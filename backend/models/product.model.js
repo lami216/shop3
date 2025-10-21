@@ -26,9 +26,13 @@ const productSchema = new mongoose.Schema(
                                                 type: String,
                                                 required: true,
                                         },
+                                        fileId: {
+                                                type: String,
+                                                default: null,
+                                        },
                                         public_id: {
                                                 type: String,
-                                                required: true,
+                                                default: null,
                                         },
                                 },
                         ],
