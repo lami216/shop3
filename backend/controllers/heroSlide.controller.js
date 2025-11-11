@@ -1,6 +1,11 @@
 import HeroSlide from "../models/heroSlide.model.js";
 import { deleteImage, uploadImage } from "../lib/imagekit.js";
 
+const hasImageKitConfig =
+        Boolean(process.env.IMAGEKIT_PUBLIC_KEY) &&
+        Boolean(process.env.IMAGEKIT_PRIVATE_KEY) &&
+        Boolean(process.env.IMAGEKIT_URL_ENDPOINT);
+
 const sanitizeString = (value) => {
         if (typeof value !== "string") return "";
         return value.trim();
@@ -32,6 +37,7 @@ const normalizeSlide = (slide) => {
                 subtitle: payload.subtitle ?? "",
                 ctaLabel: payload.ctaLabel ?? "",
                 ctaUrl: payload.ctaUrl ?? "",
+                price: typeof payload.price === "number" ? payload.price : null,
                 order: typeof payload.order === "number" ? payload.order : 0,
                 image: payload.image
                         ? {
@@ -65,8 +71,17 @@ const prepareImagePayload = async (image) => {
         const trimmed = image.trim();
 
         if (trimmed.startsWith("data:")) {
-                const { url, fileId } = await uploadImage(trimmed, "hero-slides");
-                return { url, fileId: fileId ?? null };
+                if (!hasImageKitConfig) {
+                        return { url: trimmed, fileId: null };
+                }
+
+                try {
+                        const { url, fileId } = await uploadImage(trimmed, "hero-slides");
+                        return { url, fileId: fileId ?? null };
+                } catch (error) {
+                        console.warn("[HeroSlide] Falling back to inline image due to upload error:", error.message);
+                        return { url: trimmed, fileId: null };
+                }
         }
 
         if (isValidUrl(trimmed)) {
@@ -78,10 +93,17 @@ const prepareImagePayload = async (image) => {
 
 export const createHeroSlide = async (req, res) => {
         try {
-                const { title, subtitle, image, ctaLabel, ctaUrl, order } = req.body;
+                const { title, subtitle, image, ctaLabel, ctaUrl, order, price } = req.body;
 
                 if (typeof image !== "string" || !image.trim()) {
                         return res.status(400).json({ message: "Image is required" });
+                }
+
+                const numericPrice = Number(price);
+                if (price !== undefined && price !== null && price !== "") {
+                        if (!Number.isFinite(numericPrice) || Number.isNaN(numericPrice) || numericPrice < 0) {
+                                return res.status(400).json({ message: "price must be a valid non-negative number" });
+                        }
                 }
 
                 let storedImage;
@@ -101,6 +123,12 @@ export const createHeroSlide = async (req, res) => {
                         image: storedImage,
                         ctaLabel: sanitizeString(ctaLabel),
                         ctaUrl: isValidUrl(ctaUrl) ? ctaUrl.trim() : "",
+                        price:
+                                price === undefined || price === null || price === ""
+                                        ? null
+                                        : Number.isNaN(numericPrice) || !Number.isFinite(numericPrice)
+                                        ? null
+                                        : numericPrice,
                         order: Number.isFinite(numericOrder) ? numericOrder : slidesCount,
                 });
 
@@ -114,7 +142,7 @@ export const createHeroSlide = async (req, res) => {
 export const updateHeroSlide = async (req, res) => {
         try {
                 const { id } = req.params;
-                const { title, subtitle, image, ctaLabel, ctaUrl, order } = req.body;
+                const { title, subtitle, image, ctaLabel, ctaUrl, order, price } = req.body;
 
                 const slide = await HeroSlide.findById(id);
 
@@ -144,6 +172,18 @@ export const updateHeroSlide = async (req, res) => {
                                 return res.status(400).json({ message: "order must be a valid number" });
                         }
                         slide.order = numericOrder;
+                }
+
+                if (price !== undefined) {
+                        if (price === null || price === "") {
+                                slide.price = null;
+                        } else {
+                                const numericPrice = Number(price);
+                                if (!Number.isFinite(numericPrice) || Number.isNaN(numericPrice) || numericPrice < 0) {
+                                        return res.status(400).json({ message: "price must be a valid non-negative number" });
+                                }
+                                slide.price = numericPrice;
+                        }
                 }
 
                 if (image !== undefined) {

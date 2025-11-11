@@ -49,7 +49,7 @@ const CategoryPage = () => {
                                 if (!ignore) {
                                         setChildCategories(children);
                                 }
-                        } catch (error) {
+                        } catch {
                                 if (!ignore) {
                                         setChildCategories([]);
                                         toast.error(t("toast.categoryFetchError"));

@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import useTranslation from "../hooks/useTranslation";
+import { formatMRU } from "../lib/formatMRU";
+import { createOfferWhatsAppUrl } from "../lib/whatsapp";
 
 const AUTO_PLAY_INTERVAL = 6500;
 
 const HeroSlider = ({ slides = [] }) => {
+        const { t } = useTranslation();
+
         const items = useMemo(() => {
                 return slides
                         .filter(Boolean)
@@ -12,10 +17,13 @@ const HeroSlider = ({ slides = [] }) => {
                                         typeof slide.image === "object" && slide.image !== null
                                                 ? slide.image.url
                                                 : slide.image;
+                                const numericPrice = Number(slide.price);
+                                const hasValidPrice = !Number.isNaN(numericPrice) && Number.isFinite(numericPrice);
 
                                 return {
                                         ...slide,
                                         image: normalizedImage || slide.cover || slide.background || "",
+                                        price: hasValidPrice ? numericPrice : null,
                                 };
                         });
         }, [slides]);
@@ -65,6 +73,16 @@ const HeroSlider = ({ slides = [] }) => {
                         <div className='absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent' aria-hidden='true' />
                         {items.map((item, index) => {
                                 const isActive = index === activeIndex;
+                                const title = item.title || item.name || "";
+                                const priceFormatted =
+                                        item.price !== null && item.price !== undefined
+                                                ? formatMRU(item.price)
+                                                : null;
+                                const whatsappUrl = createOfferWhatsAppUrl({
+                                        title,
+                                        priceFormatted,
+                                });
+
                                 return (
                                         <article
                                                 key={`${item._id || item.image || index}`}
@@ -90,19 +108,22 @@ const HeroSlider = ({ slides = [] }) => {
                                                                 offer
                                                         </span>
                                                         <h2 className='text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-tight text-brand-text'>
-                                                                {item.title || item.name}
+                                                                {title}
                                                         </h2>
-                                                        {item.description && (
-                                                                <p className='mt-4 max-w-2xl text-base text-brand-muted sm:text-lg'>
-                                                                        {item.description}
+                                                        {priceFormatted && (
+                                                                <p className='mt-4 text-3xl font-bold text-brand-primary'>
+                                                                        {t("home.hero.offerPrice", { price: priceFormatted })}
                                                                 </p>
                                                         )}
-                                                        {item.ctaLabel && item.ctaUrl && (
+                                                        {whatsappUrl && (
                                                                 <a
-                                                                        href={item.ctaUrl}
+                                                                        href={whatsappUrl}
+                                                                        target='_blank'
+                                                                        rel='noopener noreferrer'
                                                                         className='golden-button mt-8 inline-flex w-max items-center gap-2 text-xs uppercase tracking-[0.35em]'
+                                                                        aria-label={t("home.hero.whatsappCtaAria", { title: title || t("home.hero.offerFallback") })}
                                                                 >
-                                                                        {item.ctaLabel}
+                                                                        {t("home.hero.whatsappCta")}
                                                                 </a>
                                                         )}
                                                 </div>

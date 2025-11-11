@@ -78,6 +78,12 @@
                 "titleHighlight": "أبرز الفئات",
                 "subtitle": "تابع أحدث الاتجاهات في الخدمات الرقمية مع تجربة بايزون السلسة",
                 "featuredTitle": "مميزة",
+                "hero": {
+                        "offerPrice": "السعر: {{price}}",
+                        "whatsappCta": "تواصل عبر واتساب",
+                        "whatsappCtaAria": "تواصل عبر واتساب بخصوص {{title}}",
+                        "offerFallback": "هذا العرض"
+                },
                 "search": {
                         "filters": {
                                 "label": "فلترة البحث",
@@ -218,15 +224,11 @@
                         "sectionTitle": "تحكم في صور البانر الرئيسية",
                         "fields": {
                                 "title": "عنوان العرض",
-                                "subtitle": "الوصف",
-                                "ctaLabel": "نص الزر",
-                                "ctaUrl": "رابط الزر"
+                                "price": "سعر العرض"
                         },
                         "placeholders": {
-                                "title": "مثال: عطر الموسم الجديد",
-                                "subtitle": "اكتب وصفاً قصيراً عن العرض",
-                                "ctaLabel": "مثال: تسوق الآن",
-                                "ctaUrl": "https://example.com"
+                                "title": "مثال: عرض ترويجي جديد",
+                                "price": "مثال: 1499"
                         },
                         "actions": {
                                 "upload": "اختر صورة",
@@ -241,13 +243,15 @@
                                 "deleteConfirm": "هل أنت متأكد أنك تريد حذف العرض \"{{title}}\"؟",
                                 "untitled": "عرض بدون عنوان",
                                 "noImage": "لا توجد صورة",
-                                "noLink": "بدون رابط"
+                                "titleRequired": "يرجى إدخال اسم العرض.",
+                                "priceRequired": "يرجى إدخال سعر العرض.",
+                                "priceInvalid": "يرجى إدخال قيمة سعر صحيحة."
                         },
                         "list": {
                                 "title": "العروض الحالية",
                                 "empty": "لم يتم إضافة أي عروض بعد.",
                                 "order": "الترتيب رقم {{index}}",
-                                "ctaPreview": "زر: {{label}} • رابط: {{url}}"
+                                "price": "السعر: {{price}}"
                         }
                 }
         },
