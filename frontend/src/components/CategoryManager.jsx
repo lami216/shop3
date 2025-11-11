@@ -1,8 +1,92 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ImagePlus, Trash2, Edit3, X, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import useTranslation from "../hooks/useTranslation";
 import { useCategoryStore } from "../stores/useCategoryStore";
+
+const getCategoryId = (category) => {
+        if (!category) return null;
+
+        const id = category._id;
+        if (typeof id === "string") return id;
+        if (id && typeof id.toString === "function") {
+                const stringId = id.toString();
+                return stringId === "[object Object]" ? null : stringId;
+        }
+
+        return null;
+};
+
+const getParentId = (category) => {
+        if (!category) return null;
+
+        const parent = category.parentCategory;
+
+        if (parent === null || parent === undefined || parent === "") {
+                return null;
+        }
+
+        if (typeof parent === "string") {
+                const trimmed = parent.trim();
+                return trimmed.length > 0 ? trimmed : null;
+        }
+
+        if (typeof parent === "object") {
+                if (typeof parent._id === "string") {
+                        return parent._id;
+                }
+
+                if (parent._id && typeof parent._id.toString === "function") {
+                        return parent._id.toString();
+                }
+
+                if (typeof parent.toString === "function") {
+                        const value = parent.toString();
+                        return value === "[object Object]" ? null : value;
+                }
+        }
+
+        return null;
+};
+
+const buildCategoryTree = (categories) => {
+        if (!Array.isArray(categories)) return [];
+
+        const byId = new Map();
+
+        categories.forEach((category) => {
+                const id = getCategoryId(category);
+                if (!id) return;
+
+                byId.set(id, {
+                        ...category,
+                        _id: id,
+                        children: [],
+                });
+        });
+
+        const roots = [];
+
+        byId.forEach((category) => {
+                const parentId = getParentId(category);
+                if (parentId && byId.has(parentId)) {
+                        byId.get(parentId).children.push(category);
+                } else {
+                        roots.push(category);
+                }
+        });
+
+        const sortedRoots = roots.sort((a, b) => a.name.localeCompare(b.name, "ar"));
+
+        const sortNode = (node) => ({
+                ...node,
+                children: node.children
+                        .sort((a, b) => a.name.localeCompare(b.name, "ar"))
+                        .map((child) => sortNode(child)),
+        });
+
+        return sortedRoots.map((root) => sortNode(root));
+};
 
 const CategoryManager = () => {
         const {
@@ -31,6 +115,7 @@ const CategoryManager = () => {
         );
 
         const [formState, setFormState] = useState(() => createEmptyForm());
+        const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
 
         useEffect(() => {
                 fetchCategories({ rootOnly: false });
@@ -144,6 +229,77 @@ const CategoryManager = () => {
                 if (window.confirm(t("categories.manager.confirmDelete"))) {
                         deleteCategory(category._id);
                 }
+        };
+
+        const renderCategoryNode = (
+                category,
+                depth = 0,
+                parentName = t("categories.manager.form.parentNone")
+        ) => {
+                if (!category) return null;
+
+                const hasChildren = Array.isArray(category.children) && category.children.length > 0;
+                const indentStyle = depth > 0 ? { marginRight: `${depth * 1.5}rem` } : undefined;
+                const displayParent =
+                        depth > 0 ? parentName : t("categories.manager.form.parentNone");
+
+                return (
+                        <li key={category._id} className='space-y-3'>
+                                <div
+                                        className={`flex flex-col gap-3 rounded-lg border border-white/10 bg-payzone-navy/40 p-4 sm:flex-row sm:items-center sm:justify-between ${
+                                                depth > 0 ? "border-dashed" : ""
+                                        }`}
+                                        style={indentStyle}
+                                >
+                                        <div className='flex items-center gap-4'>
+                                                <img
+                                                        src={category.imageUrl}
+                                                        alt={category.name}
+                                                        className='h-14 w-14 rounded-lg object-cover'
+                                                />
+                                                <div>
+                                                        <p className='text-lg font-semibold text-white'>{category.name}</p>
+                                                        {category.description && (
+                                                                <p className='text-sm text-white/60'>{category.description}</p>
+                                                        )}
+                                                        <p className='text-xs text-white/50'>
+                                                                {t("categories.manager.list.parent", {
+                                                                        parent: displayParent,
+                                                                })}
+                                                        </p>
+                                                </div>
+                                        </div>
+                                        <div className='flex items-center gap-2'>
+                                                <button
+                                                        type='button'
+                                                        className='inline-flex items-center gap-1 rounded-md bg-white/10 px-3 py-1 text-sm text-white transition hover:bg-white/20'
+                                                        onClick={() => handleEdit(category)}
+                                                >
+                                                        <Edit3 className='h-4 w-4' />
+                                                        {t("categories.manager.list.actions.edit")}
+                                                </button>
+                                                <button
+                                                        type='button'
+                                                        className='inline-flex items-center gap-1 rounded-md bg-red-500/20 px-3 py-1 text-sm text-red-200 transition hover:bg-red-500/30'
+                                                        onClick={() => handleDelete(category)}
+                                                >
+                                                        <Trash2 className='h-4 w-4' />
+                                                        {t("categories.manager.list.actions.delete")}
+                                                </button>
+                                        </div>
+                                </div>
+                                {hasChildren && (
+                                        <ul
+                                                className='space-y-3 border-r border-white/10 pr-4'
+                                                style={{ marginRight: `${(depth + 1) * 1.5}rem` }}
+                                        >
+                                                {category.children.map((child) =>
+                                                        renderCategoryNode(child, depth + 1, category.name)
+                                                )}
+                                        </ul>
+                                )}
+                        </li>
+                );
         };
 
         return (
@@ -281,73 +437,11 @@ const CategoryManager = () => {
 
                         <div className='rounded-xl border border-payzone-indigo/40 bg-white/5 p-6 shadow-lg backdrop-blur-sm'>
                                 <h3 className='mb-4 text-xl font-semibold text-payzone-gold'>{t("categories.manager.list.title")}</h3>
-                                {categories.length === 0 ? (
+                                {categoryTree.length === 0 ? (
                                         <p className='text-sm text-white/70'>{t("categories.manager.list.empty")}</p>
                                 ) : (
                                         <ul className='space-y-4'>
-                                                {categories.map((category) => (
-                                                        <li
-                                                                key={category._id}
-                                                                className='flex flex-col gap-3 rounded-lg border border-white/10 bg-payzone-navy/40 p-4 sm:flex-row sm:items-center sm:justify-between'
-                                                        >
-                                                                <div className='flex items-center gap-4'>
-                                                                        <img
-                                                                                src={category.imageUrl}
-                                                                                alt={category.name}
-                                                                                className='h-14 w-14 rounded-lg object-cover'
-                                                                        />
-                                                                        <div>
-                                                                                <p className='text-lg font-semibold text-white'>{category.name}</p>
-                                                                                {category.description && (
-                                                                                        <p className='text-sm text-white/60'>{category.description}</p>
-                                                                                )}
-                                                                                <p className='text-xs text-white/50'>
-                                                                                {(() => {
-                                                                                        const parentId =
-                                                                                                typeof category.parentCategory ===
-                                                                                                "object"
-                                                                                                        ? category.parentCategory?._id ??
-                                                                                                          category.parentCategory?.toString?.() ??
-                                                                                                          null
-                                                                                                        : category.parentCategory ?? null;
-
-                                                                                        const parentName = parentId
-                                                                                                ? categories.find((item) => {
-                                                                                                          const itemId =
-                                                                                                                  typeof item._id === "object"
-                                                                                                                          ? item._id?.toString?.() ?? null
-                                                                                                                          : item._id ?? null;
-                                                                                                          return itemId === parentId;
-                                                                                                  })?.name
-                                                                                                : null;
-
-                                                                                        return t("categories.manager.list.parent", {
-                                                                                                parent: parentName || t("categories.manager.form.parentNone"),
-                                                                                        });
-                                                                                })()}
-                                                                                </p>
-                                                                        </div>
-                                                                </div>
-                                                                <div className='flex items-center gap-2'>
-                                                                        <button
-                                                                                type='button'
-                                                                                className='inline-flex items-center gap-1 rounded-md bg-white/10 px-3 py-1 text-sm text-white transition hover:bg-white/20'
-                                                                                onClick={() => handleEdit(category)}
-                                                                        >
-                                                                                <Edit3 className='h-4 w-4' />
-                                                                                {t("categories.manager.list.actions.edit")}
-                                                                        </button>
-                                                                        <button
-                                                                                type='button'
-                                                                                className='inline-flex items-center gap-1 rounded-md bg-red-500/20 px-3 py-1 text-sm text-red-200 transition hover:bg-red-500/30'
-                                                                                onClick={() => handleDelete(category)}
-                                                                        >
-                                                                                <Trash2 className='h-4 w-4' />
-                                                                                {t("categories.manager.list.actions.delete")}
-                                                                        </button>
-                                                                </div>
-                                                        </li>
-                                                ))}
+                                                {categoryTree.map((category) => renderCategoryNode(category))}
                                         </ul>
                                 )}
                         </div>
