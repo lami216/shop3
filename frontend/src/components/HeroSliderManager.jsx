@@ -5,6 +5,9 @@ import useTranslation from "../hooks/useTranslation";
 import { useHeroSliderStore } from "../stores/useHeroSliderStore";
 import { formatMRU } from "../lib/formatMRU";
 
+const MAX_IMAGE_SIZE_MB = 10;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
 const createInitialFormState = () => ({
         title: "",
         price: "",
@@ -39,18 +42,30 @@ const HeroSliderManager = () => {
                 const file = event.target.files?.[0];
                 if (!file) return;
 
+                if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                        toast.error(
+                                t("admin.heroSlider.messages.imageTooLarge", {
+                                        size: MAX_IMAGE_SIZE_MB,
+                                })
+                        );
+                        event.target.value = "";
+                        return;
+                }
+
                 const reader = new FileReader();
-                        reader.onloadend = () => {
-                                setFormState((previous) => ({
-                                        ...previous,
-                                        imageData: reader.result,
-                                        previewUrl: reader.result,
-                                }));
-                        };
-                        reader.onerror = () => {
-                                toast.error(t("admin.heroSlider.messages.imageReadError"));
-                        };
-                        reader.readAsDataURL(file);
+                reader.onloadend = () => {
+                        const result = typeof reader.result === "string" ? reader.result : "";
+                        setFormState((previous) => ({
+                                ...previous,
+                                imageData: result,
+                                previewUrl: result,
+                        }));
+                };
+                reader.onerror = () => {
+                        toast.error(t("admin.heroSlider.messages.imageReadError"));
+                };
+                reader.readAsDataURL(file);
+                event.target.value = "";
         };
 
         const handleChange = (event) => {
