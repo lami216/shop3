@@ -3,11 +3,13 @@ import useTranslation from "../hooks/useTranslation";
 import CategoryItem from "../components/CategoryItem";
 import { useProductStore } from "../stores/useProductStore";
 import FeaturedProducts from "../components/FeaturedProducts";
-import { useCategoryStore } from "../stores/useCategoryStore";
+import { selectRootCategories, useCategoryStore } from "../stores/useCategoryStore";
 
 const HomePage = () => {
         const { fetchFeaturedProducts, products, loading: productsLoading } = useProductStore();
-        const { categories, fetchCategories, loading: categoriesLoading } = useCategoryStore();
+        const fetchCategories = useCategoryStore((state) => state.fetchCategories);
+        const categoriesLoading = useCategoryStore((state) => state.loading);
+        const rootCategories = useCategoryStore(selectRootCategories);
         const { t } = useTranslation();
 
         useEffect(() => {
@@ -15,7 +17,7 @@ const HomePage = () => {
         }, [fetchFeaturedProducts]);
 
         useEffect(() => {
-                fetchCategories();
+                fetchCategories({ rootOnly: true });
         }, [fetchCategories]);
 
         return (
@@ -32,12 +34,12 @@ const HomePage = () => {
                                 </p>
 
                                 <div className='grid grid-cols-2 gap-4 lg:grid-cols-3'>
-                                        {categories.length === 0 && !categoriesLoading && (
+                                        {rootCategories.length === 0 && !categoriesLoading && (
                                                 <div className='col-span-full text-center text-white/70'>
                                                         {t("categories.manager.list.empty")}
                                                 </div>
                                         )}
-                                        {categories.map((category) => (
+                                        {rootCategories.map((category) => (
                                                 <CategoryItem category={category} key={category._id} />
                                         ))}
                                 </div>

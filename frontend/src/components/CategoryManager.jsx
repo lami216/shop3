@@ -33,7 +33,7 @@ const CategoryManager = () => {
         const [formState, setFormState] = useState(() => createEmptyForm());
 
         useEffect(() => {
-                fetchCategories();
+                fetchCategories({ rootOnly: false });
         }, [fetchCategories]);
 
         useEffect(() => {

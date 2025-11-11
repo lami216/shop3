@@ -78,7 +78,7 @@ const CreateProductForm = () => {
         };
 
         useEffect(() => {
-                fetchCategories();
+                fetchCategories({ rootOnly: false });
         }, [fetchCategories]);
 
         useEffect(() => {
