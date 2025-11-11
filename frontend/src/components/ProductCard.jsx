@@ -28,52 +28,50 @@ const ProductCard = ({ product }) => {
         };
 
         return (
-                <div className='group relative flex w-full flex-col overflow-hidden rounded-xl border border-payzone-indigo/30 bg-white/5 shadow-lg transition-all duration-300 hover:border-payzone-gold/60 hover:shadow-xl sm:aspect-[3/4] lg:aspect-square'>
+                <div className='group relative flex w-full flex-col overflow-hidden rounded-3xl border border-brand-primary/20 bg-black/60 p-4 text-brand-text shadow-golden transition duration-200 ease-out hover:border-brand-primary/60 hover:shadow-golden-strong'>
                         <Link
                                 to={`/products/${product._id}`}
-                                className='relative mx-3 mt-3 overflow-hidden rounded-xl aspect-[4/5] min-h-[14rem] sm:min-h-0 sm:aspect-square'
+                                className='relative block overflow-hidden rounded-2xl bg-black/40'
                                 aria-label={t("product.viewDetails", { name: product.name })}
                         >
                                 {isDiscounted && (
-                                        <span className='absolute right-3 top-3 z-10 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white shadow-lg'>
+                                        <span className='absolute right-4 top-4 z-10 rounded-full bg-brand-accent px-3 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-brand-text shadow-golden'>
                                                 -{discountPercentage}%
                                         </span>
                                 )}
                                 {coverImage ? (
                                         <img
-                                                className='h-full w-full object-cover transition-transform duration-500 group-hover:scale-110'
+                                                className='h-60 w-full object-cover transition duration-500 ease-out group-hover:scale-105'
                                                 src={coverImage}
                                                 alt={product.name}
                                         />
                                 ) : (
-                                        <div className='flex h-full w-full items-center justify-center bg-payzone-navy/70 text-sm text-white/60'>
+                                        <div className='flex h-60 w-full items-center justify-center bg-black/40 text-sm text-brand-muted'>
                                                 {t("common.status.noImage")}
                                         </div>
                                 )}
-                                <div className='pointer-events-none absolute inset-0 z-0 bg-gradient-to-t from-payzone-navy/60 via-payzone-navy/20 to-transparent' />
+                                <div className='pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent' />
                         </Link>
 
-                        <div className='mt-4 flex flex-1 flex-col px-5 pb-5'>
-                                <Link to={`/products/${product._id}`} className='block transition-colors duration-300 hover:text-payzone-gold'>
-                                        <h5 className='text-lg font-semibold tracking-tight text-white'>{product.name}</h5>
+                        <div className='flex flex-1 flex-col gap-4 pt-6'>
+                                <Link to={`/products/${product._id}`} className='transition duration-150 ease-out hover:text-brand-primary'>
+                                        <h5 className='text-lg font-semibold tracking-wide'>{product.name}</h5>
                                 </Link>
-                                <div className='mt-3 flex flex-wrap items-baseline gap-2'>
+                                <p className='min-h-[3.5rem] text-sm leading-relaxed text-brand-muted'>
+                                        {product.description || t("products.detail.descriptionFallback")}
+                                </p>
+                                <div className='flex flex-wrap items-baseline gap-3'>
                                         {isDiscounted ? (
                                                 <>
-                                                        <span className='max-w-full break-words text-sm text-white/60 line-through'>{formatMRU(price)}</span>
-                                                        <span className='max-w-full break-words text-lg font-bold text-red-300'>{formatMRU(discountedPrice)}</span>
+                                                        <span className='text-sm text-brand-muted line-through'>{formatMRU(price)}</span>
+                                                        <span className='text-2xl font-semibold text-brand-primary'>{formatMRU(discountedPrice)}</span>
                                                 </>
                                         ) : (
-                                                <span className='max-w-full break-words text-lg font-semibold leading-tight text-payzone-gold'>
-                                                        {formatMRU(price)}
-                                                </span>
+                                                <span className='text-2xl font-semibold text-brand-primary'>{formatMRU(price)}</span>
                                         )}
                                 </div>
-                                <button
-                                        className='mt-auto flex items-center justify-center gap-2 rounded-lg bg-payzone-gold px-5 py-2 text-sm font-medium text-payzone-navy transition-colors duration-300 hover:bg-[#b8873d] focus:outline-none focus:ring-4 focus:ring-payzone-indigo/40'
-                                        onClick={handleAddToCart}
-                                >
-                                        <ShoppingCart size={20} />
+                                <button className='golden-button mt-auto text-xs uppercase tracking-[0.35em]' onClick={handleAddToCart}>
+                                        <ShoppingCart size={18} />
                                         {t("common.actions.addToCart")}
                                 </button>
                         </div>

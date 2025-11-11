@@ -85,10 +85,12 @@ const ProductDetailPage = () => {
 
         if (!selectedProduct) {
                 return (
-                        <div className='relative min-h-screen text-payzone-white'>
+                        <div className='relative min-h-screen bg-brand-bg text-brand-text'>
                                 <div className='relative z-10 mx-auto max-w-4xl px-4 py-24 text-center'>
-                                        <h1 className='text-3xl font-semibold text-payzone-gold'>{t("products.detail.notFound.title")}</h1>
-                                        <p className='mt-4 text-white/70'>{t("products.detail.notFound.description")}</p>
+                                        <h1 className='text-[clamp(1.75rem,4vw,2.5rem)] font-semibold text-brand-primary'>
+                                                {t("products.detail.notFound.title")}
+                                        </h1>
+                                        <p className='mt-4 text-brand-muted'>{t("products.detail.notFound.description")}</p>
                                 </div>
                         </div>
                 );
@@ -119,28 +121,24 @@ const ProductDetailPage = () => {
         };
 
         return (
-                <div className='relative min-h-screen overflow-hidden text-payzone-white'>
-                        <div className='relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8'>
-                                <div className='grid gap-10 lg:grid-cols-2'>
+                <div className='relative min-h-screen overflow-hidden bg-brand-bg text-brand-text'>
+                        <div className='relative z-10 mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8'>
+                                <div className='grid gap-12 lg:grid-cols-2'>
                                         <div>
-                                                <div className='relative flex h-96 items-center justify-center overflow-hidden rounded-2xl border border-payzone-indigo/40 bg-payzone-navy/60'>
+                                                <div className='relative flex h-[420px] items-center justify-center overflow-hidden rounded-3xl border border-brand-primary/25 bg-black/60 shadow-golden'>
                                                         {isDiscounted && (
-                                                                <span className='absolute right-4 top-4 rounded-full bg-red-600 px-4 py-1 text-sm font-semibold text-white shadow-lg'>
+                                                                <span className='absolute right-6 top-6 rounded-full bg-brand-accent px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-brand-text shadow-golden'>
                                                                         -{discountPercentage}%
                                                                 </span>
                                                         )}
                                                         {activeImage ? (
-                                                                <img
-                                                                        src={activeImage}
-                                                                        alt={selectedProduct.name}
-                                                                        className='h-full w-full object-contain'
-                                                                />
+                                                                <img src={activeImage} alt={selectedProduct.name} className='h-full w-full object-contain p-6' />
                                                         ) : (
-                                                                <div className='text-white/60'>{t("common.status.noImage")}</div>
+                                                                <div className='text-brand-muted'>{t("common.status.noImage")}</div>
                                                         )}
                                                 </div>
                                                 {galleryImages.length > 1 && (
-                                                        <div className='mt-4 flex gap-3 overflow-x-auto pb-2'>
+                                                        <div className='mt-5 flex gap-3 overflow-x-auto pb-2'>
                                                                 {galleryImages.map((imageUrl, index) => {
                                                                         const isActive = imageUrl === activeImage;
                                                                         const localizedIndex = new Intl.NumberFormat("ar").format(index + 1);
@@ -149,10 +147,10 @@ const ProductDetailPage = () => {
                                                                                         key={`${imageUrl}-${index}`}
                                                                                         type='button'
                                                                                         onClick={() => setActiveImage(imageUrl)}
-                                                                                        className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border transition-colors duration-200 ${
+                                                                                        className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border transition duration-150 ease-out ${
                                                                                                 isActive
-                                                                                                        ? "border-payzone-gold"
-                                                                                                        : "border-transparent"
+                                                                                                        ? "border-brand-primary shadow-golden"
+                                                                                                        : "border-brand-primary/20 hover:border-brand-primary/60"
                                                                                         }`}
                                                                                         aria-label={t("products.detail.viewImage", { index: localizedIndex })}
                                                                                 >
@@ -164,10 +162,9 @@ const ProductDetailPage = () => {
                                                 )}
                                         </div>
 
-                                        <div className='flex flex-col gap-8 py-2 lg:pl-4'>
+                                        <div className='flex flex-col gap-8 rounded-3xl border border-brand-primary/15 bg-black/40 px-6 py-8 shadow-golden lg:pl-8'>
                                                 <div className='space-y-6'>
-                                                        {Array.isArray(selectedProduct.categoryDetails) &&
-                                                        selectedProduct.categoryDetails.length > 0 ? (
+                                                        {Array.isArray(selectedProduct.categoryDetails) && selectedProduct.categoryDetails.length > 0 ? (
                                                                 <div className='flex flex-wrap gap-2'>
                                                                         {selectedProduct.categoryDetails.map((category) => {
                                                                                 const label = category?.name || category?.slug;
@@ -176,7 +173,7 @@ const ProductDetailPage = () => {
                                                                                 return (
                                                                                         <span
                                                                                                 key={category._id || label}
-                                                                                                className='rounded-full bg-payzone-navy/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-payzone-gold/80'
+                                                                                                className='rounded-full border border-brand-primary/40 bg-black/50 px-3 py-1 text-xs uppercase tracking-[0.35em] text-brand-muted'
                                                                                         >
                                                                                                 {label}
                                                                                         </span>
@@ -185,29 +182,27 @@ const ProductDetailPage = () => {
                                                                 </div>
                                                         ) : (
                                                                 selectedProduct.category && (
-                                                                        <p className='text-sm font-medium uppercase tracking-wide text-payzone-gold/80'>
+                                                                        <p className='text-xs uppercase tracking-[0.45em] text-brand-muted'>
                                                                                 {selectedProduct.category}
                                                                         </p>
                                                                 )
                                                         )}
                                                         <div className='space-y-2'>
-                                                                <p className='text-sm font-semibold text-white/70'>الإسم</p>
-                                                                <h1 className='text-3xl font-bold text-payzone-gold'>
-                                                                        {selectedProduct.name}
-                                                                </h1>
+                                                                <p className='text-xs uppercase tracking-[0.45em] text-brand-muted'>الإسم</p>
+                                                                <h1 className='text-[clamp(2rem,4vw,3rem)] font-semibold text-brand-primary'>{selectedProduct.name}</h1>
                                                         </div>
                                                         <div className='space-y-2'>
-                                                                <p className='text-sm font-semibold text-white/70'>السعر</p>
-                                                                <div className='flex flex-wrap items-center gap-4 text-3xl font-semibold text-payzone-gold'>
+                                                                <p className='text-xs uppercase tracking-[0.45em] text-brand-muted'>السعر</p>
+                                                                <div className='flex flex-wrap items-center gap-4 text-3xl font-semibold text-brand-primary'>
                                                                         {isDiscounted ? (
                                                                                 <>
-                                                                                        <span className='text-2xl font-normal text-white/60 line-through'>
+                                                                                        <span className='text-base font-normal text-brand-muted line-through'>
                                                                                                 {formatMRU(price)}
                                                                                         </span>
-                                                                                        <span className='text-4xl font-bold text-red-300'>
+                                                                                        <span className='text-4xl font-bold text-brand-primary'>
                                                                                                 {formatMRU(discountedPrice)}
                                                                                         </span>
-                                                                                        <span className='rounded-full bg-red-600/80 px-3 py-1 text-base font-semibold text-white shadow'>
+                                                                                        <span className='rounded-full border border-brand-accent bg-brand-accent/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-brand-text'>
                                                                                                 -{discountPercentage}%
                                                                                         </span>
                                                                                 </>
@@ -218,26 +213,26 @@ const ProductDetailPage = () => {
                                                         </div>
                                                 </div>
 
-                                                <div className='flex flex-wrap items-center gap-3 text-white/80'>
-                                                        <span className='text-sm font-medium text-white/70'>
+                                                <div className='flex flex-wrap items-center gap-4 text-brand-text'>
+                                                        <span className='text-xs uppercase tracking-[0.35em] text-brand-muted'>
                                                                 {t("cart.item.chooseQuantity")}
                                                         </span>
                                                         <div className='flex items-center gap-3'>
                                                                 <button
                                                                         type='button'
                                                                         onClick={handleDecreaseQuantity}
-                                                                        className='inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-payzone-gold/80 hover:bg-payzone-navy/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-payzone-gold'
+                                                                        className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-primary/30 bg-black/60 text-brand-text transition duration-150 ease-out hover:border-brand-primary hover:bg-brand-primary/10'
                                                                         aria-label={t("cart.item.decrease")}
                                                                 >
                                                                         <Minus className='h-4 w-4' />
                                                                 </button>
-                                                                <span className='flex h-9 min-w-[3rem] items-center justify-center rounded-xl bg-white/10 text-base font-semibold text-white'>
+                                                                <span className='flex h-10 min-w-[3rem] items-center justify-center rounded-2xl border border-brand-primary/20 bg-black/60 text-base font-semibold text-brand-text'>
                                                                         {quantity}
                                                                 </span>
                                                                 <button
                                                                         type='button'
                                                                         onClick={handleIncreaseQuantity}
-                                                                        className='inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-payzone-gold/80 hover:bg-payzone-navy/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-payzone-gold'
+                                                                        className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-primary/30 bg-black/60 text-brand-text transition duration-150 ease-out hover:border-brand-primary hover:bg-brand-primary/10'
                                                                         aria-label={t("cart.item.increase")}
                                                                 >
                                                                         <Plus className='h-4 w-4' />
@@ -245,29 +240,23 @@ const ProductDetailPage = () => {
                                                         </div>
                                                 </div>
 
-                                                <div className='space-y-3 text-white/80'>
-                                                        <h2 className='text-lg font-semibold text-payzone-gold'>
+                                                <div className='space-y-3 text-brand-muted'>
+                                                        <h2 className='text-lg font-semibold text-brand-primary'>
                                                                 {t("products.detail.descriptionTitle")}
                                                         </h2>
-                                                        <p className='text-base leading-relaxed'>
+                                                        <p className='text-base leading-relaxed text-brand-text/90'>
                                                                 {selectedProduct.description || t("products.detail.descriptionFallback")}
                                                         </p>
                                                 </div>
 
-                                                <button
-                                                        onClick={handleAddToCart}
-                                                        className='inline-flex items-center justify-center rounded-full bg-payzone-gold px-6 py-3 text-lg font-semibold text-payzone-navy transition-colors duration-300 hover:bg-[#b8873d] focus:outline-none focus:ring-4 focus:ring-payzone-indigo/40'
-                                                >
+                                                <button onClick={handleAddToCart} className='golden-button text-xs uppercase tracking-[0.45em]'>
                                                         {t("common.actions.addToCart")}
                                                 </button>
                                         </div>
                                 </div>
 
-                                <div className='mt-16'>
-                                        <PeopleAlsoBought
-                                                productId={selectedProduct._id}
-                                                category={selectedProduct.category}
-                                        />
+                                <div className='mt-20'>
+                                        <PeopleAlsoBought productId={selectedProduct._id} category={selectedProduct.category} />
                                 </div>
                         </div>
                 </div>

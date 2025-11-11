@@ -1,3 +1,94 @@
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=IBM+Plex+Arabic:wght@300;400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+        --bg: #000000;
+        --primary: #c9a96e;
+        --accent: #6b0f1a;
+        --muted: #b0b0b0;
+        --text: #ffffff;
+}
+
+@layer base {
+        *,
+        *::before,
+        *::after {
+                box-sizing: border-box;
+        }
+
+        body {
+                margin: 0;
+                min-height: 100vh;
+                background-color: var(--bg);
+                color: var(--text);
+                font-family: "Cairo", "IBM Plex Arabic", system-ui, sans-serif;
+                line-height: 1.6;
+                -webkit-font-smoothing: antialiased;
+        }
+
+        ::selection {
+                background: rgba(201, 169, 110, 0.35);
+                color: var(--text);
+        }
+}
+
+@layer components {
+        .golden-outline {
+                position: relative;
+        }
+
+        .golden-outline::before {
+                content: "";
+                position: absolute;
+                inset: -1px;
+                border-radius: inherit;
+                padding: 1px;
+                background: linear-gradient(135deg, rgba(201, 169, 110, 0.85), rgba(107, 15, 26, 0.35));
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                -webkit-mask-composite: xor;
+                mask-composite: exclude;
+                pointer-events: none;
+                z-index: 0;
+        }
+
+        .golden-button {
+                @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-brand-primary px-6 py-3 text-sm font-semibold tracking-wide text-brand-bg transition duration-150 ease-out;
+        }
+
+        .golden-button::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.35), transparent 55%);
+                opacity: 0;
+                transition: opacity 150ms ease-out;
+        }
+
+        .golden-button:hover::after {
+                opacity: 1;
+        }
+
+        .golden-button:hover {
+                box-shadow: 0 0 22px rgba(201, 169, 110, 0.35);
+        }
+
+        .shadow-golden {
+                box-shadow: 0 0 28px rgba(201, 169, 110, 0.25);
+        }
+
+        .text-gradient-gold {
+                background-image: linear-gradient(120deg, rgba(201, 169, 110, 0.95), rgba(246, 224, 173, 0.8), rgba(201, 169, 110, 0.95));
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+        }
+}
+
+@layer utilities {
+        .backdrop-gold {
+                background: linear-gradient(165deg, rgba(201, 169, 110, 0.12), rgba(0, 0, 0, 0.65));
+        }
+}
