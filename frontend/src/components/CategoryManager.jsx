@@ -25,6 +25,7 @@ const CategoryManager = () => {
                         image: "",
                         imagePreview: "",
                         imageChanged: false,
+                        parentCategory: "",
                 }),
                 []
         );
@@ -47,6 +48,10 @@ const CategoryManager = () => {
                         image: "",
                         imagePreview: selectedCategory.imageUrl ?? "",
                         imageChanged: false,
+                        parentCategory:
+                                typeof selectedCategory.parentCategory === "string"
+                                        ? selectedCategory.parentCategory
+                                        : selectedCategory.parentCategory?._id ?? "",
                 });
         }, [selectedCategory, createEmptyForm]);
 
@@ -88,9 +93,27 @@ const CategoryManager = () => {
                         return;
                 }
 
+                const normalizedParent =
+                        formState.parentCategory &&
+                        formState.parentCategory !== "null" &&
+                        formState.parentCategory !== "root"
+                                ? formState.parentCategory
+                                : null;
+
+                const selectedCategoryId =
+                        typeof selectedCategory?._id === "object"
+                                ? selectedCategory?._id?.toString?.() ?? null
+                                : selectedCategory?._id ?? null;
+
+                if (selectedCategoryId && normalizedParent === selectedCategoryId) {
+                        toast.error(t("categories.manager.form.parentInvalid"));
+                        return;
+                }
+
                 const payload = {
                         name: trimmedName,
                         description: trimmedDescription,
+                        parentCategory: normalizedParent,
                 };
 
                 if (formState.image && (formState.imageChanged || !selectedCategory)) {
@@ -210,6 +233,39 @@ const CategoryManager = () => {
                                                 />
                                         </div>
 
+                                        <div>
+                                                <label className='block text-sm font-medium text-white/80' htmlFor='category-parent'>
+                                                        {t("categories.manager.form.parentCategory")}
+                                                </label>
+                                                <select
+                                                        id='category-parent'
+                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                                        value={formState.parentCategory}
+                                                        onChange={(event) =>
+                                                                setFormState((previous) => ({
+                                                                        ...previous,
+                                                                        parentCategory: event.target.value,
+                                                                }))
+                                                        }
+                                                >
+                                                        <option value=''>
+                                                                {t("categories.manager.form.parentNone")}
+                                                        </option>
+                                                        {categories
+                                                                .filter((categoryOption) =>
+                                                                        categoryOption._id !== selectedCategory?._id
+                                                                )
+                                                                .map((categoryOption) => (
+                                                                        <option key={categoryOption._id} value={categoryOption._id}>
+                                                                                {categoryOption.name}
+                                                                        </option>
+                                                                ))}
+                                                </select>
+                                                <p className='mt-2 text-xs text-white/60'>
+                                                        {t("categories.manager.form.parentHint")}
+                                                </p>
+                                        </div>
+
                                         <button
                                                 type='submit'
                                                 className='inline-flex items-center justify-center gap-2 rounded-md bg-payzone-gold px-4 py-2 font-semibold text-payzone-navy transition hover:bg-[#b8873d] focus:outline-none focus:ring-2 focus:ring-payzone-indigo disabled:opacity-50'
@@ -245,6 +301,31 @@ const CategoryManager = () => {
                                                                                 {category.description && (
                                                                                         <p className='text-sm text-white/60'>{category.description}</p>
                                                                                 )}
+                                                                                <p className='text-xs text-white/50'>
+                                                                                {(() => {
+                                                                                        const parentId =
+                                                                                                typeof category.parentCategory ===
+                                                                                                "object"
+                                                                                                        ? category.parentCategory?._id ??
+                                                                                                          category.parentCategory?.toString?.() ??
+                                                                                                          null
+                                                                                                        : category.parentCategory ?? null;
+
+                                                                                        const parentName = parentId
+                                                                                                ? categories.find((item) => {
+                                                                                                          const itemId =
+                                                                                                                  typeof item._id === "object"
+                                                                                                                          ? item._id?.toString?.() ?? null
+                                                                                                                          : item._id ?? null;
+                                                                                                          return itemId === parentId;
+                                                                                                  })?.name
+                                                                                                : null;
+
+                                                                                        return t("categories.manager.list.parent", {
+                                                                                                parent: parentName || t("categories.manager.form.parentNone"),
+                                                                                        });
+                                                                                })()}
+                                                                                </p>
                                                                         </div>
                                                                 </div>
                                                                 <div className='flex items-center gap-2'>

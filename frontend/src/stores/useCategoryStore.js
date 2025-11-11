@@ -12,10 +12,19 @@ export const useCategoryStore = create((set) => ({
         setSelectedCategory: (category) => set({ selectedCategory: category }),
         clearSelectedCategory: () => set({ selectedCategory: null }),
 
-        fetchCategories: async () => {
+        fetchCategories: async (options = {}) => {
                 set({ loading: true, error: null });
                 try {
-                        const data = await apiClient.get(`/categories`);
+                        const { parent } = options;
+                        let query = "";
+
+                        if (parent === null) {
+                                query = "?parent=null";
+                        } else if (typeof parent === "string" && parent.trim()) {
+                                query = `?parent=${parent.trim()}`;
+                        }
+
+                        const data = await apiClient.get(`/categories${query}`);
                         set({ categories: data?.categories ?? [], loading: false });
                 } catch (error) {
                         set({ loading: false, error: error.response?.data?.message || "Failed to fetch categories" });
@@ -65,7 +74,23 @@ export const useCategoryStore = create((set) => ({
                 try {
                         await apiClient.delete(`/categories/${id}`);
                         set((state) => ({
-                                categories: state.categories.filter((category) => category._id !== id),
+                                categories: state.categories
+                                        .filter((category) => category._id !== id)
+                                        .map((category) =>
+                                                (() => {
+                                                        const parent = category.parentCategory;
+                                                        const parentId =
+                                                                typeof parent === "object" && parent !== null
+                                                                        ? parent._id ?? parent.toString?.() ?? null
+                                                                        : parent;
+
+                                                        if (parentId === id) {
+                                                                return { ...category, parentCategory: null };
+                                                        }
+
+                                                        return category;
+                                                })()
+                                        ),
                                 selectedCategory: state.selectedCategory?._id === id ? null : state.selectedCategory,
                                 loading: false,
                         }));

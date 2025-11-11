@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { redis } from "../lib/redis.js";
 import { uploadImage, deleteImage } from "../lib/imagekit.js";
+import Category from "../models/category.model.js";
 import Product from "../models/product.model.js";
 
 const toBoolean = (value) => {
@@ -137,6 +138,57 @@ const finalizeProductPayload = (product) => {
         const normalizedImages = normalizeImagesForResponse(product.images);
         const coverImageUrl = product.image || normalizedImages[0]?.url || "";
 
+        const categorySource = Array.isArray(product.categoryDetails)
+                ? product.categoryDetails
+                : Array.isArray(product.categories)
+                        ? product.categories
+                        : [];
+
+        const normalizeCategory = (category) => {
+                if (!category) return null;
+
+                if (typeof category === "object") {
+                        const id =
+                                category._id?.toString?.() ??
+                                category.id?.toString?.() ??
+                                (typeof category === "string" ? category : null);
+
+                        if (!id) return null;
+
+                        const parent =
+                                typeof category.parentCategory === "object"
+                                        ? category.parentCategory?._id?.toString?.() ??
+                                          category.parentCategory?.id?.toString?.() ??
+                                          category.parentCategory?.toString?.() ??
+                                          null
+                                        : category.parentCategory ?? null;
+
+                        return {
+                                _id: id,
+                                name: category.name ?? "",
+                                slug: category.slug ?? "",
+                                parentCategory: parent,
+                        };
+                }
+
+                if (typeof category === "string") {
+                        return {
+                                _id: category,
+                                name: "",
+                                slug: "",
+                                parentCategory: null,
+                        };
+                }
+
+                return null;
+        };
+
+        const categoryDetails = categorySource
+                .map((category) => normalizeCategory(category))
+                .filter(Boolean);
+        const categoryIds = categoryDetails.map((category) => category._id);
+        const primaryCategorySlug = categoryDetails.find((category) => category.slug)?.slug || null;
+
         return {
                 ...product,
                 isDiscounted,
@@ -144,6 +196,9 @@ const finalizeProductPayload = (product) => {
                 discountedPrice,
                 image: coverImageUrl,
                 images: normalizedImages,
+                categories: categoryIds,
+                categoryDetails,
+                category: primaryCategorySlug,
         };
 };
 
@@ -157,9 +212,113 @@ const serializeProduct = (product) => {
         return finalizeProductPayload(serialized);
 };
 
+const resolveCategoryIdentifiers = async (rawCategories, fallbackCategory = null) => {
+        const collected = [];
+
+        if (Array.isArray(rawCategories)) {
+                collected.push(...rawCategories);
+        } else if (rawCategories !== undefined && rawCategories !== null) {
+                collected.push(rawCategories);
+        }
+
+        if (
+                (!collected.length || collected.every((item) => item === null || item === "")) &&
+                typeof fallbackCategory === "string" &&
+                fallbackCategory.trim().length
+        ) {
+                collected.push(fallbackCategory);
+        }
+
+        const trimmed = collected
+                .map((value) => (typeof value === "string" ? value.trim() : ""))
+                .filter(
+                        (value) =>
+                                value.length > 0 && !["null", "root"].includes(value.toLowerCase())
+                );
+
+        if (!trimmed.length) {
+                return [];
+        }
+
+        const uniqueValues = [...new Set(trimmed)];
+
+        const objectIdValues = uniqueValues
+                .filter((value) => mongoose.Types.ObjectId.isValid(value))
+                .map((value) => new mongoose.Types.ObjectId(value));
+        const slugValues = uniqueValues.filter((value) => !mongoose.Types.ObjectId.isValid(value));
+
+        const orConditions = [];
+
+        if (objectIdValues.length) {
+                orConditions.push({ _id: { $in: objectIdValues } });
+        }
+
+        if (slugValues.length) {
+                orConditions.push({ slug: { $in: slugValues } });
+        }
+
+        if (!orConditions.length) {
+                return [];
+        }
+
+        const categories = await Category.find({ $or: orConditions })
+                .select("_id slug")
+                .lean();
+
+        const resolutionMap = new Map();
+
+        categories.forEach((category) => {
+                if (!category?._id) return;
+                const idString = category._id.toString();
+                resolutionMap.set(idString, idString);
+                if (category.slug) {
+                        resolutionMap.set(category.slug, idString);
+                }
+        });
+
+        const resolvedIds = uniqueValues.map((value) => resolutionMap.get(value));
+
+        if (resolvedIds.some((value) => !value)) {
+                const missing = uniqueValues.filter((value, index) => !resolvedIds[index]);
+                return {
+                        error:
+                                missing.length === 1
+                                        ? `Category \"${missing[0]}\" was not found`
+                                        : `Categories not found: ${missing.join(", ")}`,
+                };
+        }
+
+        return [...new Set(resolvedIds.filter(Boolean))];
+};
+
+const UNCATEGORIZED_FILTER = {
+        $or: [{ categories: { $exists: false } }, { categories: { $size: 0 } }],
+};
+
 export const getAllProducts = async (req, res) => {
         try {
-                const products = await Product.find({}).lean({ virtuals: true });
+                const { category: categorySlug, uncategorized } = req.query;
+                const filter = {};
+
+                if (typeof uncategorized !== "undefined" && toBoolean(uncategorized)) {
+                        Object.assign(filter, UNCATEGORIZED_FILTER);
+                } else if (typeof categorySlug === "string" && categorySlug.trim()) {
+                        const normalizedSlug = categorySlug.trim().toLowerCase();
+                        const category = await Category.findOne({ slug: normalizedSlug })
+                                .select("_id")
+                                .lean();
+
+                        if (!category) {
+                                return res.json({ products: [] });
+                        }
+
+                        filter.categories = category._id;
+                }
+
+                const products = await Product.find(filter)
+                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .lean({ virtuals: true });
+
                 res.json({ products: products.map(finalizeProductPayload) });
         } catch (error) {
                 console.log("Error in getAllProducts controller", error.message);
@@ -175,7 +334,9 @@ export const getFeaturedProducts = async (req, res) => {
                         return res.json(parsed.map(finalizeProductPayload));
                 }
 
-                featuredProducts = await Product.find({ isFeatured: true }).lean({ virtuals: true });
+                featuredProducts = await Product.find({ isFeatured: true })
+                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .lean({ virtuals: true });
 
                 if (!featuredProducts || !featuredProducts.length) {
                         return res.status(404).json({ message: "No featured products found" });
@@ -194,7 +355,16 @@ export const getFeaturedProducts = async (req, res) => {
 
 export const createProduct = async (req, res) => {
         try {
-                const { name, description, price, category, images, isDiscounted, discountPercentage } = req.body;
+                const {
+                        name,
+                        description,
+                        price,
+                        categories: rawCategories,
+                        category: legacyCategory,
+                        images,
+                        isDiscounted,
+                        discountPercentage,
+                } = req.body;
 
                 const trimmedName = typeof name === "string" ? name.trim() : "";
                 const trimmedDescription =
@@ -214,10 +384,6 @@ export const createProduct = async (req, res) => {
 
                 if (images.length > 3) {
                         return res.status(400).json({ message: "You can upload up to 3 images per product" });
-                }
-
-                if (typeof category !== "string" || !category.trim()) {
-                        return res.status(400).json({ message: "Category is required" });
                 }
 
                 const sanitizedImages = images
@@ -241,6 +407,15 @@ export const createProduct = async (req, res) => {
 
                 if (discountSettings.error) {
                         return res.status(400).json({ message: discountSettings.error });
+                }
+
+                const resolvedCategories = await resolveCategoryIdentifiers(
+                        rawCategories,
+                        legacyCategory
+                );
+
+                if (resolvedCategories?.error) {
+                        return res.status(400).json({ message: resolvedCategories.error });
                 }
 
                 const uploadedImages = [];
@@ -279,9 +454,14 @@ export const createProduct = async (req, res) => {
                         price: numericPrice,
                         image: storedImages[0]?.url || "",
                         images: storedImages,
-                        category: category.trim(),
+                        categories: resolvedCategories,
                         isDiscounted: discountSettings.isDiscounted,
                         discountPercentage: discountSettings.discountPercentage,
+                });
+
+                await product.populate({
+                        path: "categories",
+                        select: "name slug parentCategory",
                 });
 
                 res.status(201).json(serializeProduct(product));
@@ -298,7 +478,8 @@ export const updateProduct = async (req, res) => {
                         name,
                         description,
                         price,
-                        category,
+                        categories: rawCategories,
+                        category: legacyCategory,
                         existingImages,
                         newImages,
                         cover,
@@ -451,10 +632,20 @@ export const updateProduct = async (req, res) => {
                         return res.status(400).json({ message: "Price must be a valid number" });
                 }
 
-                const nextCategory =
-                        typeof category === "string" && category.trim().length
-                                ? category.trim()
-                                : product.category;
+                let nextCategories = product.categories;
+
+                if (rawCategories !== undefined || legacyCategory !== undefined) {
+                        const resolvedCategories = await resolveCategoryIdentifiers(
+                                rawCategories,
+                                legacyCategory
+                        );
+
+                        if (resolvedCategories?.error) {
+                                return res.status(400).json({ message: resolvedCategories.error });
+                        }
+
+                        nextCategories = resolvedCategories;
+                }
 
                 const discountSettings = normalizeDiscountSettings({
                         rawIsDiscounted: isDiscounted,
@@ -470,7 +661,7 @@ export const updateProduct = async (req, res) => {
                 product.name = trimmedName;
                 product.description = trimmedDescription;
                 product.price = numericPrice;
-                product.category = nextCategory;
+                product.categories = nextCategories;
                 const storedImages = finalImages
                         .map((image) => prepareImageForStorage(image))
                         .filter(Boolean);
@@ -481,6 +672,11 @@ export const updateProduct = async (req, res) => {
                 product.discountPercentage = discountSettings.discountPercentage;
 
                 const updatedProduct = await product.save();
+
+                await updatedProduct.populate({
+                        path: "categories",
+                        select: "name slug parentCategory",
+                });
 
                 if (updatedProduct.isFeatured) {
                         await updateFeaturedProductsCache();
@@ -531,7 +727,10 @@ export const deleteProduct = async (req, res) => {
 
 export const getProductById = async (req, res) => {
         try {
-                const product = await Product.findById(req.params.id);
+                const product = await Product.findById(req.params.id).populate({
+                        path: "categories",
+                        select: "name slug parentCategory",
+                });
 
                 if (!product) {
                         return res.status(404).json({ message: "Product not found" });
@@ -548,64 +747,78 @@ export const getRecommendedProducts = async (req, res) => {
         try {
                 const { productId, category } = req.query;
                 const sampleSize = 4;
-                const projectionStage = {
-                        $project: {
-                                _id: 1,
-                                name: 1,
-                                description: 1,
-                                image: 1,
-                                images: 1,
-                                price: 1,
-                                category: 1,
-                                isFeatured: 1,
-                                isDiscounted: 1,
-                                discountPercentage: 1,
-                        },
-                };
 
-                let targetCategory = typeof category === "string" && category.trim() ? category.trim() : null;
+                let targetCategorySlug =
+                        typeof category === "string" && category.trim()
+                                ? category.trim().toLowerCase()
+                                : null;
+                let targetCategoryId = null;
                 const excludedIds = [];
 
                 if (productId && mongoose.Types.ObjectId.isValid(productId)) {
                         excludedIds.push(new mongoose.Types.ObjectId(productId));
 
-                        if (!targetCategory) {
-                                const product = await Product.findById(productId).select("category");
-                                if (product) {
-                                        targetCategory = product.category;
+                        if (!targetCategorySlug) {
+                                const product = await Product.findById(productId)
+                                        .select("categories")
+                                        .lean();
+                                if (product?.categories?.length) {
+                                        const populated = await Category.find({
+                                                _id: { $in: product.categories },
+                                        })
+                                                .select("slug")
+                                                .lean();
+                                        targetCategorySlug = populated[0]?.slug || null;
                                 }
                         }
                 }
 
                 let recommendations = [];
 
-                if (targetCategory) {
+                if (targetCategorySlug) {
+                        const categoryDoc = await Category.findOne({ slug: targetCategorySlug })
+                                .select("_id")
+                                .lean();
+
+                        if (categoryDoc) {
+                                targetCategoryId = categoryDoc._id;
+                        }
+                }
+
+                const buildSamplePipeline = (matchFilter) => {
+                        const pipeline = [{ $sample: { size: sampleSize } }];
+
+                        if (matchFilter) {
+                                pipeline.unshift({ $match: matchFilter });
+                        }
+
+                        return pipeline;
+                };
+
+                if (targetCategoryId) {
                         const matchStage = {
-                                category: targetCategory,
-                                ...(excludedIds.length
-                                        ? { _id: { $nin: excludedIds } }
-                                        : {}),
+                                categories: targetCategoryId,
+                                ...(excludedIds.length ? { _id: { $nin: excludedIds } } : {}),
                         };
 
-                        recommendations = await Product.aggregate([
-                                { $match: matchStage },
-                                { $sample: { size: sampleSize } },
-                                projectionStage,
-                        ]);
+                        recommendations = await Product.aggregate(
+                                buildSamplePipeline(matchStage)
+                        );
                 }
 
                 if (!recommendations.length) {
                         const fallbackMatch = excludedIds.length ? { _id: { $nin: excludedIds } } : null;
-                        const pipeline = [
-                                ...(fallbackMatch ? [{ $match: fallbackMatch }] : []),
-                                { $sample: { size: sampleSize } },
-                                projectionStage,
-                        ];
-
-                        recommendations = await Product.aggregate(pipeline);
+                        recommendations = await Product.aggregate(
+                                buildSamplePipeline(fallbackMatch)
+                        );
                 }
 
-                res.json(recommendations.map(finalizeProductPayload));
+                const populatedRecommendations = await Product.populate(recommendations, {
+                        path: "categories",
+                        select: "name slug parentCategory",
+                });
+
+                res.json(populatedRecommendations.map(finalizeProductPayload));
         } catch (error) {
                 console.log("Error in getRecommendedProducts controller", error.message);
                 res.status(500).json({ message: "Server error", error: error.message });
@@ -615,7 +828,35 @@ export const getRecommendedProducts = async (req, res) => {
 export const getProductsByCategory = async (req, res) => {
         const { category } = req.params;
         try {
-                const products = await Product.find({ category }).lean({ virtuals: true });
+                if (!category) {
+                        return res.json({ products: [] });
+                }
+
+                if (category.toLowerCase() === "uncategorized") {
+                        const uncategorizedProducts = await Product.find(UNCATEGORIZED_FILTER)
+                                .populate({
+                                        path: "categories",
+                                        select: "name slug parentCategory",
+                                })
+                                .lean({ virtuals: true });
+
+                        return res.json({
+                                products: uncategorizedProducts.map(finalizeProductPayload),
+                        });
+                }
+
+                const normalizedSlug = category.trim().toLowerCase();
+                const categoryDoc = await Category.findOne({ slug: normalizedSlug })
+                        .select("_id")
+                        .lean();
+
+                if (!categoryDoc) {
+                        return res.json({ products: [] });
+                }
+
+                const products = await Product.find({ categories: categoryDoc._id })
+                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .lean({ virtuals: true });
                 res.json({ products: products.map(finalizeProductPayload) });
         } catch (error) {
                 console.log("Error in getProductsByCategory controller", error.message);
@@ -629,6 +870,10 @@ export const toggleFeaturedProduct = async (req, res) => {
                 if (product) {
                         product.isFeatured = !product.isFeatured;
                         const updatedProduct = await product.save();
+                        await updatedProduct.populate({
+                                path: "categories",
+                                select: "name slug parentCategory",
+                        });
                         await updateFeaturedProductsCache();
                         res.json(serializeProduct(updatedProduct));
                 } else {
@@ -642,7 +887,9 @@ export const toggleFeaturedProduct = async (req, res) => {
 
 async function updateFeaturedProductsCache() {
         try {
-                const featuredProducts = await Product.find({ isFeatured: true }).lean({ virtuals: true });
+                const featuredProducts = await Product.find({ isFeatured: true })
+                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .lean({ virtuals: true });
                 await redis.set(
                         "featured_products",
                         JSON.stringify(featuredProducts.map(finalizeProductPayload))

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { PlusCircle, Upload, Loader, Star, X, Save } from "lucide-react";
 import toast from "react-hot-toast";
@@ -13,7 +13,7 @@ const createInitialFormState = () => ({
         name: "",
         description: "",
         price: "",
-        category: "",
+        categories: [],
         isDiscounted: false,
         discountPercentage: "",
         existingImages: [],
@@ -33,6 +33,49 @@ const CreateProductForm = () => {
         } = useProductStore();
         const { categories, fetchCategories } = useCategoryStore();
         const { t } = useTranslation();
+        const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+
+        const categoryMap = useMemo(() => {
+                return categories.reduce((accumulator, category) => {
+                        if (!category?._id) {
+                                return accumulator;
+                        }
+
+                        accumulator[category._id] = category;
+                        return accumulator;
+                }, {});
+        }, [categories]);
+
+        const categoryOptions = useMemo(() => {
+                return categories
+                        .map((category) => {
+                                const parentId =
+                                        typeof category.parentCategory === "object"
+                                                ? category.parentCategory?._id ??
+                                                  category.parentCategory?.toString?.() ??
+                                                  null
+                                                : category.parentCategory ?? null;
+
+                                const parent = parentId ? categoryMap[parentId] : undefined;
+                                const label = parent ? `${parent.name} › ${category.name}` : category.name;
+
+                                return { ...category, label };
+                        })
+                        .sort((a, b) => a.label.localeCompare(b.label, "ar"));
+        }, [categories, categoryMap]);
+
+        const handleCategoriesChange = (event) => {
+                const selectedValues = Array.from(
+                        event.target.selectedOptions || [],
+                        (option) => option.value
+                );
+
+                setFormState((previous) => ({
+                        ...previous,
+                        categories: selectedValues,
+                }));
+                setSelectedCategoryIds(selectedValues);
+        };
 
         useEffect(() => {
                 fetchCategories();
@@ -41,6 +84,7 @@ const CreateProductForm = () => {
         useEffect(() => {
                 if (!selectedProduct) {
                         setFormState(createInitialFormState());
+                        setSelectedCategoryIds([]);
                         return;
                 }
 
@@ -60,7 +104,15 @@ const CreateProductForm = () => {
                                 selectedProduct.price !== undefined && selectedProduct.price !== null
                                         ? String(selectedProduct.price)
                                         : "",
-                        category: selectedProduct.category ?? "",
+                        categories: Array.isArray(selectedProduct.categories)
+                                ? selectedProduct.categories
+                                          .map((categoryId) =>
+                                                  typeof categoryId === "object" && categoryId !== null
+                                                          ? categoryId.toString?.() ?? ""
+                                                          : categoryId
+                                          )
+                                          .filter((categoryId) => typeof categoryId === "string" && categoryId.length > 0)
+                                : [],
                         isDiscounted: Boolean(selectedProduct.isDiscounted) &&
                                 Number(selectedProduct.discountPercentage) > 0,
                         discountPercentage:
@@ -73,6 +125,18 @@ const CreateProductForm = () => {
                         coverSource: existingImages.length ? "existing" : "new",
                         coverIndex: 0,
                 });
+
+                setSelectedCategoryIds(
+                        Array.isArray(selectedProduct.categories)
+                                ? selectedProduct.categories
+                                          .map((categoryId) =>
+                                                  typeof categoryId === "object" && categoryId !== null
+                                                          ? categoryId.toString?.() ?? ""
+                                                          : categoryId
+                                          )
+                                          .filter((categoryId) => typeof categoryId === "string" && categoryId.length > 0)
+                                : []
+                );
         }, [selectedProduct]);
 
         const totalImages = formState.existingImages.length + formState.newImages.length;
@@ -228,6 +292,7 @@ const CreateProductForm = () => {
 
         const resetForm = () => {
                 setFormState(createInitialFormState());
+                setSelectedCategoryIds([]);
                 clearSelectedProduct();
         };
 
@@ -288,11 +353,6 @@ const CreateProductForm = () => {
                         return;
                 }
 
-                if (!formState.category) {
-                        toast.error(t("admin.createProduct.messages.categoryRequired"));
-                        return;
-                }
-
                 if (totalImages === 0) {
                         toast.error(t("admin.createProduct.messages.missingImages"));
                         return;
@@ -331,13 +391,25 @@ const CreateProductForm = () => {
 
                 const { existing, fresh } = buildOrderedImages();
 
+                const payloadCategories = Array.from(
+                        new Set(
+                                (Array.isArray(selectedCategoryIds)
+                                        ? selectedCategoryIds
+                                        : []
+                                ).filter(
+                                        (categoryId) =>
+                                                typeof categoryId === "string" && categoryId.trim().length > 0
+                                )
+                        )
+                );
+
                 try {
                         if (isEditing && selectedProduct) {
                                 await updateProduct(selectedProduct._id, {
                                         name: trimmedName,
                                         description: trimmedDescription,
                                         price: numericPrice,
-                                        category: formState.category,
+                                        categories: payloadCategories,
                                         existingImages: existing.map((image) => image.public_id).filter(Boolean),
                                         newImages: fresh,
                                         cover: {
@@ -353,12 +425,12 @@ const CreateProductForm = () => {
                                         name: trimmedName,
                                         description: trimmedDescription,
                                         price: numericPrice,
-                                        category: formState.category,
+                                        categories: payloadCategories,
                                         images: fresh,
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
                                 });
-                                setFormState(createInitialFormState());
+                                resetForm();
                         }
                 } catch {
                         console.log("error saving product");
@@ -520,28 +592,25 @@ const CreateProductForm = () => {
                                 </div>
 
                                 <div>
-                                        <label htmlFor='category' className='block text-sm font-medium text-white/80'>
-                                                {t("admin.createProduct.fields.category")}
+                                        <label className='block text-sm font-medium text-white/80' htmlFor='product-categories'>
+                                                {t("admin.createProduct.fields.categories")}
                                         </label>
                                         <select
-                                                id='category'
-                                                name='category'
-                                                value={formState.category}
-                                                onChange={(event) =>
-                                                        setFormState({ ...formState, category: event.target.value })
-                                                }
+                                                id='product-categories'
+                                                multiple
                                                 className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
-                                                required
+                                                value={selectedCategoryIds}
+                                                onChange={handleCategoriesChange}
                                         >
-                                                <option value=''>
-                                                        {t("admin.createProduct.placeholders.category")}
-                                                </option>
-                                                {categories.map((category) => (
-                                                        <option key={category._id} value={category.slug}>
-                                                                {category.name}
+                                                {categoryOptions.map((category) => (
+                                                        <option key={category._id} value={category._id}>
+                                                                {category.label}
                                                         </option>
                                                 ))}
                                         </select>
+                                        <p className='mt-2 text-xs text-white/60'>
+                                                {t("admin.createProduct.messages.categoriesHint")}
+                                        </p>
                                 </div>
 
                                 <div className='mt-1 flex items-center'>
