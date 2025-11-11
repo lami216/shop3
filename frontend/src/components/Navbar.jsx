@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { LogIn, LogOut, Lock, Menu, ShoppingCart, UserPlus, X } from "lucide-react";
+import { LogIn, LogOut, Lock, Menu, PackageSearch, ShoppingCart, UserPlus, X, ListTree } from "lucide-react";
 import useTranslation from "../hooks/useTranslation";
 import { useUserStore } from "../stores/useUserStore";
 import { useCartStore } from "../stores/useCartStore";
+import { selectRootCategories, useCategoryStore } from "../stores/useCategoryStore";
 
 const Navbar = () => {
         const { user, logout } = useUserStore();
@@ -12,6 +13,19 @@ const Navbar = () => {
         const cartItemCount = cart.reduce((total, item) => total + (item.quantity ?? 0), 0);
         const { t } = useTranslation();
         const [isMenuOpen, setIsMenuOpen] = useState(false);
+        const fetchCategories = useCategoryStore((state) => state.fetchCategories);
+        const categoriesLoading = useCategoryStore((state) => state.loading);
+        const rootCategories = useCategoryStore(selectRootCategories);
+        const sortedRootCategories = useMemo(
+                () => [...rootCategories].sort((a, b) => a.name.localeCompare(b.name, "ar")),
+                [rootCategories]
+        );
+
+        useEffect(() => {
+                if (rootCategories.length === 0) {
+                        fetchCategories({ rootOnly: false });
+                }
+        }, [fetchCategories, rootCategories.length]);
 
         useEffect(() => {
                 if (isMenuOpen) {
@@ -125,6 +139,16 @@ const Navbar = () => {
                                         >
                                                 <span>{t("nav.home")}</span>
                                         </Link>
+                                        <Link
+                                                to={'/products'}
+                                                onClick={closeMenu}
+                                                className='flex items-center justify-between rounded-lg border border-transparent px-4 py-3 transition duration-150 ease-out hover:border-brand-primary/40 hover:bg-white/5'
+                                        >
+                                                <span className='flex items-center gap-3'>
+                                                        <PackageSearch size={18} />
+                                                        {t("nav.allProducts")}
+                                                </span>
+                                        </Link>
                                         {isAdmin && (
                                                 <Link
                                                         to={'/secret-dashboard'}
@@ -154,6 +178,33 @@ const Navbar = () => {
                                                 )}
                                         </Link>
                                 </nav>
+
+                                <section className='space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-brand-muted'>
+                                        <div className='flex items-center gap-2 text-brand-text'>
+                                                <ListTree size={18} />
+                                                <h3 className='text-base font-semibold'>{t("nav.categoriesHeading")}</h3>
+                                        </div>
+                                        {categoriesLoading ? (
+                                                <p className='text-sm text-brand-muted'>{t("common.loading")}</p>
+                                        ) : sortedRootCategories.length === 0 ? (
+                                                <p className='text-sm text-brand-muted'>{t("nav.categoriesEmpty")}</p>
+                                        ) : (
+                                                <ul className='space-y-2 text-brand-text'>
+                                                        {sortedRootCategories.map((category) => (
+                                                                <li key={category._id}>
+                                                                        <Link
+                                                                                to={`/category/${category.slug}`}
+                                                                                onClick={closeMenu}
+                                                                                className='flex items-center justify-between rounded-lg border border-transparent px-3 py-2 text-sm transition duration-150 ease-out hover:border-brand-primary/40 hover:bg-black/20'
+                                                                        >
+                                                                                <span>{category.name}</span>
+                                                                                <ListTree size={16} className='text-brand-primary/80' />
+                                                                        </Link>
+                                                                </li>
+                                                        ))}
+                                                </ul>
+                                        )}
+                                </section>
 
                                 <div className='mt-auto space-y-4 border-t border-white/10 pt-6 text-sm text-brand-muted'>
                                         {renderAuthActions()}

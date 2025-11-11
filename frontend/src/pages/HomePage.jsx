@@ -7,7 +7,6 @@ import { selectRootCategories, useCategoryStore } from "../stores/useCategorySto
 import HeroSlider from "../components/HeroSlider";
 import SearchBanner from "../components/SearchBanner";
 import ProductCard from "../components/ProductCard";
-import SearchFilters from "../components/SearchFilters";
 import { useHeroSliderStore } from "../stores/useHeroSliderStore";
 
 const HomePage = () => {
@@ -23,12 +22,9 @@ const HomePage = () => {
         const fetchCategories = useCategoryStore((state) => state.fetchCategories);
         const categoriesLoading = useCategoryStore((state) => state.loading);
         const rootCategories = useCategoryStore(selectRootCategories);
-        const allCategories = useCategoryStore((state) => state.categories);
         const { slides: heroSlides, fetchSlides } = useHeroSliderStore();
         const { t } = useTranslation();
         const [searchQuery, setSearchQuery] = useState("");
-        const [showAllProducts, setShowAllProducts] = useState(false);
-        const [selectedCategoryFilters, setSelectedCategoryFilters] = useState([]);
         const [priceRange, setPriceRange] = useState({ min: "", max: "" });
 
         useEffect(() => {
@@ -42,21 +38,6 @@ const HomePage = () => {
         useEffect(() => {
                 fetchSlides();
         }, [fetchSlides]);
-
-        const categoryOptions = useMemo(() => {
-                if (!Array.isArray(allCategories)) return [];
-
-                return allCategories
-                        .filter((category) => Boolean(category?._id))
-                        .map((category) => ({
-                                value:
-                                        typeof category._id === "string"
-                                                ? category._id
-                                                : category._id?.toString?.() ?? "",
-                                label: category.name,
-                        }))
-                        .sort((a, b) => a.label.localeCompare(b.label, "ar"));
-        }, [allCategories]);
 
         const productSlides = useMemo(() => {
                 if (!Array.isArray(products)) return [];
@@ -90,31 +71,19 @@ const HomePage = () => {
         const normalizedQuery = searchQuery.trim().toLowerCase();
 
         const hasPriceFilter = Boolean(priceRange.min) || Boolean(priceRange.max);
-        const showOnlySearchResults =
-                normalizedQuery.length > 0 || selectedCategoryFilters.length > 0 || hasPriceFilter;
+        const showOnlySearchResults = normalizedQuery.length > 0 || hasPriceFilter;
 
         const visibleProducts = useMemo(() => {
                 if (showOnlySearchResults) return searchResults;
-                if (showAllProducts) return products;
                 return Array.isArray(products) ? products.slice(0, 6) : [];
-        }, [products, searchResults, showAllProducts, showOnlySearchResults]);
+        }, [products, searchResults, showOnlySearchResults]);
 
         const handleQueryChange = (value) => {
                 setSearchQuery(value);
-                if (value.trim()) {
-                        setShowAllProducts(false);
-                }
         };
 
         const handleClearSearch = () => {
                 setSearchQuery("");
-        };
-
-        const handleShowAll = () => {
-                setShowAllProducts(true);
-                setSearchQuery("");
-                setSelectedCategoryFilters([]);
-                setPriceRange({ min: "", max: "" });
                 clearSearchResults();
         };
 
@@ -123,41 +92,19 @@ const HomePage = () => {
                         if (showOnlySearchResults) {
                                 searchProducts({
                                         query: searchQuery,
-                                        categories: selectedCategoryFilters,
                                         priceMin: priceRange.min,
                                         priceMax: priceRange.max,
                                 }).catch(() => {});
-                                setShowAllProducts(false);
                         } else {
                                 clearSearchResults();
                         }
                 }, 400);
 
                 return () => clearTimeout(handler);
-        }, [
-                showOnlySearchResults,
-                searchProducts,
-                searchQuery,
-                selectedCategoryFilters,
-                priceRange,
-                clearSearchResults,
-        ]);
-
-        const handleCategoriesFilterChange = (nextCategories) => {
-                setSelectedCategoryFilters(nextCategories);
-                setShowAllProducts(false);
-        };
+        }, [showOnlySearchResults, searchProducts, searchQuery, priceRange, clearSearchResults]);
 
         const handlePriceFilterChange = (nextRange) => {
                 setPriceRange(nextRange);
-                setShowAllProducts(false);
-        };
-
-        const handleResetFilters = () => {
-                setSelectedCategoryFilters([]);
-                setPriceRange({ min: "", max: "" });
-                setShowAllProducts(false);
-                clearSearchResults();
         };
 
         return (
@@ -169,26 +116,13 @@ const HomePage = () => {
                                         query={searchQuery}
                                         onQueryChange={handleQueryChange}
                                         onClear={handleClearSearch}
-                                        onShowAll={handleShowAll}
-                                        hasResults={
-                                                showOnlySearchResults ? searchResults.length > 0 : showAllProducts
-                                        }
+                                        hasResults={showOnlySearchResults && searchResults.length > 0}
                                         totalCount={
                                                 showOnlySearchResults ? searchResults.length : products?.length || 0
                                         }
                                         isLoading={showOnlySearchResults && searchLoading}
                                         priceRange={priceRange}
                                         onPriceChange={handlePriceFilterChange}
-                                />
-
-                                <SearchFilters
-                                        categories={categoryOptions}
-                                        selectedCategories={selectedCategoryFilters}
-                                        onCategoriesChange={handleCategoriesFilterChange}
-                                        priceRange={priceRange}
-                                        onPriceChange={handlePriceFilterChange}
-                                        onReset={handleResetFilters}
-                                        showPriceFilter={false}
                                 />
 
                                 {showOnlySearchResults ? (

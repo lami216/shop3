@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Loader2, Search, X } from "lucide-react";
 import useTranslation from "../hooks/useTranslation";
 
@@ -5,12 +6,12 @@ const SearchBanner = ({
         query,
         onQueryChange,
         onClear,
-        onShowAll,
         hasResults,
         totalCount,
         isLoading = false,
         priceRange = { min: "", max: "" },
         onPriceChange,
+        allProductsPath = "/products",
 }) => {
         const { t } = useTranslation();
 
@@ -103,9 +104,9 @@ const SearchBanner = ({
                                                         />
                                                 </label>
                                         </div>
-                                        <button type='button' onClick={onShowAll} className='golden-button text-xs uppercase tracking-[0.45em]'>
-                                                كل المنتجات
-                                        </button>
+                                        <Link to={allProductsPath} className='golden-button text-xs uppercase tracking-[0.45em]'>
+                                                {t("home.search.allProductsButton")}
+                                        </Link>
                                 </div>
                         </div>
                 </section>
