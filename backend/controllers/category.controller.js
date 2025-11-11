@@ -1,4 +1,7 @@
+import mongoose from "mongoose";
 import Category from "../models/category.model.js";
+import Product from "../models/product.model.js";
+import { redis } from "../lib/redis.js";
 import { uploadImage, deleteImage } from "../lib/imagekit.js";
 
 const uploadCategoryImage = async (image) => {
@@ -56,7 +59,22 @@ const serializeCategory = (category) => {
 
 export const getCategories = async (req, res) => {
         try {
-                const categories = await Category.find({}).lean();
+                const { parent } = req.query;
+                const filter = {};
+
+                if (parent !== undefined) {
+                        if (parent === null || parent === "" || parent === "null" || parent === "root") {
+                                filter.parentCategory = null;
+                        } else if (mongoose.Types.ObjectId.isValid(parent)) {
+                                filter.parentCategory = new mongoose.Types.ObjectId(parent);
+                        } else {
+                                return res
+                                        .status(400)
+                                        .json({ message: "Invalid parent category identifier" });
+                        }
+                }
+
+                const categories = await Category.find(filter).lean();
                 res.json({ categories });
         } catch (error) {
                 console.log("Error in getCategories controller", error.message);
@@ -66,7 +84,7 @@ export const getCategories = async (req, res) => {
 
 export const createCategory = async (req, res) => {
         try {
-                const { name, description = "", image } = req.body;
+                const { name, description = "", image, parentCategory = null } = req.body;
 
                 const trimmedName = typeof name === "string" ? name.trim() : "";
                 const trimmedDescription =
@@ -94,6 +112,21 @@ export const createCategory = async (req, res) => {
                         return res.status(500).json({ message: "Failed to process category image" });
                 }
 
+                let parentCategoryId = null;
+
+                if (parentCategory !== null && parentCategory !== undefined && parentCategory !== "") {
+                        if (!mongoose.Types.ObjectId.isValid(parentCategory)) {
+                                return res.status(400).json({ message: "Invalid parent category" });
+                        }
+
+                        const parent = await Category.findById(parentCategory).select("_id");
+                        if (!parent) {
+                                return res.status(404).json({ message: "Parent category not found" });
+                        }
+
+                        parentCategoryId = parent._id;
+                }
+
                 const slug = await generateUniqueSlug(trimmedName);
 
                 const category = await Category.create({
@@ -103,6 +136,7 @@ export const createCategory = async (req, res) => {
                         imageUrl: uploadResult.url,
                         imageFileId: uploadResult.fileId ?? null,
                         imagePublicId: uploadResult.fileId ?? null,
+                        parentCategory: parentCategoryId,
                 });
 
                 res.status(201).json(serializeCategory(category));
@@ -115,12 +149,47 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
         try {
                 const { id } = req.params;
-                const { name, description, image } = req.body;
+                const { name, description, image, parentCategory } = req.body;
 
                 const category = await Category.findById(id);
 
                 if (!category) {
                         return res.status(404).json({ message: "Category not found" });
+                }
+
+                if (parentCategory !== undefined) {
+                        if (
+                                parentCategory === null ||
+                                parentCategory === "" ||
+                                parentCategory === "null" ||
+                                parentCategory === "root"
+                        ) {
+                                category.parentCategory = null;
+                        } else {
+                                if (!mongoose.Types.ObjectId.isValid(parentCategory)) {
+                                        return res
+                                                .status(400)
+                                                .json({ message: "Invalid parent category" });
+                                }
+
+                                if (category._id.equals(parentCategory)) {
+                                        return res
+                                                .status(400)
+                                                .json({
+                                                        message:
+                                                                "Category cannot be its own parent",
+                                                });
+                                }
+
+                                const parent = await Category.findById(parentCategory).select("_id");
+                                if (!parent) {
+                                        return res
+                                                .status(404)
+                                                .json({ message: "Parent category not found" });
+                                }
+
+                                category.parentCategory = parent._id;
+                        }
                 }
 
                 if (typeof name === "string" && name.trim()) {
@@ -194,6 +263,18 @@ export const deleteCategory = async (req, res) => {
                 }
 
                 await Category.findByIdAndDelete(id);
+
+                await Category.updateMany(
+                        { parentCategory: category._id },
+                        { $set: { parentCategory: null } }
+                );
+
+                await Product.updateMany(
+                        { categories: category._id },
+                        { $pull: { categories: category._id } }
+                );
+
+                await redis.del("featured_products");
 
                 res.json({ message: "Category deleted successfully" });
         } catch (error) {

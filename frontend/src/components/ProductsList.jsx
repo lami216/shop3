@@ -41,11 +41,11 @@ const ProductsList = ({ onEdit }) => {
                         <table className='min-w-full divide-y divide-white/10'>
                                 <thead className='bg-payzone-navy/80'>
                                         <tr>
-                                                {[ 
+                                                {[
                                                         t("admin.productsTable.headers.product"),
                                                         t("admin.productsTable.headers.price"),
                                                         t("admin.productsTable.headers.discount"),
-                                                        t("admin.productsTable.headers.category"),
+                                                        t("admin.productsTable.headers.categories"),
                                                         t("admin.productsTable.headers.featured"),
                                                         t("admin.productsTable.headers.actions"),
                                                 ].map((heading) => (
@@ -101,7 +101,22 @@ const ProductsList = ({ onEdit }) => {
                                                                 )}
                                                         </td>
                                                         <td className='whitespace-nowrap px-6 py-4'>
-                                                                <div className='text-sm text-white/70'>{product.category}</div>
+                                                                <div className='text-sm text-white/70'>
+                                                                        {(() => {
+                                                                                const details = Array.isArray(product.categoryDetails)
+                                                                                        ? product.categoryDetails
+                                                                                        : [];
+                                                                                const labels = details
+                                                                                        .map((category) => category?.name || category?.slug)
+                                                                                        .filter(Boolean);
+
+                                                                                if (labels.length) {
+                                                                                        return labels.join("، ");
+                                                                                }
+
+                                                                                return t("admin.productsTable.noCategory");
+                                                                        })()}
+                                                                </div>
                                                         </td>
                                                         <td className='whitespace-nowrap px-6 py-4'>
                                                                 <button

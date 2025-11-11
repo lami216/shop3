@@ -129,11 +129,11 @@ export const useProductStore = create((set, get) => ({
                         const data = await apiClient.patch(`/products/${productId}`);
                         set((prevState) => ({
                                 products: prevState.products.map((product) =>
-                                        product._id === productId ? { ...product, isFeatured: data.isFeatured } : product
+                                        product._id === productId ? data : product
                                 ),
                                 selectedProduct:
                                         prevState.selectedProduct?._id === productId
-                                                ? { ...prevState.selectedProduct, isFeatured: data.isFeatured }
+                                                ? data
                                                 : prevState.selectedProduct,
                                 loading: false,
                         }));

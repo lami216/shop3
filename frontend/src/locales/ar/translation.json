@@ -91,6 +91,10 @@
                                 "imageHint": "يفضل رفع صورة مربعة للفئة.",
                                 "imageRequired": "يرجى رفع صورة للفئة.",
                                 "nameRequired": "يرجى إدخال اسم الفئة.",
+                                "parentCategory": "الفئة الرئيسية",
+                                "parentNone": "فئة رئيسية",
+                                "parentHint": "اختر فئة رئيسية لإنشاء فئة فرعية، أو اتركها كفئة رئيسية.",
+                                "parentInvalid": "لا يمكن اختيار نفس الفئة كفئة رئيسية.",
                                 "submitCreate": "إنشاء الفئة",
                                 "submitUpdate": "حفظ التعديلات",
                                 "cancelEdit": "إلغاء التعديل",
@@ -99,6 +103,7 @@
                         "list": {
                                 "title": "الفئات الحالية",
                                 "empty": "لا توجد فئات متاحة بعد.",
+                                "parent": "الفئة الرئيسية: {{parent}}",
                                 "actions": {
                                         "edit": "تعديل",
                                         "delete": "حذف"
@@ -122,7 +127,7 @@
                                 "name": "اسم المنتج",
                                 "description": "الوصف",
                                 "price": "السعر",
-                                "category": "الفئة",
+                                "categories": "الفئات",
                                 "baseLanguage": "لغة المحتوى",
                                 "images": "الصور",
                                 "cover": "الغلاف",
@@ -136,7 +141,6 @@
                                 "name": "أدخل اسم المنتج",
                                 "description": "صف المنتج",
                                 "price": "أدخل السعر",
-                                "category": "اختر الفئة",
                                 "baseLanguage": "اختر لغة المحتوى",
                                 "discountPercentage": "مثال: 15"
                         },
@@ -154,7 +158,7 @@
                                 "productCreated": "تم إنشاء المنتج بنجاح",
                                 "nameRequired": "يرجى إدخال اسم المنتج.",
                                 "descriptionRequired": "يرجى كتابة وصف للمنتج.",
-                                "categoryRequired": "يرجى اختيار الفئة.",
+                                "categoriesHint": "يمكنك اختيار أكثر من فئة، أو ترك الحقل فارغاً للمنتجات العامة.",
                                 "discountRequired": "يرجى إدخال نسبة التخفيض.",
                                 "discountInvalid": "نسبة التخفيض يجب أن تكون رقماً صالحاً.",
                                 "discountRange": "نسبة التخفيض يجب أن تكون بين 1% و 99%."
@@ -165,10 +169,11 @@
                                 "product": "المنتج",
                                 "price": "السعر",
                                 "discount": "التخفيض",
-                                "category": "الفئة",
+                                "categories": "الفئات",
                                 "featured": "مميز",
                                 "actions": "إجراءات"
                         },
+                        "noCategory": "بدون فئة",
                         "confirmations": {
                                 "edit": "هل تريد تعديل المنتج {{name}}؟",
                                 "delete": "هل أنت متأكد أنك تريد حذف المنتج {{name}}؟"

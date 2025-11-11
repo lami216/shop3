@@ -166,10 +166,29 @@ const ProductDetailPage = () => {
 
                                         <div className='flex flex-col gap-8 py-2 lg:pl-4'>
                                                 <div className='space-y-6'>
-                                                        {selectedProduct.category && (
-                                                                <p className='text-sm font-medium uppercase tracking-wide text-payzone-gold/80'>
-                                                                        {selectedProduct.category}
-                                                                </p>
+                                                        {Array.isArray(selectedProduct.categoryDetails) &&
+                                                        selectedProduct.categoryDetails.length > 0 ? (
+                                                                <div className='flex flex-wrap gap-2'>
+                                                                        {selectedProduct.categoryDetails.map((category) => {
+                                                                                const label = category?.name || category?.slug;
+                                                                                if (!label) return null;
+
+                                                                                return (
+                                                                                        <span
+                                                                                                key={category._id || label}
+                                                                                                className='rounded-full bg-payzone-navy/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-payzone-gold/80'
+                                                                                        >
+                                                                                                {label}
+                                                                                        </span>
+                                                                                );
+                                                                        })}
+                                                                </div>
+                                                        ) : (
+                                                                selectedProduct.category && (
+                                                                        <p className='text-sm font-medium uppercase tracking-wide text-payzone-gold/80'>
+                                                                                {selectedProduct.category}
+                                                                        </p>
+                                                                )
                                                         )}
                                                         <div className='space-y-2'>
                                                                 <p className='text-sm font-semibold text-white/70'>الإسم</p>

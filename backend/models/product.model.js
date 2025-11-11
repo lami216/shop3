@@ -44,9 +44,14 @@ const productSchema = new mongoose.Schema(
                                 message: "A product can have up to 3 images only",
                         },
                 },
-                category: {
-                        type: String,
-                        required: true,
+                categories: {
+                        type: [
+                                {
+                                        type: mongoose.Schema.Types.ObjectId,
+                                        ref: "Category",
+                                },
+                        ],
+                        default: [],
                 },
                 isFeatured: {
                         type: Boolean,
@@ -83,6 +88,8 @@ productSchema.virtual("discountedPrice").get(function getDiscountedPrice() {
 
         return Number(finalPrice.toFixed(2));
 });
+
+productSchema.index({ categories: 1 });
 
 const Product = mongoose.model("Product", productSchema);
 
