@@ -77,52 +77,56 @@ const CategoryPage = () => {
         }, [currentCategory, category]);
 
         return (
-                <div className='min-h-screen'>
-                        <div className='relative z-10 mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8'>
-                                <motion.h1
-                                        className='mb-8 text-center text-4xl font-bold text-payzone-gold sm:text-5xl'
+                <div className='min-h-screen bg-brand-bg text-brand-text'>
+                        <div className='relative z-10 mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8'>
+                                <motion.div
+                                        className='mb-14 flex flex-col items-center gap-6 text-center'
                                         initial={{ opacity: 0, y: -20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.8 }}
                                 >
-                                        {categoryName}
-                                </motion.h1>
+                                        <span className='inline-flex rounded-full border border-brand-primary/40 px-4 py-1 text-xs uppercase tracking-[0.45em] text-brand-muted'>
+                                                collection
+                                        </span>
+                                        <h1 className='text-[clamp(2rem,5vw,3.25rem)] font-semibold text-brand-primary'>
+                                                {categoryName}
+                                        </h1>
+                                        <p className='max-w-3xl text-sm text-brand-muted'>
+                                                {t("home.subtitle")}
+                                        </p>
+                                </motion.div>
 
                                 {currentCategory && (
                                         <motion.section
-                                                className='mb-10'
+                                                className='mb-16 space-y-8 rounded-3xl border border-brand-primary/15 bg-black/50 px-6 py-8 shadow-golden sm:px-10'
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ duration: 0.6, delay: 0.15 }}
                                         >
-                                                <h2 className='mb-4 text-2xl font-semibold text-payzone-gold'>
+                                                <h2 className='text-[clamp(1.5rem,3vw,2.25rem)] font-semibold text-brand-primary'>
                                                         {t("categoryPage.childrenTitle")}
                                                 </h2>
                                                 {childrenLoading ? (
-                                                        <p className='text-sm text-white/70'>
-                                                                {t("common.loading")}
-                                                        </p>
+                                                        <p className='text-sm text-brand-muted'>{t("common.loading")}</p>
                                                 ) : childCategories.length > 0 ? (
-                                                        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+                                                        <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
                                                                 {childCategories.map((child) => (
                                                                         <Link
                                                                                 to={`/category/${child.slug}`}
                                                                                 key={child._id}
-                                                                                className='group overflow-hidden rounded-xl border border-white/10 bg-payzone-navy/40 transition hover:border-payzone-gold hover:bg-payzone-navy/60'
+                                                                                className='group overflow-hidden rounded-3xl border border-brand-primary/20 bg-black/50 transition duration-200 ease-out hover:border-brand-primary/60 hover:shadow-golden'
                                                                         >
                                                                                 <div className='relative h-48 w-full'>
                                                                                         <img
                                                                                                 src={child.imageUrl}
                                                                                                 alt={child.name}
-                                                                                                className='h-full w-full object-cover transition-transform duration-500 group-hover:scale-105'
+                                                                                                className='h-full w-full object-cover transition duration-500 ease-out group-hover:scale-105'
                                                                                                 loading='lazy'
                                                                                         />
-                                                                                        <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-payzone-navy/90 via-payzone-navy/50 to-transparent p-4'>
-                                                                                                <p className='text-lg font-semibold text-white'>
-                                                                                                        {child.name}
-                                                                                                </p>
+                                                                                        <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-5 text-brand-text'>
+                                                                                                <p className='text-lg font-semibold'>{child.name}</p>
                                                                                                 {child.description && (
-                                                                                                        <p className='mt-1 text-xs text-white/70'>
+                                                                                                        <p className='mt-1 text-xs text-brand-muted'>
                                                                                                                 {child.description}
                                                                                                         </p>
                                                                                                 )}
@@ -132,7 +136,7 @@ const CategoryPage = () => {
                                                                 ))}
                                                         </div>
                                                 ) : (
-                                                        <p className='text-sm text-white/70'>
+                                                        <p className='rounded-2xl border border-white/10 bg-white/5 px-6 py-8 text-sm text-brand-muted'>
                                                                 {t("categoryPage.noChildren")}
                                                         </p>
                                                 )}
@@ -140,23 +144,23 @@ const CategoryPage = () => {
                                 )}
 
                                 <motion.div
-                                        className='grid grid-cols-2 gap-6 lg:grid-cols-3 justify-items-center'
+                                        className='grid gap-6 sm:grid-cols-2 xl:grid-cols-3'
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.8, delay: 0.2 }}
                                 >
                                         {products?.length === 0 && (
-                                                <h2 className='col-span-full text-center text-3xl font-semibold text-white/70'>
+                                                <div className='col-span-full rounded-3xl border border-white/10 bg-white/5 px-6 py-12 text-center text-brand-muted'>
                                                         {t("categoryPage.noProducts")}
-                                                </h2>
+                                                </div>
                                         )}
 
-					{products?.map((product) => (
-						<ProductCard key={product._id} product={product} />
-					))}
-				</motion.div>
-			</div>
-		</div>
-	);
+                                        {products?.map((product) => (
+                                                <ProductCard key={product._id} product={product} />
+                                        ))}
+                                </motion.div>
+                        </div>
+                </div>
+        );
 };
 export default CategoryPage;
