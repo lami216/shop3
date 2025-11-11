@@ -8,6 +8,8 @@ export const useProductStore = create((set, get) => ({
         selectedProduct: null,
         loading: false,
         productDetailsLoading: false,
+        searchResults: [],
+        searchLoading: false,
 
         setProducts: (products) => {
                 const currentSelected = get().selectedProduct;
@@ -153,4 +155,50 @@ export const useProductStore = create((set, get) => ({
                         console.log("Error fetching featured products:", error);
                 }
         },
+        searchProducts: async ({ query, categories, priceMin, priceMax } = {}) => {
+                set({ searchLoading: true });
+
+                try {
+                        const params = new URLSearchParams();
+
+                        if (typeof query === "string" && query.trim()) {
+                                params.set("q", query.trim());
+                        }
+
+                        if (Array.isArray(categories)) {
+                                categories
+                                        .map((category) => (typeof category === "string" ? category.trim() : ""))
+                                        .filter(Boolean)
+                                        .forEach((category) => params.append("categories", category));
+                        }
+
+                        if (priceMin !== undefined && priceMin !== null && priceMin !== "") {
+                                const numericMin = Number(priceMin);
+                                if (!Number.isNaN(numericMin)) {
+                                        params.set("priceMin", String(numericMin));
+                                }
+                        }
+
+                        if (priceMax !== undefined && priceMax !== null && priceMax !== "") {
+                                const numericMax = Number(priceMax);
+                                if (!Number.isNaN(numericMax)) {
+                                        params.set("priceMax", String(numericMax));
+                                }
+                        }
+
+                        const queryString = params.toString();
+                        const data = await apiClient.get(`/products/search${queryString ? `?${queryString}` : ""}`);
+                        const results = Array.isArray(data?.products) ? data.products : [];
+                        set({ searchResults: results, searchLoading: false });
+                        return results;
+                } catch (error) {
+                        set({ searchResults: [], searchLoading: false });
+                        toast.error(
+                                error.response?.data?.message ||
+                                        translate("toast.fetchProductsError")
+                        );
+                        throw error;
+                }
+        },
+        clearSearchResults: () => set({ searchResults: [], searchLoading: false }),
 }));

@@ -49,6 +49,10 @@ const normalizeDiscountSettings = ({
         return { isDiscounted: false, discountPercentage: 0 };
 };
 
+const escapeRegex = (value) => {
+        return value.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+};
+
 const getImageIdentifier = (image) => {
         if (!image) return null;
         if (typeof image === "string") return image;
@@ -322,6 +326,84 @@ export const getAllProducts = async (req, res) => {
                 res.json({ products: products.map(finalizeProductPayload) });
         } catch (error) {
                 console.log("Error in getAllProducts controller", error.message);
+                res.status(500).json({ message: "Server error", error: error.message });
+        }
+};
+
+export const searchProducts = async (req, res) => {
+        try {
+                const { q, categories: rawCategories, priceMin, priceMax } = req.query;
+                const filter = {};
+
+                const normalizedQuery = typeof q === "string" ? q.trim() : "";
+
+                if (normalizedQuery) {
+                        const regex = new RegExp(escapeRegex(normalizedQuery), "i");
+                        filter.$or = [{ name: regex }, { description: regex }];
+                }
+
+                if (rawCategories !== undefined) {
+                        const incoming = Array.isArray(rawCategories)
+                                ? rawCategories
+                                : String(rawCategories)
+                                          .split(",")
+                                          .map((value) => value.trim())
+                                          .filter(Boolean);
+
+                        if (incoming.length) {
+                                const resolved = await resolveCategoryIdentifiers(incoming);
+
+                                if (resolved?.error) {
+                                        return res.status(400).json({ message: resolved.error });
+                                }
+
+                                if (!resolved.length) {
+                                        return res.json({ products: [] });
+                                }
+
+                                filter.categories = { $in: resolved };
+                        }
+                }
+
+                const hasMin = priceMin !== undefined && priceMin !== "";
+                const hasMax = priceMax !== undefined && priceMax !== "";
+                const priceFilter = {};
+
+                if (hasMin) {
+                        const numericMin = Number(priceMin);
+                        if (Number.isNaN(numericMin)) {
+                                return res.status(400).json({ message: "priceMin must be a valid number" });
+                        }
+                        priceFilter.$gte = numericMin;
+                }
+
+                if (hasMax) {
+                        const numericMax = Number(priceMax);
+                        if (Number.isNaN(numericMax)) {
+                                return res.status(400).json({ message: "priceMax must be a valid number" });
+                        }
+                        priceFilter.$lte = numericMax;
+                }
+
+                if (priceFilter.$gte !== undefined && priceFilter.$lte !== undefined) {
+                        if (priceFilter.$gte > priceFilter.$lte) {
+                                return res
+                                        .status(400)
+                                        .json({ message: "priceMin cannot be greater than priceMax" });
+                        }
+                }
+
+                if (Object.keys(priceFilter).length) {
+                        filter.price = priceFilter;
+                }
+
+                const products = await Product.find(filter)
+                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .lean({ virtuals: true });
+
+                res.json({ products: products.map(finalizeProductPayload) });
+        } catch (error) {
+                console.log("Error in searchProducts controller", error.message);
                 res.status(500).json({ message: "Server error", error: error.message });
         }
 };

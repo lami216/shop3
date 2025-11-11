@@ -1,4 +1,4 @@
-import { BarChart, PlusCircle, ShoppingBasket, FolderTree } from "lucide-react";
+import { BarChart, PlusCircle, ShoppingBasket, FolderTree, Image } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import useTranslation from "../hooks/useTranslation";
@@ -8,6 +8,7 @@ import CreateProductForm from "../components/CreateProductForm";
 import ProductsList from "../components/ProductsList";
 import CategoryManager from "../components/CategoryManager";
 import { useProductStore } from "../stores/useProductStore";
+import HeroSliderManager from "../components/HeroSliderManager";
 
 const AdminPage = () => {
         const [activeTab, setActiveTab] = useState("create");
@@ -23,6 +24,7 @@ const AdminPage = () => {
                         { id: "create", label: t("admin.tabs.create"), icon: PlusCircle },
                         { id: "products", label: t("admin.tabs.products"), icon: ShoppingBasket },
                         { id: "categories", label: t("admin.tabs.categories"), icon: FolderTree },
+                        { id: "hero-slider", label: t("admin.tabs.heroSlider"), icon: Image },
                         { id: "analytics", label: t("admin.tabs.analytics"), icon: BarChart },
                 ],
                 [t]
@@ -59,6 +61,7 @@ const AdminPage = () => {
                                 {activeTab === "create" && <CreateProductForm />}
                                 {activeTab === "products" && <ProductsList onEdit={() => setActiveTab("create")} />}
                                 {activeTab === "categories" && <CategoryManager />}
+                                {activeTab === "hero-slider" && <HeroSliderManager />}
                                 {activeTab === "analytics" && <AnalyticsTab />}
                         </div>
                 </div>
