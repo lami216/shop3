@@ -216,7 +216,9 @@
         },
         "categoryPage": {
                 "title": "{{category}}",
-                "noProducts": "لا توجد منتجات"
+                "noProducts": "لا توجد منتجات",
+                "childrenTitle": "الفئات الفرعية",
+                "noChildren": "لا توجد فئات فرعية حالياً."
         },
         "cart": {
                 "title": "السلة",

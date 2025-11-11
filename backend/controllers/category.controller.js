@@ -59,8 +59,21 @@ const serializeCategory = (category) => {
 
 export const getCategories = async (req, res) => {
         try {
-                const { parent } = req.query;
+                const { parent, rootOnly: rootOnlyParam } = req.query;
                 const filter = {};
+
+                let rootOnly = true;
+
+                if (rootOnlyParam !== undefined) {
+                        const normalized = String(rootOnlyParam).toLowerCase();
+                        if (["false", "0"].includes(normalized)) {
+                                rootOnly = false;
+                        } else if (["true", "1", ""].includes(normalized)) {
+                                rootOnly = true;
+                        } else {
+                                return res.status(400).json({ message: "Invalid rootOnly value" });
+                        }
+                }
 
                 if (parent !== undefined) {
                         if (parent === null || parent === "" || parent === "null" || parent === "root") {
@@ -72,12 +85,34 @@ export const getCategories = async (req, res) => {
                                         .status(400)
                                         .json({ message: "Invalid parent category identifier" });
                         }
+                        rootOnly = false;
+                } else if (rootOnly) {
+                        filter.parentCategory = null;
                 }
 
-                const categories = await Category.find(filter).lean();
+                const categories = await Category.find(filter).sort({ name: 1 }).lean();
                 res.json({ categories });
         } catch (error) {
                 console.log("Error in getCategories controller", error.message);
+                res.status(500).json({ message: "Server error", error: error.message });
+        }
+};
+
+export const getCategoryChildren = async (req, res) => {
+        try {
+                const { id } = req.params;
+
+                if (!mongoose.Types.ObjectId.isValid(id)) {
+                        return res.status(400).json({ message: "Invalid category identifier" });
+                }
+
+                const categories = await Category.find({ parentCategory: id })
+                        .sort({ name: 1 })
+                        .lean();
+
+                res.json({ categories });
+        } catch (error) {
+                console.log("Error in getCategoryChildren controller", error.message);
                 res.status(500).json({ message: "Server error", error: error.message });
         }
 };
