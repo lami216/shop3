@@ -22,6 +22,11 @@ const heroSlideSchema = new mongoose.Schema(
                         default: "",
                         trim: true,
                 },
+                price: {
+                        type: Number,
+                        default: null,
+                        min: 0,
+                },
                 order: {
                         type: Number,
                         default: 0,

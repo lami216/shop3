@@ -65,7 +65,7 @@ const buildCategoriesQuery = ({ parent, rootOnly }) => {
         return query ? `?${query}` : "";
 };
 
-export const useCategoryStore = create((set, get) => ({
+export const useCategoryStore = create((set) => ({
         categories: [],
         loading: false,
         error: null,
@@ -103,12 +103,8 @@ export const useCategoryStore = create((set, get) => ({
                         return [];
                 }
 
-                try {
-                        const data = await apiClient.get(`/categories/${parentId}/children`);
-                        return Array.isArray(data?.categories) ? data.categories : [];
-                } catch (error) {
-                        throw error;
-                }
+                const data = await apiClient.get(`/categories/${parentId}/children`);
+                return Array.isArray(data?.categories) ? data.categories : [];
         },
 
         createCategory: async (payload) => {

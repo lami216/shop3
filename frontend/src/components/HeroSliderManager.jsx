@@ -3,12 +3,11 @@ import { Camera, Image as ImageIcon, Loader2, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 import useTranslation from "../hooks/useTranslation";
 import { useHeroSliderStore } from "../stores/useHeroSliderStore";
+import { formatMRU } from "../lib/formatMRU";
 
 const createInitialFormState = () => ({
         title: "",
-        subtitle: "",
-        ctaLabel: "",
-        ctaUrl: "",
+        price: "",
         imageData: "",
         previewUrl: "",
 });
@@ -70,16 +69,30 @@ const HeroSliderManager = () => {
                         return;
                 }
 
+                if (!formState.title.trim()) {
+                        toast.error(t("admin.heroSlider.messages.titleRequired"));
+                        return;
+                }
+
+                if (formState.price === "") {
+                        toast.error(t("admin.heroSlider.messages.priceRequired"));
+                        return;
+                }
+
+                const numericPrice = Number(formState.price);
+                if (Number.isNaN(numericPrice) || numericPrice < 0) {
+                        toast.error(t("admin.heroSlider.messages.priceInvalid"));
+                        return;
+                }
+
                 try {
                         await createSlide({
                                 title: formState.title,
-                                subtitle: formState.subtitle,
-                                ctaLabel: formState.ctaLabel,
-                                ctaUrl: formState.ctaUrl,
+                                price: numericPrice,
                                 image: formState.imageData,
                         });
                         resetForm();
-                } catch (error) {
+                } catch {
                         // errors handled in store
                 }
         };
@@ -121,40 +134,17 @@ const HeroSliderManager = () => {
                                                         />
                                                 </label>
                                                 <label className='block text-sm text-white/80'>
-                                                        {t("admin.heroSlider.fields.subtitle")}
-                                                        <textarea
-                                                                name='subtitle'
-                                                                value={formState.subtitle}
+                                                        {t("admin.heroSlider.fields.price")}
+                                                        <input
+                                                                type='number'
+                                                                name='price'
+                                                                value={formState.price}
                                                                 onChange={handleChange}
-                                                                rows={3}
+                                                                min='0'
                                                                 className='mt-2 w-full rounded-lg border border-white/10 bg-payzone-navy/40 px-4 py-2 text-white outline-none transition focus:border-payzone-gold'
-                                                                placeholder={t("admin.heroSlider.placeholders.subtitle")}
+                                                                placeholder={t("admin.heroSlider.placeholders.price")}
                                                         />
                                                 </label>
-                                                <div className='grid gap-4 md:grid-cols-2'>
-                                                        <label className='block text-sm text-white/80'>
-                                                                {t("admin.heroSlider.fields.ctaLabel")}
-                                                                <input
-                                                                        type='text'
-                                                                        name='ctaLabel'
-                                                                        value={formState.ctaLabel}
-                                                                        onChange={handleChange}
-                                                                        className='mt-2 w-full rounded-lg border border-white/10 bg-payzone-navy/40 px-4 py-2 text-white outline-none transition focus:border-payzone-gold'
-                                                                        placeholder={t("admin.heroSlider.placeholders.ctaLabel")}
-                                                                />
-                                                        </label>
-                                                        <label className='block text-sm text-white/80'>
-                                                                {t("admin.heroSlider.fields.ctaUrl")}
-                                                                <input
-                                                                        type='url'
-                                                                        name='ctaUrl'
-                                                                        value={formState.ctaUrl}
-                                                                        onChange={handleChange}
-                                                                        className='mt-2 w-full rounded-lg border border-white/10 bg-payzone-navy/40 px-4 py-2 text-white outline-none transition focus:border-payzone-gold'
-                                                                        placeholder={t("admin.heroSlider.placeholders.ctaUrl")}
-                                                                />
-                                                        </label>
-                                                </div>
                                         </div>
 
                                         <div className='flex flex-col justify-between gap-6'>
@@ -230,7 +220,7 @@ const HeroSliderManager = () => {
                                                                                         className='h-full w-full object-cover'
                                                                                 />
                                                                         ) : (
-                                                                                <div className='flex h-full w-full items-center justify-center text-sm text-white/60'>
+                                                                        <div className='flex h-full w-full items-center justify-center text-sm text-white/60'>
                                                                                         {t("admin.heroSlider.messages.noImage")}
                                                                                 </div>
                                                                         )}
@@ -244,14 +234,10 @@ const HeroSliderManager = () => {
                                                                         <h4 className='text-lg font-semibold text-white'>
                                                                                 {slide.title || t("admin.heroSlider.messages.untitled")}
                                                                         </h4>
-                                                                        {slide.subtitle && (
-                                                                                <p className='text-sm text-white/70'>{slide.subtitle}</p>
-                                                                        )}
-                                                                        {slide.ctaLabel && (
-                                                                                <p className='text-xs text-payzone-gold'>
-                                                                                        {t("admin.heroSlider.list.ctaPreview", {
-                                                                                                label: slide.ctaLabel,
-                                                                                                url: slide.ctaUrl || t("admin.heroSlider.messages.noLink"),
+                                                                        {Number.isFinite(slide.price) && (
+                                                                                <p className='text-sm text-payzone-gold'>
+                                                                                        {t("admin.heroSlider.list.price", {
+                                                                                                price: formatMRU(slide.price),
                                                                                         })}
                                                                                 </p>
                                                                         )}

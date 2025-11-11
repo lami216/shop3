@@ -1,4 +1,5 @@
 import { Loader2, Search, X } from "lucide-react";
+import useTranslation from "../hooks/useTranslation";
 
 const SearchBanner = ({
         query,
@@ -8,7 +9,16 @@ const SearchBanner = ({
         hasResults,
         totalCount,
         isLoading = false,
+        priceRange = { min: "", max: "" },
+        onPriceChange,
 }) => {
+        const { t } = useTranslation();
+
+        const handlePriceChange = (key, value) => {
+                if (typeof onPriceChange !== "function") return;
+                onPriceChange({ ...priceRange, [key]: value });
+        };
+
         return (
                 <section className='relative z-10 -mt-12 w-full rounded-3xl border border-brand-primary/25 bg-brand-bg/90 p-6 shadow-golden backdrop-blur-md sm:-mt-16 sm:p-10'>
                         <div className='flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between'>
@@ -17,7 +27,7 @@ const SearchBanner = ({
                                                 اكتشف عطر أحلامك
                                         </p>
                                         <h2 className='text-[clamp(1.75rem,4vw,2.5rem)] font-semibold text-brand-text'>
-                                                ابحث وصنّف ضمن تشكيلة "الصاحب"
+                                                ابحث وصنّف ضمن تشكيلة &quot;الصاحب&quot;
                                         </h2>
                                         <p className='max-w-2xl text-sm text-brand-muted'>
                                                 النتائج تظهر مباشرة أثناء الكتابة، ويمكنك تصفح جميع المنتجات بضغطة واحدة.
@@ -70,9 +80,33 @@ const SearchBanner = ({
                                                 <span>ابدأ الكتابة لمشاهدة النتائج الفورية</span>
                                         )}
                                 </div>
-                                <button type='button' onClick={onShowAll} className='golden-button text-xs uppercase tracking-[0.45em]'>
-                                        كل المنتجات
-                                </button>
+                                <div className='flex flex-col gap-4 text-xs uppercase tracking-[0.35em] text-brand-muted sm:flex-row sm:items-center sm:gap-6'>
+                                        <div className='flex flex-wrap items-center gap-3 text-[0.7rem] normal-case sm:text-xs'>
+                                                <label className='flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-2 text-[0.7rem] text-brand-text sm:text-xs'>
+                                                        <span className='text-brand-muted'>{t("home.search.filters.minPrice")}</span>
+                                                        <input
+                                                                type='number'
+                                                                value={priceRange.min}
+                                                                onChange={(event) => handlePriceChange("min", event.target.value)}
+                                                                className='w-20 bg-transparent text-right text-brand-text outline-none'
+                                                                placeholder={t("home.search.filters.minPlaceholder")}
+                                                        />
+                                                </label>
+                                                <label className='flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-2 text-[0.7rem] text-brand-text sm:text-xs'>
+                                                        <span className='text-brand-muted'>{t("home.search.filters.maxPrice")}</span>
+                                                        <input
+                                                                type='number'
+                                                                value={priceRange.max}
+                                                                onChange={(event) => handlePriceChange("max", event.target.value)}
+                                                                className='w-20 bg-transparent text-right text-brand-text outline-none'
+                                                                placeholder={t("home.search.filters.maxPlaceholder")}
+                                                        />
+                                                </label>
+                                        </div>
+                                        <button type='button' onClick={onShowAll} className='golden-button text-xs uppercase tracking-[0.45em]'>
+                                                كل المنتجات
+                                        </button>
+                                </div>
                         </div>
                 </section>
         );

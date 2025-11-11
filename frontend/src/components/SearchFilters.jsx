@@ -8,6 +8,7 @@ const SearchFilters = ({
         priceRange = { min: "", max: "" },
         onPriceChange,
         onReset,
+        showPriceFilter = true,
 }) => {
         const { t } = useTranslation();
 
@@ -85,33 +86,35 @@ const SearchFilters = ({
                                         </div>
                                 </div>
 
-                                <div className='space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4'>
-                                        <h4 className='text-sm font-semibold text-brand-text'>
-                                                {t("home.search.filters.price")}
-                                        </h4>
-                                        <div className='space-y-3'>
-                                                <label className='flex flex-col text-sm text-brand-muted'>
-                                                        {t("home.search.filters.minPrice")}
-                                                        <input
-                                                                type='number'
-                                                                value={priceRange.min}
-                                                                onChange={(event) => handlePriceChange("min", event.target.value)}
-                                                                className='mt-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-brand-text outline-none transition focus:border-brand-primary'
-                                                                placeholder={t("home.search.filters.minPlaceholder")}
-                                                        />
-                                                </label>
-                                                <label className='flex flex-col text-sm text-brand-muted'>
-                                                        {t("home.search.filters.maxPrice")}
-                                                        <input
-                                                                type='number'
-                                                                value={priceRange.max}
-                                                                onChange={(event) => handlePriceChange("max", event.target.value)}
-                                                                className='mt-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-brand-text outline-none transition focus:border-brand-primary'
-                                                                placeholder={t("home.search.filters.maxPlaceholder")}
-                                                        />
-                                                </label>
+                                {showPriceFilter && (
+                                        <div className='space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4'>
+                                                <h4 className='text-sm font-semibold text-brand-text'>
+                                                        {t("home.search.filters.price")}
+                                                </h4>
+                                                <div className='space-y-3'>
+                                                        <label className='flex flex-col text-sm text-brand-muted'>
+                                                                {t("home.search.filters.minPrice")}
+                                                                <input
+                                                                        type='number'
+                                                                        value={priceRange.min}
+                                                                        onChange={(event) => handlePriceChange("min", event.target.value)}
+                                                                        className='mt-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-brand-text outline-none transition focus:border-brand-primary'
+                                                                        placeholder={t("home.search.filters.minPlaceholder")}
+                                                                />
+                                                        </label>
+                                                        <label className='flex flex-col text-sm text-brand-muted'>
+                                                                {t("home.search.filters.maxPrice")}
+                                                                <input
+                                                                        type='number'
+                                                                        value={priceRange.max}
+                                                                        onChange={(event) => handlePriceChange("max", event.target.value)}
+                                                                        className='mt-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-brand-text outline-none transition focus:border-brand-primary'
+                                                                        placeholder={t("home.search.filters.maxPlaceholder")}
+                                                                />
+                                                        </label>
+                                                </div>
                                         </div>
-                                </div>
+                                )}
                         </div>
                 </section>
         );

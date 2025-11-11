@@ -157,6 +157,7 @@ const HomePage = () => {
                 setSelectedCategoryFilters([]);
                 setPriceRange({ min: "", max: "" });
                 setShowAllProducts(false);
+                clearSearchResults();
         };
 
         return (
@@ -176,6 +177,8 @@ const HomePage = () => {
                                                 showOnlySearchResults ? searchResults.length : products?.length || 0
                                         }
                                         isLoading={showOnlySearchResults && searchLoading}
+                                        priceRange={priceRange}
+                                        onPriceChange={handlePriceFilterChange}
                                 />
 
                                 <SearchFilters
@@ -185,6 +188,7 @@ const HomePage = () => {
                                         priceRange={priceRange}
                                         onPriceChange={handlePriceFilterChange}
                                         onReset={handleResetFilters}
+                                        showPriceFilter={false}
                                 />
 
                                 {showOnlySearchResults ? (
