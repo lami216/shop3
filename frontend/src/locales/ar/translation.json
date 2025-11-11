@@ -56,7 +56,11 @@
                         "categoryDeleted": "تم حذف الفئة بنجاح",
                         "passwordMismatch": "كلمتا المرور غير متطابقتين.",
                         "productAddedToCart": "تمت إضافة المنتج إلى السلة",
-                        "couponAppliedSuccess": "تم تطبيق الكوبون بنجاح"
+                        "couponAppliedSuccess": "تم تطبيق الكوبون بنجاح",
+                        "slideCreated": "تم إضافة عرض جديد",
+                        "slideUpdated": "تم تحديث العرض",
+                        "slideDeleted": "تم حذف العرض",
+                        "noLink": "لا يوجد رابط"
                 }
         },
         "nav": {
@@ -73,7 +77,22 @@
                 "titleLine1": "اكتشف",
                 "titleHighlight": "أبرز الفئات",
                 "subtitle": "تابع أحدث الاتجاهات في الخدمات الرقمية مع تجربة بايزون السلسة",
-                "featuredTitle": "مميزة"
+                "featuredTitle": "مميزة",
+                "search": {
+                        "filters": {
+                                "label": "فلترة البحث",
+                                "title": "حدد ما تبحث عنه",
+                                "reset": "إعادة التصفية",
+                                "categories": "الفئات",
+                                "noCategories": "لا توجد فئات متاحة",
+                                "price": "نطاق السعر",
+                                "minPrice": "السعر الأدنى",
+                                "maxPrice": "السعر الأقصى",
+                                "minPlaceholder": "مثال: 500",
+                                "maxPlaceholder": "مثال: 2500"
+                        },
+                        "noResults": "لم يتم العثور على منتجات مطابقة للبحث"
+                }
         },
         "categories": {
                 "explore": "استكشف {{category}}",
@@ -119,7 +138,8 @@
                         "create": "إنشاء منتج",
                         "products": "المنتجات",
                         "analytics": "الإحصائيات",
-                        "categories": "الفئات"
+                        "categories": "الفئات",
+                        "heroSlider": "عروض البداية"
                 },
                 "createProduct": {
                         "title": "إنشاء منتج جديد",
@@ -191,6 +211,43 @@
                         "chart": {
                                 "sales": "المبيعات",
                                 "revenue": "الإيرادات"
+                        }
+                },
+                "heroSlider": {
+                        "sectionLabel": "إدارة العروض",
+                        "sectionTitle": "تحكم في صور البانر الرئيسية",
+                        "fields": {
+                                "title": "عنوان العرض",
+                                "subtitle": "الوصف",
+                                "ctaLabel": "نص الزر",
+                                "ctaUrl": "رابط الزر"
+                        },
+                        "placeholders": {
+                                "title": "مثال: عطر الموسم الجديد",
+                                "subtitle": "اكتب وصفاً قصيراً عن العرض",
+                                "ctaLabel": "مثال: تسوق الآن",
+                                "ctaUrl": "https://example.com"
+                        },
+                        "actions": {
+                                "upload": "اختر صورة",
+                                "save": "حفظ العرض",
+                                "saving": "جاري الحفظ",
+                                "reset": "إعادة تعيين",
+                                "delete": "حذف العرض"
+                        },
+                        "messages": {
+                                "imageRequired": "يرجى إضافة صورة للعرض.",
+                                "imageReadError": "تعذر قراءة الصورة، حاول مرة أخرى.",
+                                "deleteConfirm": "هل أنت متأكد أنك تريد حذف العرض \"{{title}}\"؟",
+                                "untitled": "عرض بدون عنوان",
+                                "noImage": "لا توجد صورة",
+                                "noLink": "بدون رابط"
+                        },
+                        "list": {
+                                "title": "العروض الحالية",
+                                "empty": "لم يتم إضافة أي عروض بعد.",
+                                "order": "الترتيب رقم {{index}}",
+                                "ctaPreview": "زر: {{label}} • رابط: {{url}}"
                         }
                 }
         },
@@ -366,6 +423,10 @@
                 "cartFetchError": "تعذر تحميل عناصر السلة",
                 "addToCartError": "تعذر إضافة المنتج إلى السلة",
                 "removeItemError": "تعذر إزالة العنصر",
-                "updateQuantityError": "تعذر تحديث الكمية"
+                "updateQuantityError": "تعذر تحديث الكمية",
+                "heroSlidesFetchError": "تعذر جلب عروض البداية",
+                "heroSlidesCreateError": "تعذر إنشاء العرض",
+                "heroSlidesUpdateError": "تعذر تحديث العرض",
+                "heroSlidesDeleteError": "تعذر حذف العرض"
         }
 }

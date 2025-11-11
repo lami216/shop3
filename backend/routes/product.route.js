@@ -7,6 +7,7 @@ import {
         getProductById,
         getProductsByCategory,
         getRecommendedProducts,
+        searchProducts,
         toggleFeaturedProduct,
         updateProduct,
 } from "../controllers/product.controller.js";
@@ -18,6 +19,7 @@ router.get("/", protectRoute, adminRoute, getAllProducts);
 router.get("/featured", getFeaturedProducts);
 router.get("/category/:category", getProductsByCategory);
 router.get("/recommendations", getRecommendedProducts);
+router.get("/search", searchProducts);
 router.get("/:id", getProductById);
 router.post("/", protectRoute, adminRoute, createProduct);
 router.put("/:id", protectRoute, adminRoute, updateProduct);

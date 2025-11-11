@@ -7,25 +7,58 @@ import { selectRootCategories, useCategoryStore } from "../stores/useCategorySto
 import HeroSlider from "../components/HeroSlider";
 import SearchBanner from "../components/SearchBanner";
 import ProductCard from "../components/ProductCard";
+import SearchFilters from "../components/SearchFilters";
+import { useHeroSliderStore } from "../stores/useHeroSliderStore";
 
 const HomePage = () => {
-        const { fetchFeaturedProducts, products, loading: productsLoading } = useProductStore();
+        const {
+                fetchFeaturedProducts,
+                products,
+                loading: productsLoading,
+                searchResults,
+                searchLoading,
+                searchProducts,
+                clearSearchResults,
+        } = useProductStore();
         const fetchCategories = useCategoryStore((state) => state.fetchCategories);
         const categoriesLoading = useCategoryStore((state) => state.loading);
         const rootCategories = useCategoryStore(selectRootCategories);
+        const allCategories = useCategoryStore((state) => state.categories);
+        const { slides: heroSlides, fetchSlides } = useHeroSliderStore();
         const { t } = useTranslation();
         const [searchQuery, setSearchQuery] = useState("");
         const [showAllProducts, setShowAllProducts] = useState(false);
+        const [selectedCategoryFilters, setSelectedCategoryFilters] = useState([]);
+        const [priceRange, setPriceRange] = useState({ min: "", max: "" });
 
         useEffect(() => {
                 fetchFeaturedProducts();
         }, [fetchFeaturedProducts]);
 
         useEffect(() => {
-                fetchCategories({ rootOnly: true });
+                fetchCategories({ rootOnly: false });
         }, [fetchCategories]);
 
-        const slides = useMemo(() => {
+        useEffect(() => {
+                fetchSlides();
+        }, [fetchSlides]);
+
+        const categoryOptions = useMemo(() => {
+                if (!Array.isArray(allCategories)) return [];
+
+                return allCategories
+                        .filter((category) => Boolean(category?._id))
+                        .map((category) => ({
+                                value:
+                                        typeof category._id === "string"
+                                                ? category._id
+                                                : category._id?.toString?.() ?? "",
+                                label: category.name,
+                        }))
+                        .sort((a, b) => a.label.localeCompare(b.label, "ar"));
+        }, [allCategories]);
+
+        const productSlides = useMemo(() => {
                 if (!Array.isArray(products)) return [];
 
                 return products.slice(0, 5).map((product) => {
@@ -46,34 +79,25 @@ const HomePage = () => {
                 });
         }, [products]);
 
+        const slides = useMemo(() => {
+                if (Array.isArray(heroSlides) && heroSlides.length) {
+                        return heroSlides;
+                }
+
+                return productSlides;
+        }, [heroSlides, productSlides]);
+
         const normalizedQuery = searchQuery.trim().toLowerCase();
 
-        const filteredProducts = useMemo(() => {
-                if (!Array.isArray(products)) return [];
-                if (!normalizedQuery) return products;
-
-                return products.filter((product) => {
-                        const name = String(product.name || "").toLowerCase();
-                        const description = String(product.description || "").toLowerCase();
-                        const categories = Array.isArray(product.categoryDetails)
-                                ? product.categoryDetails.map((category) => category?.name || "").join(" ").toLowerCase()
-                                : String(product.category || "").toLowerCase();
-
-                        return (
-                                name.includes(normalizedQuery) ||
-                                description.includes(normalizedQuery) ||
-                                categories.includes(normalizedQuery)
-                        );
-                });
-        }, [normalizedQuery, products]);
-
-        const showOnlySearchResults = normalizedQuery.length > 0;
+        const hasPriceFilter = Boolean(priceRange.min) || Boolean(priceRange.max);
+        const showOnlySearchResults =
+                normalizedQuery.length > 0 || selectedCategoryFilters.length > 0 || hasPriceFilter;
 
         const visibleProducts = useMemo(() => {
-                if (showOnlySearchResults) return filteredProducts;
+                if (showOnlySearchResults) return searchResults;
                 if (showAllProducts) return products;
                 return Array.isArray(products) ? products.slice(0, 6) : [];
-        }, [filteredProducts, products, showAllProducts, showOnlySearchResults]);
+        }, [products, searchResults, showAllProducts, showOnlySearchResults]);
 
         const handleQueryChange = (value) => {
                 setSearchQuery(value);
@@ -89,6 +113,50 @@ const HomePage = () => {
         const handleShowAll = () => {
                 setShowAllProducts(true);
                 setSearchQuery("");
+                setSelectedCategoryFilters([]);
+                setPriceRange({ min: "", max: "" });
+                clearSearchResults();
+        };
+
+        useEffect(() => {
+                const handler = setTimeout(() => {
+                        if (showOnlySearchResults) {
+                                searchProducts({
+                                        query: searchQuery,
+                                        categories: selectedCategoryFilters,
+                                        priceMin: priceRange.min,
+                                        priceMax: priceRange.max,
+                                }).catch(() => {});
+                                setShowAllProducts(false);
+                        } else {
+                                clearSearchResults();
+                        }
+                }, 400);
+
+                return () => clearTimeout(handler);
+        }, [
+                showOnlySearchResults,
+                searchProducts,
+                searchQuery,
+                selectedCategoryFilters,
+                priceRange,
+                clearSearchResults,
+        ]);
+
+        const handleCategoriesFilterChange = (nextCategories) => {
+                setSelectedCategoryFilters(nextCategories);
+                setShowAllProducts(false);
+        };
+
+        const handlePriceFilterChange = (nextRange) => {
+                setPriceRange(nextRange);
+                setShowAllProducts(false);
+        };
+
+        const handleResetFilters = () => {
+                setSelectedCategoryFilters([]);
+                setPriceRange({ min: "", max: "" });
+                setShowAllProducts(false);
         };
 
         return (
@@ -101,8 +169,22 @@ const HomePage = () => {
                                         onQueryChange={handleQueryChange}
                                         onClear={handleClearSearch}
                                         onShowAll={handleShowAll}
-                                        hasResults={showOnlySearchResults ? filteredProducts.length > 0 : showAllProducts}
-                                        totalCount={showOnlySearchResults ? filteredProducts.length : products?.length || 0}
+                                        hasResults={
+                                                showOnlySearchResults ? searchResults.length > 0 : showAllProducts
+                                        }
+                                        totalCount={
+                                                showOnlySearchResults ? searchResults.length : products?.length || 0
+                                        }
+                                        isLoading={showOnlySearchResults && searchLoading}
+                                />
+
+                                <SearchFilters
+                                        categories={categoryOptions}
+                                        selectedCategories={selectedCategoryFilters}
+                                        onCategoriesChange={handleCategoriesFilterChange}
+                                        priceRange={priceRange}
+                                        onPriceChange={handlePriceFilterChange}
+                                        onReset={handleResetFilters}
                                 />
 
                                 {showOnlySearchResults ? (
@@ -112,17 +194,21 @@ const HomePage = () => {
                                                                 نتائج البحث
                                                         </h2>
                                                         <span className='text-sm text-brand-muted'>
-                                                                {filteredProducts.length}
+                                                                {searchResults.length}
                                                                 <span className='mr-2 text-brand-muted/70'>عناصر مطابقة</span>
                                                         </span>
                                                 </header>
-                                                {filteredProducts.length === 0 ? (
+                                                {searchLoading ? (
                                                         <p className='rounded-2xl border border-white/10 bg-white/5 px-6 py-10 text-center text-brand-muted'>
-                                                                {t("categories.manager.list.empty")}
+                                                                {t("common.loading")}
+                                                        </p>
+                                                ) : searchResults.length === 0 ? (
+                                                        <p className='rounded-2xl border border-white/10 bg-white/5 px-6 py-10 text-center text-brand-muted'>
+                                                                {t("home.search.noResults")}
                                                         </p>
                                                 ) : (
                                                         <div className='grid gap-6 sm:grid-cols-2 xl:grid-cols-3'>
-                                                                {filteredProducts.map((product) => (
+                                                                {searchResults.map((product) => (
                                                                         <ProductCard key={product._id} product={product} />
                                                                 ))}
                                                         </div>

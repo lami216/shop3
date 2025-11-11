@@ -4,7 +4,21 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 const AUTO_PLAY_INTERVAL = 6500;
 
 const HeroSlider = ({ slides = [] }) => {
-        const items = useMemo(() => slides.filter(Boolean), [slides]);
+        const items = useMemo(() => {
+                return slides
+                        .filter(Boolean)
+                        .map((slide) => {
+                                const normalizedImage =
+                                        typeof slide.image === "object" && slide.image !== null
+                                                ? slide.image.url
+                                                : slide.image;
+
+                                return {
+                                        ...slide,
+                                        image: normalizedImage || slide.cover || slide.background || "",
+                                };
+                        });
+        }, [slides]);
         const [activeIndex, setActiveIndex] = useState(0);
 
         useEffect(() => {
@@ -59,11 +73,17 @@ const HeroSlider = ({ slides = [] }) => {
                                                 }`}
                                                 aria-hidden={!isActive}
                                         >
-                                                <img
-                                                        src={item.image || item.cover || item.background}
-                                                        alt={item.name || "عرض العطور"}
-                                                        className='h-full w-full object-cover'
-                                                />
+                                                {item.image ? (
+                                                        <img
+                                                                src={item.image}
+                                                                alt={item.title || item.name || "عرض العطور"}
+                                                                className='h-full w-full object-cover'
+                                                        />
+                                                ) : (
+                                                        <div className='flex h-full w-full items-center justify-center bg-black/60 text-brand-muted'>
+                                                                لا توجد صورة للعرض
+                                                        </div>
+                                                )}
                                                 <div className='absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/20' />
                                                 <div className='absolute inset-0 flex flex-col justify-end px-6 pb-16 text-brand-text sm:px-10 lg:px-16'>
                                                         <span className='mb-4 inline-flex w-max rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.45em] text-brand-muted backdrop-blur'>
@@ -76,6 +96,14 @@ const HeroSlider = ({ slides = [] }) => {
                                                                 <p className='mt-4 max-w-2xl text-base text-brand-muted sm:text-lg'>
                                                                         {item.description}
                                                                 </p>
+                                                        )}
+                                                        {item.ctaLabel && item.ctaUrl && (
+                                                                <a
+                                                                        href={item.ctaUrl}
+                                                                        className='golden-button mt-8 inline-flex w-max items-center gap-2 text-xs uppercase tracking-[0.35em]'
+                                                                >
+                                                                        {item.ctaLabel}
+                                                                </a>
                                                         )}
                                                 </div>
                                         </article>

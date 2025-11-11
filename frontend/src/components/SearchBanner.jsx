@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 
 const SearchBanner = ({
         query,
@@ -7,6 +7,7 @@ const SearchBanner = ({
         onShowAll,
         hasResults,
         totalCount,
+        isLoading = false,
 }) => {
         return (
                 <section className='relative z-10 -mt-12 w-full rounded-3xl border border-brand-primary/25 bg-brand-bg/90 p-6 shadow-golden backdrop-blur-md sm:-mt-16 sm:p-10'>
@@ -44,6 +45,9 @@ const SearchBanner = ({
                                                                 <X size={16} />
                                                         </button>
                                                 )}
+                                                {isLoading && (
+                                                        <Loader2 className='ml-2 h-5 w-5 animate-spin text-brand-primary' />
+                                                )}
                                         </div>
                                 </div>
                         </div>
@@ -53,7 +57,12 @@ const SearchBanner = ({
                                         <span className='inline-flex h-8 items-center rounded-full border border-brand-primary/40 px-3 uppercase tracking-[0.35em] text-xs text-brand-muted'>
                                                 live search
                                         </span>
-                                        {hasResults ? (
+                                        {isLoading ? (
+                                                <span className='flex items-center gap-2 text-brand-muted'>
+                                                        <Loader2 className='h-4 w-4 animate-spin text-brand-primary' />
+                                                        <span>جاري جلب النتائج...</span>
+                                                </span>
+                                        ) : hasResults ? (
                                                 <span>
                                                         تم العثور على <strong className='text-brand-primary'>{totalCount}</strong> عنصر
                                                 </span>
