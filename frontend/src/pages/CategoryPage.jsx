@@ -21,18 +21,40 @@ const CategoryPage = () => {
                 fetchProductsByCategory(category);
         }, [fetchProductsByCategory, category]);
 
-        const currentCategory = useMemo(
-                () => categories.find((item) => item.slug === category),
-                [categories, category]
-        );
+        const [currentCategory, setCurrentCategory] = useState(null);
 
         useEffect(() => {
-                if (!categories.length || (category && !currentCategory)) {
+                if (!category) {
+                        setCurrentCategory(null);
+                        return;
+                }
+
+                const matchedCategory = categories.find((item) => item.slug === category);
+
+                if (matchedCategory) {
+                        setCurrentCategory(matchedCategory);
+                        return;
+                }
+
+                if (categories.length === 0) {
+                        setCurrentCategory(null);
+                }
+        }, [categories, category]);
+
+        useEffect(() => {
+                if (
+                        !categories.length ||
+                        (category && !categories.some((item) => item.slug === category))
+                ) {
                         fetchCategories({ rootOnly: false });
                 }
-        }, [categories.length, category, currentCategory, fetchCategories]);
+        }, [categories, category, fetchCategories]);
 
         const currentCategoryId = currentCategory?._id;
+
+        useEffect(() => {
+                setChildCategories([]);
+        }, [category]);
 
         useEffect(() => {
                 let ignore = false;

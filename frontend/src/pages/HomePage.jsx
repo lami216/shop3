@@ -116,10 +116,6 @@ const HomePage = () => {
                                         query={searchQuery}
                                         onQueryChange={handleQueryChange}
                                         onClear={handleClearSearch}
-                                        hasResults={showOnlySearchResults && searchResults.length > 0}
-                                        totalCount={
-                                                showOnlySearchResults ? searchResults.length : products?.length || 0
-                                        }
                                         isLoading={showOnlySearchResults && searchLoading}
                                         priceRange={priceRange}
                                         onPriceChange={handlePriceFilterChange}
