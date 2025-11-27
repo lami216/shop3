@@ -5,11 +5,11 @@
 @tailwind utilities;
 
 :root {
-        --bg: #000000;
-        --primary: #c9a96e;
-        --accent: #6b0f1a;
-        --muted: #b0b0b0;
-        --text: #ffffff;
+        --bg: #fafafa;
+        --primary: #c9a45a;
+        --accent: #b88a2f;
+        --muted: #6b6b6b;
+        --text: #111111;
 }
 
 @layer base {
@@ -33,6 +33,15 @@
                 background: rgba(201, 169, 110, 0.35);
                 color: var(--text);
         }
+
+        [class*="text-white"] {
+                color: #111111 !important;
+        }
+
+        ::placeholder {
+                color: #555555;
+                opacity: 1;
+        }
 }
 
 @layer components {
@@ -55,7 +64,7 @@
         }
 
         .golden-button {
-                @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-brand-primary px-6 py-3 text-sm font-semibold tracking-wide text-brand-bg transition duration-150 ease-out;
+                @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-brand-primary px-6 py-3 text-sm font-semibold tracking-wide text-brand-text transition duration-150 ease-out;
         }
 
         .golden-button::after {

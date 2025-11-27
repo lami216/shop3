@@ -45,9 +45,9 @@ const HeroSlider = ({ slides = [] }) => {
 
         if (!items.length) {
                 return (
-                        <section className='relative flex h-[60vh] min-h-[420px] w-full items-center justify-center overflow-hidden rounded-3xl border border-brand-primary/20 bg-brand-bg/40 shadow-golden backdrop-blur'>
+                        <section className='relative flex h-[42vh] min-h-[280px] w-full items-center justify-center overflow-hidden rounded-3xl border border-brand-primary/25 bg-white shadow-sm sm:h-[55vh] sm:min-h-[360px] lg:h-[65vh]'>
                                 <div className='px-8 text-center md:px-12'>
-                                        <h2 className='text-gradient-gold text-[clamp(2rem,4vw,3.25rem)] font-bold tracking-wide'>
+                                        <h2 className='text-[clamp(2rem,4vw,3.25rem)] font-bold tracking-wide text-brand-text'>
                                                 عالم عطور فاخر
                                         </h2>
                                         <p className='mt-4 text-lg text-brand-muted'>
@@ -69,8 +69,8 @@ const HeroSlider = ({ slides = [] }) => {
         };
 
         return (
-                <section className='relative h-[65vh] min-h-[460px] w-full overflow-hidden rounded-3xl border border-brand-primary/20 bg-black shadow-golden'>
-                        <div className='absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent' aria-hidden='true' />
+                <section className='relative h-[42vh] min-h-[280px] w-full overflow-hidden rounded-3xl border border-brand-primary/25 bg-white shadow-sm sm:h-[55vh] sm:min-h-[360px] lg:h-[65vh]'>
+                        <div className='absolute inset-0 bg-gradient-to-b from-white via-white/60 to-transparent' aria-hidden='true' />
                         {items.map((item, index) => {
                                 const isActive = index === activeIndex;
                                 const title = item.title || item.name || "";
@@ -102,9 +102,9 @@ const HeroSlider = ({ slides = [] }) => {
                                                                 لا توجد صورة للعرض
                                                         </div>
                                                 )}
-                                                <div className='absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/20' />
-                                                <div className='absolute inset-0 flex flex-col justify-end px-6 pb-16 text-brand-text sm:px-10 lg:px-16'>
-                                                        <span className='mb-4 inline-flex w-max rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.45em] text-brand-muted backdrop-blur'>
+                                                <div className='absolute inset-0 bg-gradient-to-t from-white via-white/80 to-white/30' />
+                                                <div className='absolute inset-0 flex flex-col justify-end px-6 pb-10 text-brand-text sm:px-10 lg:px-16'>
+                                                        <span className='mb-4 inline-flex w-max rounded-full border border-brand-primary/40 bg-white/80 px-4 py-1 text-xs uppercase tracking-[0.45em] text-brand-muted backdrop-blur-sm'>
                                                                 offer
                                                         </span>
                                                         <h2 className='text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-tight text-brand-text'>
@@ -131,7 +131,7 @@ const HeroSlider = ({ slides = [] }) => {
                                 );
                         })}
 
-                        <div className='absolute inset-x-0 bottom-8 flex items-center justify-center gap-3'>
+                        <div className='absolute inset-x-0 bottom-6 flex items-center justify-center gap-3'>
                                 {items.map((_, index) => {
                                         const isActive = index === activeIndex;
                                         return (
@@ -142,7 +142,7 @@ const HeroSlider = ({ slides = [] }) => {
                                                         className={`h-2 rounded-full transition-all duration-200 ${
                                                                 isActive
                                                                         ? "w-10 bg-brand-primary shadow-golden"
-                                                                        : "w-3 bg-white/40 hover:bg-brand-primary/60"
+                                                                        : "w-3 bg-brand-primary/30 hover:bg-brand-primary/60"
                                                         }`}
                                                         aria-label={`عرض ${index + 1}`}
                                                 />

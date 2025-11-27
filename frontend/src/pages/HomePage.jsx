@@ -25,7 +25,6 @@ const HomePage = () => {
         const { slides: heroSlides, fetchSlides } = useHeroSliderStore();
         const { t } = useTranslation();
         const [searchQuery, setSearchQuery] = useState("");
-        const [priceRange, setPriceRange] = useState({ min: "", max: "" });
 
         useEffect(() => {
                 fetchFeaturedProducts();
@@ -70,8 +69,7 @@ const HomePage = () => {
 
         const normalizedQuery = searchQuery.trim().toLowerCase();
 
-        const hasPriceFilter = Boolean(priceRange.min) || Boolean(priceRange.max);
-        const showOnlySearchResults = normalizedQuery.length > 0 || hasPriceFilter;
+        const showOnlySearchResults = normalizedQuery.length > 0;
 
         const visibleProducts = useMemo(() => {
                 if (showOnlySearchResults) return searchResults;
@@ -92,8 +90,6 @@ const HomePage = () => {
                         if (showOnlySearchResults) {
                                 searchProducts({
                                         query: searchQuery,
-                                        priceMin: priceRange.min,
-                                        priceMax: priceRange.max,
                                 }).catch(() => {});
                         } else {
                                 clearSearchResults();
@@ -101,25 +97,30 @@ const HomePage = () => {
                 }, 400);
 
                 return () => clearTimeout(handler);
-        }, [showOnlySearchResults, searchProducts, searchQuery, priceRange, clearSearchResults]);
-
-        const handlePriceFilterChange = (nextRange) => {
-                setPriceRange(nextRange);
-        };
+        }, [showOnlySearchResults, searchProducts, searchQuery, clearSearchResults]);
 
         return (
                 <div className='relative min-h-screen overflow-hidden bg-brand-bg text-brand-text'>
-                        <div className='relative z-10 mx-auto flex max-w-6xl flex-col gap-16 px-4 pb-24 pt-8 sm:px-6 lg:px-8'>
-                                <HeroSlider slides={slides} />
-
+                        <div className='relative z-10 mx-auto flex max-w-6xl flex-col gap-10 px-4 pb-24 pt-6 sm:px-6 lg:px-8'>
                                 <SearchBanner
                                         query={searchQuery}
                                         onQueryChange={handleQueryChange}
                                         onClear={handleClearSearch}
                                         isLoading={showOnlySearchResults && searchLoading}
-                                        priceRange={priceRange}
-                                        onPriceChange={handlePriceFilterChange}
                                 />
+
+                                <HeroSlider slides={slides} />
+
+                                <div className='space-y-6'>
+                                        <div className='flex justify-center'>
+                                                <a
+                                                        href='/products'
+                                                        className='golden-button w-full max-w-sm justify-center text-base font-semibold'
+                                                        onClick={handleClearSearch}
+                                                >
+                                                        كل المنتجات
+                                                </a>
+                                        </div>
 
                                 {showOnlySearchResults ? (
                                         <section className='space-y-8'>
@@ -133,11 +134,11 @@ const HomePage = () => {
                                                         </span>
                                                 </header>
                                                 {searchLoading ? (
-                                                        <p className='rounded-2xl border border-white/10 bg-white/5 px-6 py-10 text-center text-brand-muted'>
+                                                        <p className='rounded-2xl border border-brand-primary/15 bg-white px-6 py-10 text-center text-brand-muted shadow-sm'>
                                                                 {t("common.loading")}
                                                         </p>
                                                 ) : searchResults.length === 0 ? (
-                                                        <p className='rounded-2xl border border-white/10 bg-white/5 px-6 py-10 text-center text-brand-muted'>
+                                                        <p className='rounded-2xl border border-brand-primary/15 bg-white px-6 py-10 text-center text-brand-muted shadow-sm'>
                                                                 {t("home.search.noResults")}
                                                         </p>
                                                 ) : (
@@ -154,12 +155,12 @@ const HomePage = () => {
                                                         <FeaturedProducts featuredProducts={visibleProducts} />
                                                 )}
 
-                                                <section className='space-y-8 rounded-3xl border border-brand-primary/15 bg-black/50 px-6 py-10 shadow-golden sm:px-10'>
+                                                <section className='space-y-8 rounded-3xl border border-brand-primary/15 bg-white px-6 py-10 shadow-sm sm:px-10'>
                                                         <header className='flex flex-col gap-2 text-right'>
                                                                 <p className='text-sm uppercase tracking-[0.55em] text-brand-muted'>
                                                                         الفئات المميزة
                                                                 </p>
-                                                                <h2 className='text-[clamp(1.75rem,4vw,2.5rem)] font-semibold text-brand-primary'>
+                                                                <h2 className='text-[clamp(1.75rem,4vw,2.5rem)] font-semibold text-brand-text'>
                                                                         استكشف عالم الصاحب للعطور
                                                                 </h2>
                                                                 <p className='text-sm text-brand-muted'>
@@ -167,9 +168,9 @@ const HomePage = () => {
                                                                 </p>
                                                         </header>
 
-                                                        <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+                                                        <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'>
                                                                 {rootCategories.length === 0 && !categoriesLoading && (
-                                                                        <div className='col-span-full rounded-2xl border border-white/10 bg-white/5 px-6 py-10 text-center text-brand-muted'>
+                                                                        <div className='col-span-full rounded-2xl border border-brand-primary/15 bg-white px-6 py-10 text-center text-brand-muted shadow-sm'>
                                                                                 {t("categories.manager.list.empty")}
                                                                         </div>
                                                                 )}
@@ -180,6 +181,7 @@ const HomePage = () => {
                                                 </section>
                                         </>
                                 )}
+                                </div>
                         </div>
                 </div>
         );

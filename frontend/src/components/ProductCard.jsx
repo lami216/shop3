@@ -28,10 +28,10 @@ const ProductCard = ({ product }) => {
         };
 
         return (
-                <div className='group relative flex w-full flex-col overflow-hidden rounded-3xl border border-brand-primary/20 bg-black/60 p-4 text-brand-text shadow-golden transition duration-200 ease-out hover:border-brand-primary/60 hover:shadow-golden-strong'>
+                <div className='group relative flex w-full flex-col overflow-hidden rounded-3xl border border-brand-primary/25 bg-white p-4 text-brand-text shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-golden'>
                         <Link
                                 to={`/products/${product._id}`}
-                                className='relative block overflow-hidden rounded-2xl bg-black/40'
+                                className='relative block overflow-hidden rounded-2xl bg-white'
                                 aria-label={t("product.viewDetails", { name: product.name })}
                         >
                                 {isDiscounted && (
@@ -46,11 +46,10 @@ const ProductCard = ({ product }) => {
                                                 alt={product.name}
                                         />
                                 ) : (
-                                        <div className='flex h-60 w-full items-center justify-center bg-black/40 text-sm text-brand-muted'>
+                                        <div className='flex h-60 w-full items-center justify-center bg-brand-bg text-sm text-brand-muted'>
                                                 {t("common.status.noImage")}
                                         </div>
                                 )}
-                                <div className='pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent' />
                         </Link>
 
                         <div className='flex flex-1 flex-col gap-4 pt-6'>
