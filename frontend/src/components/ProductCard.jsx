@@ -28,7 +28,7 @@ const ProductCard = ({ product }) => {
         };
 
         return (
-                <div className='group relative flex w-full flex-col overflow-hidden rounded-3xl border border-brand-primary/25 bg-white p-4 text-brand-text shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-golden'>
+                <div className='group relative flex w-full flex-col overflow-hidden rounded-3xl border border-brand-primary/25 bg-white p-3 text-brand-text shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-golden sm:p-4'>
                         <Link
                                 to={`/products/${product._id}`}
                                 className='relative block overflow-hidden rounded-2xl bg-white'
@@ -41,7 +41,7 @@ const ProductCard = ({ product }) => {
                                 )}
                                 {coverImage ? (
                                         <img
-                                                className='h-60 w-full object-cover transition duration-500 ease-out group-hover:scale-105'
+                                                className='h-44 w-full object-cover transition duration-500 ease-out group-hover:scale-105 sm:h-60'
                                                 src={coverImage}
                                                 alt={product.name}
                                         />
@@ -52,11 +52,11 @@ const ProductCard = ({ product }) => {
                                 )}
                         </Link>
 
-                        <div className='flex flex-1 flex-col gap-4 pt-6'>
+                        <div className='flex flex-1 flex-col gap-3 pt-4 sm:gap-4 sm:pt-6'>
                                 <Link to={`/products/${product._id}`} className='transition duration-150 ease-out hover:text-brand-primary'>
-                                        <h5 className='text-lg font-semibold tracking-wide'>{product.name}</h5>
+                                        <h5 className='text-base font-semibold tracking-wide sm:text-lg'>{product.name}</h5>
                                 </Link>
-                                <p className='min-h-[3.5rem] text-sm leading-relaxed text-brand-muted'>
+                                <p className='min-h-[2.5rem] text-sm leading-relaxed text-brand-muted sm:min-h-[3.5rem]'>
                                         {product.description || t("products.detail.descriptionFallback")}
                                 </p>
                                 <div className='flex flex-wrap items-baseline gap-3'>

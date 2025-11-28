@@ -12,12 +12,12 @@ const CategoryItem = ({ category }) => {
                                         className='h-full w-full object-cover transition duration-500 ease-out group-hover:scale-105'
                                         loading='lazy'
                                 />
-                                <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent p-3 text-right'>
+                                <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3 text-right'>
                                         <span className='inline-flex items-center rounded-full border border-brand-primary/30 bg-black/60 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-white'>
                                                 collection
                                         </span>
-                                        <h3 className='mt-2 text-lg font-semibold text-white drop-shadow'>{category.name}</h3>
-                                        <p className='text-xs text-white/80'>
+                                        <h3 className='mt-2 text-lg font-semibold text-brand-primary drop-shadow-[0_3px_12px_rgba(0,0,0,0.45)]'>{category.name}</h3>
+                                        <p className='text-xs text-white/90 drop-shadow'>
                                                 {t("categories.explore", { category: category.name })}
                                         </p>
                                 </div>
