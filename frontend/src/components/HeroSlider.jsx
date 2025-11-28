@@ -110,21 +110,25 @@ const HeroSlider = ({ slides = [] }) => {
                                                         <h2 className='text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-tight text-brand-text'>
                                                                 {title}
                                                         </h2>
-                                                        {priceFormatted && (
-                                                                <p className='mt-4 text-3xl font-bold text-brand-primary'>
-                                                                        {t("home.hero.offerPrice", { price: priceFormatted })}
-                                                                </p>
-                                                        )}
-                                                        {whatsappUrl && (
-                                                                <a
-                                                                        href={whatsappUrl}
-                                                                        target='_blank'
-                                                                        rel='noopener noreferrer'
-                                                                        className='golden-button mt-8 inline-flex w-max items-center gap-2 text-xs uppercase tracking-[0.35em]'
-                                                                        aria-label={t("home.hero.whatsappCtaAria", { title: title || t("home.hero.offerFallback") })}
-                                                                >
-                                                                        {t("home.hero.whatsappCta")}
-                                                                </a>
+                                                        {(whatsappUrl || priceFormatted) && (
+                                                                <div className='mt-6 flex flex-wrap items-center gap-3 sm:gap-4'>
+                                                                        {whatsappUrl && (
+                                                                                <a
+                                                                                        href={whatsappUrl}
+                                                                                        target='_blank'
+                                                                                        rel='noopener noreferrer'
+                                                                                        className='golden-button inline-flex w-max items-center gap-2 text-xs uppercase tracking-[0.35em]'
+                                                                                        aria-label={t("home.hero.whatsappCtaAria", { title: title || t("home.hero.offerFallback") })}
+                                                                                >
+                                                                                        {t("home.hero.whatsappCta")}
+                                                                                </a>
+                                                                        )}
+                                                                        {priceFormatted && (
+                                                                                <p className='ml-auto text-3xl font-bold text-brand-primary text-right sm:text-4xl'>
+                                                                                        {t("home.hero.offerPrice", { price: priceFormatted })}
+                                                                                </p>
+                                                                        )}
+                                                                </div>
                                                         )}
                                                 </div>
                                         </article>
