@@ -27,17 +27,9 @@ const categorySchema = new mongoose.Schema(
                         type: String,
                         default: null,
                 },
-                parentCategory: {
-                        type: mongoose.Schema.Types.ObjectId,
-                        ref: "Category",
-                        default: null,
-                        index: true,
-                },
         },
         { timestamps: true }
 );
-
-categorySchema.index({ parentCategory: 1, name: 1 });
 
 const Category = mongoose.model("Category", categorySchema);
 

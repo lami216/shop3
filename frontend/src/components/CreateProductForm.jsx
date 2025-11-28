@@ -13,7 +13,7 @@ const createInitialFormState = () => ({
         name: "",
         description: "",
         price: "",
-        categories: [],
+        category: "",
         isDiscounted: false,
         discountPercentage: "",
         existingImages: [],
@@ -33,58 +33,27 @@ const CreateProductForm = () => {
         } = useProductStore();
         const { categories, fetchCategories } = useCategoryStore();
         const { t } = useTranslation();
-        const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
-
-        const categoryMap = useMemo(() => {
-                return categories.reduce((accumulator, category) => {
-                        if (!category?._id) {
-                                return accumulator;
-                        }
-
-                        accumulator[category._id] = category;
-                        return accumulator;
-                }, {});
-        }, [categories]);
-
-        const categoryOptions = useMemo(() => {
-                return categories
-                        .map((category) => {
-                                const parentId =
-                                        typeof category.parentCategory === "object"
-                                                ? category.parentCategory?._id ??
-                                                  category.parentCategory?.toString?.() ??
-                                                  null
-                                                : category.parentCategory ?? null;
-
-                                const parent = parentId ? categoryMap[parentId] : undefined;
-                                const label = parent ? `${parent.name} › ${category.name}` : category.name;
-
-                                return { ...category, label };
-                        })
-                        .sort((a, b) => a.label.localeCompare(b.label, "ar"));
-        }, [categories, categoryMap]);
+        const categoryOptions = useMemo(
+                () => [...categories].sort((a, b) => a.name.localeCompare(b.name, "ar")),
+                [categories]
+        );
 
         const handleCategoriesChange = (event) => {
-                const selectedValues = Array.from(
-                        event.target.selectedOptions || [],
-                        (option) => option.value
-                );
+                const value = event.target.value;
 
                 setFormState((previous) => ({
                         ...previous,
-                        categories: selectedValues,
+                        category: value,
                 }));
-                setSelectedCategoryIds(selectedValues);
         };
 
         useEffect(() => {
-                fetchCategories({ rootOnly: false });
+                fetchCategories();
         }, [fetchCategories]);
 
         useEffect(() => {
                 if (!selectedProduct) {
                         setFormState(createInitialFormState());
-                        setSelectedCategoryIds([]);
                         return;
                 }
 
@@ -104,15 +73,14 @@ const CreateProductForm = () => {
                                 selectedProduct.price !== undefined && selectedProduct.price !== null
                                         ? String(selectedProduct.price)
                                         : "",
-                        categories: Array.isArray(selectedProduct.categories)
-                                ? selectedProduct.categories
-                                          .map((categoryId) =>
-                                                  typeof categoryId === "object" && categoryId !== null
-                                                          ? categoryId.toString?.() ?? ""
-                                                          : categoryId
-                                          )
-                                          .filter((categoryId) => typeof categoryId === "string" && categoryId.length > 0)
-                                : [],
+                        category:
+                                Array.isArray(selectedProduct.categories) && selectedProduct.categories.length
+                                        ? (typeof selectedProduct.categories[0] === "object"
+                                                  ? selectedProduct.categories[0]?.toString?.() ||
+                                                    selectedProduct.categories[0]?._id?.toString?.() ||
+                                                    ""
+                                                  : selectedProduct.categories[0] ?? "")
+                                        : "",
                         isDiscounted: Boolean(selectedProduct.isDiscounted) &&
                                 Number(selectedProduct.discountPercentage) > 0,
                         discountPercentage:
@@ -125,18 +93,6 @@ const CreateProductForm = () => {
                         coverSource: existingImages.length ? "existing" : "new",
                         coverIndex: 0,
                 });
-
-                setSelectedCategoryIds(
-                        Array.isArray(selectedProduct.categories)
-                                ? selectedProduct.categories
-                                          .map((categoryId) =>
-                                                  typeof categoryId === "object" && categoryId !== null
-                                                          ? categoryId.toString?.() ?? ""
-                                                          : categoryId
-                                          )
-                                          .filter((categoryId) => typeof categoryId === "string" && categoryId.length > 0)
-                                : []
-                );
         }, [selectedProduct]);
 
         const totalImages = formState.existingImages.length + formState.newImages.length;
@@ -292,7 +248,6 @@ const CreateProductForm = () => {
 
         const resetForm = () => {
                 setFormState(createInitialFormState());
-                setSelectedCategoryIds([]);
                 clearSelectedProduct();
         };
 
@@ -391,17 +346,9 @@ const CreateProductForm = () => {
 
                 const { existing, fresh } = buildOrderedImages();
 
-                const payloadCategories = Array.from(
-                        new Set(
-                                (Array.isArray(selectedCategoryIds)
-                                        ? selectedCategoryIds
-                                        : []
-                                ).filter(
-                                        (categoryId) =>
-                                                typeof categoryId === "string" && categoryId.trim().length > 0
-                                )
-                        )
-                );
+                const normalizedCategoryId =
+                        typeof formState.category === "string" ? formState.category.trim() : "";
+                const payloadCategories = normalizedCategoryId ? [normalizedCategoryId] : [];
 
                 try {
                         if (isEditing && selectedProduct) {
@@ -597,14 +544,13 @@ const CreateProductForm = () => {
                                         </label>
                                         <select
                                                 id='product-categories'
-                                                multiple
                                                 className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
-                                                value={selectedCategoryIds}
+                                                value={formState.category}
                                                 onChange={handleCategoriesChange}
                                         >
                                                 {categoryOptions.map((category) => (
                                                         <option key={category._id} value={category._id}>
-                                                                {category.label}
+                                                                {category.name}
                                                         </option>
                                                 ))}
                                         </select>

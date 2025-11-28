@@ -159,19 +159,10 @@ const finalizeProductPayload = (product) => {
 
                         if (!id) return null;
 
-                        const parent =
-                                typeof category.parentCategory === "object"
-                                        ? category.parentCategory?._id?.toString?.() ??
-                                          category.parentCategory?.id?.toString?.() ??
-                                          category.parentCategory?.toString?.() ??
-                                          null
-                                        : category.parentCategory ?? null;
-
                         return {
                                 _id: id,
                                 name: category.name ?? "",
                                 slug: category.slug ?? "",
-                                parentCategory: parent,
                         };
                 }
 
@@ -180,7 +171,6 @@ const finalizeProductPayload = (product) => {
                                 _id: category,
                                 name: "",
                                 slug: "",
-                                parentCategory: null,
                         };
                 }
 
@@ -292,7 +282,13 @@ const resolveCategoryIdentifiers = async (rawCategories, fallbackCategory = null
                 };
         }
 
-        return [...new Set(resolvedIds.filter(Boolean))];
+        const uniqueIds = [...new Set(resolvedIds.filter(Boolean))];
+
+        if (uniqueIds.length > 1) {
+                return { error: "Only one category can be assigned to a product" };
+        }
+
+        return uniqueIds;
 };
 
 const UNCATEGORIZED_FILTER = {
@@ -320,7 +316,7 @@ export const getAllProducts = async (req, res) => {
                 }
 
                 const products = await Product.find(filter)
-                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .populate({ path: "categories", select: "name slug" })
                         .lean({ virtuals: true });
 
                 res.json({ products: products.map(finalizeProductPayload) });
@@ -398,7 +394,7 @@ export const searchProducts = async (req, res) => {
                 }
 
                 const products = await Product.find(filter)
-                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .populate({ path: "categories", select: "name slug" })
                         .lean({ virtuals: true });
 
                 res.json({ products: products.map(finalizeProductPayload) });
@@ -417,7 +413,7 @@ export const getFeaturedProducts = async (req, res) => {
                 }
 
                 featuredProducts = await Product.find({ isFeatured: true })
-                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .populate({ path: "categories", select: "name slug" })
                         .lean({ virtuals: true });
 
                 if (!featuredProducts || !featuredProducts.length) {
@@ -500,6 +496,10 @@ export const createProduct = async (req, res) => {
                         return res.status(400).json({ message: resolvedCategories.error });
                 }
 
+                const normalizedCategories = Array.isArray(resolvedCategories)
+                        ? resolvedCategories.slice(0, 1)
+                        : [];
+
                 const uploadedImages = [];
 
                 try {
@@ -536,14 +536,14 @@ export const createProduct = async (req, res) => {
                         price: numericPrice,
                         image: storedImages[0]?.url || "",
                         images: storedImages,
-                        categories: resolvedCategories,
+                        categories: normalizedCategories,
                         isDiscounted: discountSettings.isDiscounted,
                         discountPercentage: discountSettings.discountPercentage,
                 });
 
                 await product.populate({
                         path: "categories",
-                        select: "name slug parentCategory",
+                        select: "name slug",
                 });
 
                 res.status(201).json(serializeProduct(product));
@@ -714,7 +714,9 @@ export const updateProduct = async (req, res) => {
                         return res.status(400).json({ message: "Price must be a valid number" });
                 }
 
-                let nextCategories = product.categories;
+                let nextCategories = Array.isArray(product.categories)
+                        ? product.categories.slice(0, 1)
+                        : [];
 
                 if (rawCategories !== undefined || legacyCategory !== undefined) {
                         const resolvedCategories = await resolveCategoryIdentifiers(
@@ -726,7 +728,9 @@ export const updateProduct = async (req, res) => {
                                 return res.status(400).json({ message: resolvedCategories.error });
                         }
 
-                        nextCategories = resolvedCategories;
+                        nextCategories = Array.isArray(resolvedCategories)
+                                ? resolvedCategories.slice(0, 1)
+                                : [];
                 }
 
                 const discountSettings = normalizeDiscountSettings({
@@ -757,7 +761,7 @@ export const updateProduct = async (req, res) => {
 
                 await updatedProduct.populate({
                         path: "categories",
-                        select: "name slug parentCategory",
+                        select: "name slug",
                 });
 
                 if (updatedProduct.isFeatured) {
@@ -811,7 +815,7 @@ export const getProductById = async (req, res) => {
         try {
                 const product = await Product.findById(req.params.id).populate({
                         path: "categories",
-                        select: "name slug parentCategory",
+                        select: "name slug",
                 });
 
                 if (!product) {
@@ -897,7 +901,7 @@ export const getRecommendedProducts = async (req, res) => {
 
                 const populatedRecommendations = await Product.populate(recommendations, {
                         path: "categories",
-                        select: "name slug parentCategory",
+                        select: "name slug",
                 });
 
                 res.json(populatedRecommendations.map(finalizeProductPayload));
@@ -918,7 +922,7 @@ export const getProductsByCategory = async (req, res) => {
                         const uncategorizedProducts = await Product.find(UNCATEGORIZED_FILTER)
                                 .populate({
                                         path: "categories",
-                                        select: "name slug parentCategory",
+                                        select: "name slug",
                                 })
                                 .lean({ virtuals: true });
 
@@ -937,7 +941,7 @@ export const getProductsByCategory = async (req, res) => {
                 }
 
                 const products = await Product.find({ categories: categoryDoc._id })
-                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .populate({ path: "categories", select: "name slug" })
                         .lean({ virtuals: true });
                 res.json({ products: products.map(finalizeProductPayload) });
         } catch (error) {
@@ -954,7 +958,7 @@ export const toggleFeaturedProduct = async (req, res) => {
                         const updatedProduct = await product.save();
                         await updatedProduct.populate({
                                 path: "categories",
-                                select: "name slug parentCategory",
+                                select: "name slug",
                         });
                         await updateFeaturedProductsCache();
                         res.json(serializeProduct(updatedProduct));
@@ -970,7 +974,7 @@ export const toggleFeaturedProduct = async (req, res) => {
 async function updateFeaturedProductsCache() {
         try {
                 const featuredProducts = await Product.find({ isFeatured: true })
-                        .populate({ path: "categories", select: "name slug parentCategory" })
+                        .populate({ path: "categories", select: "name slug" })
                         .lean({ virtuals: true });
                 await redis.set(
                         "featured_products",

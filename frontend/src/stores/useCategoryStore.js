@@ -3,68 +3,6 @@ import toast from "react-hot-toast";
 import apiClient from "../lib/apiClient";
 import { translate } from "../lib/locale";
 
-const resolveParentCategoryId = (value) => {
-        if (value === null || value === undefined) {
-                return null;
-        }
-
-        if (typeof value === "string") {
-                const trimmed = value.trim();
-                return trimmed.length > 0 ? trimmed : null;
-        }
-
-        if (typeof value === "object") {
-                if (value === null) {
-                        return null;
-                }
-
-                if (typeof value._id === "string" && value._id.length > 0) {
-                        return value._id;
-                }
-
-                if (value._id && typeof value._id.toString === "function") {
-                        return value._id.toString();
-                }
-
-                if (typeof value.toString === "function") {
-                        const stringified = value.toString();
-                        return stringified && stringified !== "[object Object]" ? stringified : null;
-                }
-        }
-
-        return null;
-};
-
-export const isRootCategory = (category) => {
-        if (!category) {
-                return false;
-        }
-
-        return resolveParentCategoryId(category.parentCategory) === null;
-};
-
-export const selectRootCategories = (state) =>
-        state.categories.filter((category) => isRootCategory(category));
-
-const buildCategoriesQuery = ({ parent, rootOnly }) => {
-        const params = new URLSearchParams();
-
-        if (parent !== undefined) {
-                if (parent === null) {
-                        params.set("parent", "null");
-                } else if (typeof parent === "string" && parent.trim()) {
-                        params.set("parent", parent.trim());
-                }
-        } else if (rootOnly === true) {
-                params.set("rootOnly", "true");
-        } else if (rootOnly === false) {
-                params.set("rootOnly", "false");
-        }
-
-        const query = params.toString();
-        return query ? `?${query}` : "";
-};
-
 export const useCategoryStore = create((set) => ({
         categories: [],
         loading: false,
@@ -74,21 +12,15 @@ export const useCategoryStore = create((set) => ({
         setSelectedCategory: (category) => set({ selectedCategory: category }),
         clearSelectedCategory: () => set({ selectedCategory: null }),
 
-        fetchCategories: async (options = {}) => {
+        fetchCategories: async () => {
                 set({ loading: true, error: null });
                 try {
-                        const { parent, rootOnly = true } = options;
-                        const query = buildCategoriesQuery({ parent, rootOnly });
-                        const data = await apiClient.get(`/categories${query}`);
+                        const data = await apiClient.get(`/categories`);
                         const fetchedCategories = Array.isArray(data?.categories)
                                 ? data.categories
                                 : [];
 
-                        const categories = rootOnly
-                                ? fetchedCategories.filter((category) => isRootCategory(category))
-                                : fetchedCategories;
-
-                        set({ categories, loading: false });
+                        set({ categories: fetchedCategories, loading: false });
                 } catch (error) {
                         set({
                                 loading: false,
@@ -96,15 +28,6 @@ export const useCategoryStore = create((set) => ({
                         });
                         toast.error(translate("toast.categoryFetchError"));
                 }
-        },
-
-        fetchCategoryChildren: async (parentId) => {
-                if (!parentId) {
-                        return [];
-                }
-
-                const data = await apiClient.get(`/categories/${parentId}/children`);
-                return Array.isArray(data?.categories) ? data.categories : [];
         },
 
         createCategory: async (payload) => {
@@ -149,19 +72,8 @@ export const useCategoryStore = create((set) => ({
                 try {
                         await apiClient.delete(`/categories/${id}`);
                         set((state) => ({
-                                categories: state.categories
-                                        .filter((category) => category._id !== id)
-                                        .map((category) => {
-                                                const parentId = resolveParentCategoryId(category.parentCategory);
-
-                                                if (parentId === id) {
-                                                        return { ...category, parentCategory: null };
-                                                }
-
-                                                return category;
-                                        }),
-                                selectedCategory:
-                                        state.selectedCategory?._id === id ? null : state.selectedCategory,
+                                categories: state.categories.filter((category) => category._id !== id),
+                                selectedCategory: state.selectedCategory?._id === id ? null : state.selectedCategory,
                                 loading: false,
                         }));
                         toast.success(translate("common.messages.categoryDeleted"));

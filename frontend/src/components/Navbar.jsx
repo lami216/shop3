@@ -4,7 +4,7 @@ import { LogIn, LogOut, Lock, Menu, PackageSearch, ShoppingCart, UserPlus, X, Li
 import useTranslation from "../hooks/useTranslation";
 import { useUserStore } from "../stores/useUserStore";
 import { useCartStore } from "../stores/useCartStore";
-import { selectRootCategories, useCategoryStore } from "../stores/useCategoryStore";
+import { useCategoryStore } from "../stores/useCategoryStore";
 
 const Navbar = () => {
         const { user, logout } = useUserStore();
@@ -15,17 +15,17 @@ const Navbar = () => {
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const fetchCategories = useCategoryStore((state) => state.fetchCategories);
         const categoriesLoading = useCategoryStore((state) => state.loading);
-        const rootCategories = useCategoryStore(selectRootCategories);
-        const sortedRootCategories = useMemo(
-                () => [...rootCategories].sort((a, b) => a.name.localeCompare(b.name, "ar")),
-                [rootCategories]
+        const categories = useCategoryStore((state) => state.categories);
+        const sortedCategories = useMemo(
+                () => [...categories].sort((a, b) => a.name.localeCompare(b.name, "ar")),
+                [categories]
         );
 
         useEffect(() => {
-                if (rootCategories.length === 0) {
-                        fetchCategories({ rootOnly: false });
+                if (categories.length === 0) {
+                        fetchCategories();
                 }
-        }, [fetchCategories, rootCategories.length]);
+        }, [categories.length, fetchCategories]);
 
         useEffect(() => {
                 if (isMenuOpen) {
@@ -44,7 +44,7 @@ const Navbar = () => {
         const cartLink = (
                 <Link
                         to={'/cart'}
-                        className='relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/40 bg-white/80 text-brand-bg transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
+                        className='relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/40 bg-black text-white transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
                         aria-label={t("nav.cart")}
                         onClick={closeMenu}
                 >
@@ -97,7 +97,7 @@ const Navbar = () => {
                                 <div className='mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:h-28'>
                                         <button
                                                 type='button'
-                                                className='inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/30 bg-white text-brand-bg transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
+                                                className='inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/30 bg-black text-white transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
                                                 onClick={() => setIsMenuOpen((value) => !value)}
                                                 aria-label={t("nav.menu")}
                                         >
@@ -186,11 +186,11 @@ const Navbar = () => {
                                         </div>
                                         {categoriesLoading ? (
                                                 <p className='text-sm text-brand-muted'>{t("common.loading")}</p>
-                                        ) : sortedRootCategories.length === 0 ? (
+                                        ) : sortedCategories.length === 0 ? (
                                                 <p className='text-sm text-brand-muted'>{t("nav.categoriesEmpty")}</p>
                                         ) : (
                                                 <ul className='space-y-2 text-brand-text'>
-                                                        {sortedRootCategories.map((category) => (
+                                                        {sortedCategories.map((category) => (
                                                                 <li key={category._id}>
                                                                         <Link
                                                                                 to={`/category/${category.slug}`}
