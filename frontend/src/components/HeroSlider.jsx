@@ -70,7 +70,7 @@ const HeroSlider = ({ slides = [] }) => {
 
         return (
                 <section className='relative h-[42vh] min-h-[280px] w-full overflow-hidden rounded-3xl border border-brand-primary/25 bg-white shadow-sm sm:h-[55vh] sm:min-h-[360px] lg:h-[65vh]'>
-                        <div className='absolute inset-0 bg-gradient-to-b from-white via-white/60 to-transparent' aria-hidden='true' />
+                        <div className='absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-transparent' aria-hidden='true' />
                         {items.map((item, index) => {
                                 const isActive = index === activeIndex;
                                 const title = item.title || item.name || "";
@@ -102,7 +102,7 @@ const HeroSlider = ({ slides = [] }) => {
                                                                 لا توجد صورة للعرض
                                                         </div>
                                                 )}
-                                                <div className='absolute inset-0 bg-gradient-to-t from-white via-white/80 to-white/30' />
+                                                <div className='absolute inset-0 bg-gradient-to-t from-black/55 via-black/25 to-transparent' />
                                                 <div className='absolute inset-0 flex flex-col justify-end px-6 pb-10 text-brand-text sm:px-10 lg:px-16'>
                                                         <span className='mb-4 inline-flex w-max rounded-full border border-brand-primary/40 bg-white/80 px-4 py-1 text-xs uppercase tracking-[0.45em] text-brand-muted backdrop-blur-sm'>
                                                                 offer

@@ -3,7 +3,7 @@ import useTranslation from "../hooks/useTranslation";
 import CategoryItem from "../components/CategoryItem";
 import { useProductStore } from "../stores/useProductStore";
 import FeaturedProducts from "../components/FeaturedProducts";
-import { selectRootCategories, useCategoryStore } from "../stores/useCategoryStore";
+import { useCategoryStore } from "../stores/useCategoryStore";
 import HeroSlider from "../components/HeroSlider";
 import SearchBanner from "../components/SearchBanner";
 import ProductCard from "../components/ProductCard";
@@ -21,7 +21,7 @@ const HomePage = () => {
         } = useProductStore();
         const fetchCategories = useCategoryStore((state) => state.fetchCategories);
         const categoriesLoading = useCategoryStore((state) => state.loading);
-        const rootCategories = useCategoryStore(selectRootCategories);
+        const categories = useCategoryStore((state) => state.categories);
         const { slides: heroSlides, fetchSlides } = useHeroSliderStore();
         const { t } = useTranslation();
         const [searchQuery, setSearchQuery] = useState("");
@@ -31,7 +31,7 @@ const HomePage = () => {
         }, [fetchFeaturedProducts]);
 
         useEffect(() => {
-                fetchCategories({ rootOnly: false });
+                fetchCategories();
         }, [fetchCategories]);
 
         useEffect(() => {
@@ -169,12 +169,12 @@ const HomePage = () => {
                                                         </header>
 
                                                         <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'>
-                                                                {rootCategories.length === 0 && !categoriesLoading && (
+                                                                {categories.length === 0 && !categoriesLoading && (
                                                                         <div className='col-span-full rounded-2xl border border-brand-primary/15 bg-white px-6 py-10 text-center text-brand-muted shadow-sm'>
                                                                                 {t("categories.manager.list.empty")}
                                                                         </div>
                                                                 )}
-                                                                {rootCategories.map((category) => (
+                                                                {categories.map((category) => (
                                                                         <CategoryItem category={category} key={category._id} />
                                                                 ))}
                                                         </div>

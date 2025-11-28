@@ -52,6 +52,12 @@ const productSchema = new mongoose.Schema(
                                 },
                         ],
                         default: [],
+                        validate: {
+                                validator(categories) {
+                                        return !Array.isArray(categories) || categories.length <= 1;
+                                },
+                                message: "A product can belong to at most one category",
+                        },
                 },
                 isFeatured: {
                         type: Boolean,
