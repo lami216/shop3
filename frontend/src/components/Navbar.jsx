@@ -44,7 +44,7 @@ const Navbar = () => {
         const cartLink = (
                 <Link
                         to={'/cart'}
-                        className='relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/40 bg-black text-white transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
+                        className='relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/40 bg-white text-brand-primary shadow-golden transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
                         aria-label={t("nav.cart")}
                         onClick={closeMenu}
                 >
@@ -97,7 +97,7 @@ const Navbar = () => {
                                 <div className='mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:h-28'>
                                         <button
                                                 type='button'
-                                                className='inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/30 bg-black text-white transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
+                                                className='inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-primary/30 bg-white text-brand-primary shadow-golden transition duration-150 ease-out hover:border-brand-primary hover:shadow-golden'
                                                 onClick={() => setIsMenuOpen((value) => !value)}
                                                 aria-label={t("nav.menu")}
                                         >
