@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useTranslation from "../hooks/useTranslation";
 import { formatMRU } from "../lib/formatMRU";
 import { createOfferWhatsAppUrl } from "../lib/whatsapp";
 
 const AUTO_PLAY_INTERVAL = 6500;
+const SWIPE_THRESHOLD_PX = 12;
 
 const HeroSlider = ({ slides = [] }) => {
         const { t } = useTranslation();
@@ -28,6 +29,14 @@ const HeroSlider = ({ slides = [] }) => {
                         });
         }, [slides]);
         const [activeIndex, setActiveIndex] = useState(0);
+        const pointerStateRef = useRef({
+                pointerId: null,
+                startX: 0,
+                startY: 0,
+                isDragging: false,
+                swipeDeltaX: 0,
+        });
+        const blockClickRef = useRef(false);
 
         useEffect(() => {
                 if (!items.length) return undefined;
@@ -68,6 +77,62 @@ const HeroSlider = ({ slides = [] }) => {
                 });
         };
 
+        const handlePointerDown = (event) => {
+                pointerStateRef.current = {
+                        pointerId: event.pointerId,
+                        startX: event.clientX,
+                        startY: event.clientY,
+                        isDragging: false,
+                        swipeDeltaX: 0,
+                };
+                if (event.currentTarget.setPointerCapture) {
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                }
+        };
+
+        const handlePointerMove = (event) => {
+                if (pointerStateRef.current.pointerId !== event.pointerId) return;
+                const deltaX = event.clientX - pointerStateRef.current.startX;
+                const deltaY = event.clientY - pointerStateRef.current.startY;
+                if (
+                        !pointerStateRef.current.isDragging &&
+                        Math.abs(deltaX) > SWIPE_THRESHOLD_PX &&
+                        Math.abs(deltaX) > Math.abs(deltaY)
+                ) {
+                        pointerStateRef.current.isDragging = true;
+                        blockClickRef.current = true;
+                }
+                if (pointerStateRef.current.isDragging) {
+                        pointerStateRef.current.swipeDeltaX = deltaX;
+                }
+        };
+
+        const handlePointerEnd = (event) => {
+                if (pointerStateRef.current.pointerId !== event.pointerId) return;
+                if (pointerStateRef.current.isDragging) {
+                        if (pointerStateRef.current.swipeDeltaX < 0) {
+                                goTo("next");
+                        } else {
+                                goTo("prev");
+                        }
+                }
+                pointerStateRef.current = {
+                        pointerId: null,
+                        startX: 0,
+                        startY: 0,
+                        isDragging: false,
+                        swipeDeltaX: 0,
+                };
+        };
+
+        const handleClick = (event) => {
+                if (blockClickRef.current) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        blockClickRef.current = false;
+                }
+        };
+
         return (
                 <section className='relative h-[42vh] min-h-[280px] w-full overflow-hidden rounded-3xl border border-brand-primary/25 bg-white shadow-sm sm:h-[55vh] sm:min-h-[360px] lg:h-[65vh]'>
                         {items.map((item, index) => {
@@ -86,7 +151,7 @@ const HeroSlider = ({ slides = [] }) => {
                                         <article
                                                 key={`${item._id || item.image || index}`}
                                                 className={`absolute inset-0 transition-opacity duration-[1200ms] ease-out ${
-                                                        isActive ? "opacity-100" : "opacity-0"
+                                                        isActive ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
                                                 }`}
                                                 aria-hidden={!isActive}
                                         >
@@ -95,8 +160,13 @@ const HeroSlider = ({ slides = [] }) => {
                                                                 href={whatsappUrl}
                                                                 target='_blank'
                                                                 rel='noopener noreferrer'
-                                                                className='block h-full w-full'
+                                                                className='block h-full w-full touch-pan-y'
                                                                 aria-label={t("home.hero.whatsappCtaAria", { title: title || t("home.hero.offerFallback") })}
+                                                                onPointerDown={handlePointerDown}
+                                                                onPointerMove={handlePointerMove}
+                                                                onPointerUp={handlePointerEnd}
+                                                                onPointerCancel={handlePointerEnd}
+                                                                onClick={handleClick}
                                                         >
                                                                 <img
                                                                         src={item.image}
@@ -105,7 +175,13 @@ const HeroSlider = ({ slides = [] }) => {
                                                                 />
                                                         </a>
                                                 ) : (
-                                                        <div className='flex h-full w-full items-center justify-center bg-black/60 text-brand-muted'>
+                                                        <div
+                                                                className='flex h-full w-full items-center justify-center bg-black/60 text-brand-muted'
+                                                                onPointerDown={handlePointerDown}
+                                                                onPointerMove={handlePointerMove}
+                                                                onPointerUp={handlePointerEnd}
+                                                                onPointerCancel={handlePointerEnd}
+                                                        >
                                                                 لا توجد صورة للعرض
                                                         </div>
                                                 )}
@@ -137,18 +213,18 @@ const HeroSlider = ({ slides = [] }) => {
                                         <button
                                                 type='button'
                                                 onClick={() => goTo("prev")}
-                                                className='absolute left-6 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 p-3 text-brand-text transition duration-150 ease-out hover:border-brand-primary hover:bg-brand-primary/20 md:flex'
+                                                className='absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/30 text-brand-text backdrop-blur transition duration-150 ease-out hover:border-brand-primary hover:bg-brand-primary/20 md:left-6 md:h-11 md:w-11'
                                                 aria-label='السابق'
                                         >
-                                                <ChevronLeft size={24} />
+                                                <ChevronLeft size={26} />
                                         </button>
                                         <button
                                                 type='button'
                                                 onClick={() => goTo("next")}
-                                                className='absolute right-6 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 p-3 text-brand-text transition duration-150 ease-out hover:border-brand-primary hover:bg-brand-primary/20 md:flex'
+                                                className='absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/30 text-brand-text backdrop-blur transition duration-150 ease-out hover:border-brand-primary hover:bg-brand-primary/20 md:right-6 md:h-11 md:w-11'
                                                 aria-label='التالي'
                                         >
-                                                <ChevronRight size={24} />
+                                                <ChevronRight size={26} />
                                         </button>
                                 </>
                         )}
