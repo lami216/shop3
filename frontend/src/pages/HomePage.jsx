@@ -109,6 +109,13 @@ const HomePage = () => {
                                         isLoading={showOnlySearchResults && searchLoading}
                                 />
 
+                                <div className='space-y-2 text-right'>
+                                        <h2 className='text-[clamp(1.5rem,3vw,2.25rem)] font-semibold text-brand-primary'>
+                                                عروض
+                                        </h2>
+                                        <p className='text-sm text-brand-muted'>اضغط على الصورة لشراء العرض</p>
+                                </div>
+
                                 <HeroSlider slides={slides} />
 
                                 <div className='space-y-6'>
