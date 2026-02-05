@@ -50,12 +50,12 @@ const AdminPage = () => {
                                         {t("admin.dashboardTitle")}
                                 </motion.h1>
 
-                                <div className='flex justify-center mb-8'>
+                                <div className='mb-8 flex justify-start gap-2 overflow-x-auto whitespace-nowrap [-webkit-overflow-scrolling:touch] sm:justify-center'>
                                         {tabs.map((tab) => (
                                                 <button
                                                         key={tab.id}
                                                         onClick={() => setActiveTab(tab.id)}
-                                                        className={`mx-2 flex items-center rounded-md px-4 py-2 transition-colors duration-200 ${
+                                                        className={`flex flex-none items-center rounded-md px-4 py-2 transition-colors duration-200 ${
                                                                 activeTab === tab.id
                                                                         ? "bg-payzone-gold text-payzone-navy"
                                                                         : "bg-white/10 text-white/80 hover:bg-white/20"

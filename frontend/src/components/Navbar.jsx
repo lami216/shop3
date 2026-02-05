@@ -81,7 +81,7 @@ const Navbar = () => {
                                 </Link>
                                 <Link
                                         to={'/login'}
-                                        className='inline-flex items-center justify-center gap-2 rounded-full border border-brand-primary/60 px-6 py-3 text-sm font-semibold text-brand-primary transition duration-150 ease-out hover:border-brand-primary hover:bg-brand-primary/10'
+                                        className='inline-flex items-center justify-center gap-2 rounded-full border border-white/60 px-6 py-3 text-sm font-semibold text-white transition duration-150 ease-out hover:border-white hover:bg-white/10'
                                         onClick={closeMenu}
                                 >
                                         <LogIn size={18} />
@@ -127,7 +127,7 @@ const Navbar = () => {
                         />
 
                         <aside
-                                className={`fixed top-0 right-0 z-50 flex h-full w-full max-w-sm flex-col gap-8 overflow-y-auto border-l border-brand-primary/20 bg-brand-bg/95 px-6 py-24 text-brand-text shadow-golden backdrop-blur-md transition-transform duration-300 ease-out ${
+                                className={`fixed top-0 right-0 z-50 flex h-full w-full max-w-sm flex-col gap-8 overflow-y-auto border-l border-brand-primary/20 bg-brand-bg/95 px-6 py-24 text-white shadow-golden backdrop-blur-md transition-transform duration-300 ease-out ${
                                         isMenuOpen ? "translate-x-0" : "translate-x-full"
                                 }`}
                         >
@@ -159,7 +159,7 @@ const Navbar = () => {
                                                                 <Lock size={18} />
                                                                 {t("nav.dashboard")}
                                                         </span>
-                                                        <span className='text-xs uppercase tracking-[0.25em] text-brand-muted'>VIP</span>
+                                                        <span className='text-xs uppercase tracking-[0.25em] text-white/90'>VIP</span>
                                                 </Link>
                                         )}
                                         <Link
@@ -190,17 +190,17 @@ const Navbar = () => {
                                         </Link>
                                 </nav>
 
-                                <section className='space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-brand-muted'>
-                                        <div className='flex items-center gap-2 text-brand-text'>
+                                <section className='space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/90'>
+                                        <div className='flex items-center gap-2 text-white'>
                                                 <ListTree size={18} />
                                                 <h3 className='text-base font-semibold'>{t("nav.categoriesHeading")}</h3>
                                         </div>
                                         {categoriesLoading ? (
-                                                <p className='text-sm text-brand-muted'>{t("common.loading")}</p>
+                                                <p className='text-sm text-white/80'>{t("common.loading")}</p>
                                         ) : sortedCategories.length === 0 ? (
-                                                <p className='text-sm text-brand-muted'>{t("nav.categoriesEmpty")}</p>
+                                                <p className='text-sm text-white/80'>{t("nav.categoriesEmpty")}</p>
                                         ) : (
-                                                <ul className='space-y-2 text-brand-text'>
+                                                <ul className='space-y-2 text-white'>
                                                         {sortedCategories.map((category) => (
                                                                 <li key={category._id}>
                                                                         <Link
@@ -217,9 +217,9 @@ const Navbar = () => {
                                         )}
                                 </section>
 
-                                <div className='mt-auto space-y-4 border-t border-white/10 pt-6 text-sm text-brand-muted'>
+                                <div className='mt-auto space-y-4 border-t border-white/10 pt-6 text-sm text-white/90'>
                                         {renderAuthActions()}
-                                        <p className='text-center text-xs uppercase tracking-[0.35em] text-brand-muted/80'>
+                                        <p className='text-center text-xs uppercase tracking-[0.35em] text-white/80'>
                                                 crafted with passion for perfume lovers
                                         </p>
                                 </div>
