@@ -69,8 +69,9 @@ export const getPublicInventorySummary = async (req, res) => {
     const productIds = rawIds.filter((id) => mongoose.Types.ObjectId.isValid(id)).map((id)=>new mongoose.Types.ObjectId(id));
     if (!productIds.length) return res.json({ items: [] });
     const summaries = await getInventorySummaries(productIds);
-    const items = productIds.map((id) => ({ productId: id.toString(), ...(summaries.get(id.toString()) || { totalQuantity: 0, reservedQuantity: 0, availableQuantity: 0 }) }));
-    res.json({ items });
+    const lowStockThreshold = Number(process.env.LOW_STOCK_THRESHOLD || 3);
+    const items = productIds.map((id) => ({ productId: id.toString(), lowStockThreshold, ...(summaries.get(id.toString()) || { totalQuantity: 0, reservedQuantity: 0, availableQuantity: 0 }) }));
+    res.json({ items, lowStockThreshold });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -74,7 +74,7 @@ const ProductCard = ({ product }) => {
                                                 <span className='text-2xl font-semibold text-brand-primary'>{formatMRU(price)}</span>
                                         )}
                                 </div>
-                                <p className="text-xs text-brand-muted">{outOfStock ? "Out of stock" : reserved > 0 ? `${available} available, ${reserved} reserved` : `${available} available`}</p>
+                                <p className="text-xs text-brand-muted">{outOfStock ? 'Out of stock' : available <= (inventory?.lowStockThreshold ?? 3) ? `Only ${available} left${reserved > 0 ? `, ${reserved} reserved` : ''}` : reserved > 0 ? `${available} available, ${reserved} reserved` : `${available} available`}</p>
                                 <button disabled={outOfStock} className='golden-button mt-auto text-xs uppercase tracking-[0.35em] disabled:opacity-50' onClick={handleAddToCart}>
                                         <ShoppingCart size={18} />
                                         {t("common.actions.addToCart")}

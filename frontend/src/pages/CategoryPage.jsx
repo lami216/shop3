@@ -46,7 +46,6 @@ const CategoryPage = () => {
                 }
         }, [categories, category, fetchCategories]);
 
-        const currentCategoryId = currentCategory?._id;
 
         const categoryName = useMemo(() => {
                 if (currentCategory) {
