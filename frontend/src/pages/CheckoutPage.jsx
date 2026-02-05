@@ -7,6 +7,7 @@ import { useCartStore } from "../stores/useCartStore";
 import { formatMRU } from "../lib/formatMRU";
 import { formatNumberEn } from "../lib/formatNumberEn";
 import { getProductPricing } from "../lib/getProductPricing";
+import { useOrderStore } from "../stores/useOrderStore";
 
 const CheckoutPage = () => {
         const { cart, total, subtotal, coupon, isCouponApplied, clearCart } = useCartStore();
@@ -16,6 +17,7 @@ const CheckoutPage = () => {
         const [address, setAddress] = useState("");
         const [whatsAppError, setWhatsAppError] = useState("");
         const { t } = useTranslation();
+        const { createOrder } = useOrderStore();
 
         useEffect(() => {
                 const hasPendingWhatsAppRedirect = sessionStorage.getItem("whatsappOrderSent");
@@ -26,14 +28,6 @@ const CheckoutPage = () => {
                 }
         }, [cart, navigate, t]);
 
-        useEffect(() => {
-                const shouldRedirect = sessionStorage.getItem("whatsappOrderSent");
-
-                if (shouldRedirect) {
-                        sessionStorage.removeItem("whatsappOrderSent");
-                        navigate("/purchase-success", { replace: true });
-                }
-        }, [navigate]);
 
         const normalizedWhatsAppNumber = whatsAppNumber.replace(/\D/g, "");
         const isWhatsAppValid = /^\d{8}$/.test(normalizedWhatsAppNumber);
@@ -91,86 +85,17 @@ const CheckoutPage = () => {
                         return;
                 }
 
-                const displayCustomerNumber = normalizedWhatsAppNumber || whatsAppNumber;
-
-                const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
-                const orderDetailsPayload = {
-                        customerName: customerName.trim(),
-                        phone: displayCustomerNumber,
-                        address: address.trim(),
-                        items: cart.map((item) => {
-                                const { price, discountedPrice, discountPercentage, isDiscounted } =
-                                        getProductPricing(item);
-                                return {
-                                        id: item._id,
-                                        name: item.name,
-                                        description: item.description,
-                                        image: item.image,
-                                        price: discountedPrice,
-                                        originalPrice: price,
-                                        discountPercentage,
-                                        isDiscounted,
-                                        quantity: item.quantity,
-                                };
-                        }),
-                        summary: {
-                                subtotal,
-                                total,
-                                totalQuantity,
-                        },
-                };
-
-                sessionStorage.setItem("lastOrderDetails", JSON.stringify(orderDetailsPayload));
-
-                const messageLines = [
-                        t("checkout.messages.newOrder", { name: customerName }),
-                        t("checkout.messages.customerWhatsApp", { number: displayCustomerNumber }),
-                        t("checkout.messages.address", { address }),
-                        "",
-                        t("checkout.messages.productsHeader"),
-                        ...productsSummary,
-                ];
-
-                if (productsSummary.length === 0) {
-                        messageLines.push(t("checkout.messages.noProducts"));
-                }
-
-                if (coupon && isCouponApplied) {
-                        const discountPercentage = formatNumberEn(coupon.discountPercentage);
-                        messageLines.push(
-                                "",
-                                t("checkout.messages.coupon", {
-                                        code: coupon.code,
-                                        discount: discountPercentage,
-                                })
-                        );
-                }
-
-                if (savings > 0) {
-                        messageLines.push("", t("checkout.messages.savings", { amount: formatMRU(savings) }));
-                }
-
-                messageLines.push("", t("checkout.messages.total", { amount: formatMRU(total) }));
-                messageLines.push("", t("checkout.messages.thanks"));
-
-                const DEFAULT_STORE_WHATSAPP_NUMBER = "22231117700";
-                const envStoreNumber = import.meta.env.VITE_STORE_WHATSAPP_NUMBER;
-                const storeNumber = envStoreNumber?.replace(/\D/g, "") || DEFAULT_STORE_WHATSAPP_NUMBER;
-
-                const whatsappURL = new URL("https://wa.me/" + storeNumber);
-                whatsappURL.searchParams.set("text", messageLines.join("\n"));
-
                 try {
-                        window.open(whatsappURL.toString(), "_blank");
-                        sessionStorage.setItem("whatsappOrderSent", "true");
-                        toast.success(t("checkout.messages.orderSent"));
-                        await clearCart();
-                        navigate("/purchase-success", {
-                                state: { orderType: "whatsapp", orderDetails: orderDetailsPayload },
+                        const order = await createOrder({
+                                customerName: customerName.trim(),
+                                phone: normalizedWhatsAppNumber,
+                                address: address.trim(),
+                                items: cart.map((item) => ({ productId: item._id, quantity: item.quantity })),
                         });
+                        await clearCart();
+                        navigate(`/payment/${order.orderId}`);
                 } catch (error) {
-                        console.error("Unable to automatically open WhatsApp order", error);
-                        toast.error(t("common.messages.whatsAppOpenFailed"));
+                        toast.error(error.response?.data?.message || "Failed to create order");
                 }
         };
 
