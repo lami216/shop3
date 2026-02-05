@@ -63,7 +63,8 @@ function App() {
                                         <Route path='/products/:id' element={<ProductDetailPage />} />
                                         <Route path='/cart' element={<CartPage />} />
                                         <Route path='/checkout' element={<CheckoutPage />} />
-                                        <Route path='/payment/:id' element={<PaymentPage />} />
+                                        <Route path='/pay/:trackingCode' element={<PaymentPage />} />
+                                        <Route path='/track' element={<TrackingPage />} />
                                         <Route path='/track-order' element={<TrackingPage />} />
                                         <Route path='/my-orders' element={user ? <MyOrdersPage /> : <Navigate to='/login' />} />
                                         <Route path='/purchase-success' element={<PurchaseSuccessPage />} />

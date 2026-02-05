@@ -8,8 +8,10 @@ import {
   getMyOrders,
   getOrderByTracking,
   getOrderPaymentSession,
+  getOrderPaymentSessionByTracking,
   rejectOrder,
   submitPaymentProof,
+  submitPaymentProofByTracking,
 } from "../controllers/order.controller.js";
 
 const router = express.Router();
@@ -17,6 +19,8 @@ const router = express.Router();
 router.post("/", createOrder);
 router.get("/my", protectRoute, getMyOrders);
 router.get("/tracking/:trackingCode", getOrderByTracking);
+router.get("/tracking/:trackingCode/payment-session", getOrderPaymentSessionByTracking);
+router.post("/tracking/:trackingCode/payment-proof", submitPaymentProofByTracking);
 router.get("/:id/payment-session", getOrderPaymentSession);
 router.post("/:id/payment-proof", submitPaymentProof);
 router.get("/admin/all", protectRoute, adminRoute, getAdminOrders);

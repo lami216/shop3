@@ -177,6 +177,17 @@ const Navbar = () => {
                                                         </span>
                                                 )}
                                         </Link>
+
+                                        <Link
+                                                to={'/track'}
+                                                onClick={closeMenu}
+                                                className='flex items-center justify-between rounded-lg border border-transparent px-4 py-3 transition duration-150 ease-out hover:border-brand-primary/40 hover:bg-white/5'
+                                        >
+                                                <span className='flex items-center gap-3'>
+                                                        <PackageSearch size={18} />
+                                                        تتبع الطلب
+                                                </span>
+                                        </Link>
                                 </nav>
 
                                 <section className='space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-brand-muted'>

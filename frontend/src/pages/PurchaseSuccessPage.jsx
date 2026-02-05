@@ -20,7 +20,7 @@ const PurchaseSuccessPage = () => {
 
         <div className='flex flex-wrap gap-3'>
           {order?.trackingCode ? (
-            <Link className='rounded bg-payzone-gold px-4 py-2 font-semibold text-payzone-navy' to={`/track-order?code=${order.trackingCode}`}>
+            <Link className='rounded bg-payzone-gold px-4 py-2 font-semibold text-payzone-navy' to={`/track?code=${order.trackingCode}`}>
               Track this order
             </Link>
           ) : null}
