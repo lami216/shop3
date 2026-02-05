@@ -2,6 +2,7 @@ import { create } from "zustand";
 import toast from "react-hot-toast";
 import apiClient from "../lib/apiClient";
 import { translate } from "../lib/locale";
+import { useInventoryStore } from "./useInventoryStore";
 
 export const useProductStore = create((set, get) => ({
         products: [],
@@ -29,6 +30,7 @@ export const useProductStore = create((set, get) => ({
                                 loading: false,
                         }));
                         toast.success(translate("common.messages.productCreated"));
+                        await useInventoryStore.getState().fetchPublicSummary([data._id]);
                         return data;
                 } catch (error) {
                         toast.error(error.response?.data?.message || translate("toast.createProductError"));
@@ -63,6 +65,7 @@ export const useProductStore = create((set, get) => ({
                 try {
                         const data = await apiClient.get(`/products`);
                         get().setProducts(data.products);
+                        await useInventoryStore.getState().fetchPublicSummary((data.products || []).map((p)=>p._id));
                         set({ loading: false });
                 } catch (error) {
                         set({ error: translate("toast.fetchProductsError"), loading: false });
@@ -74,6 +77,7 @@ export const useProductStore = create((set, get) => ({
                 try {
                         const data = await apiClient.get(`/products/category/${category}`);
                         get().setProducts(data.products);
+                        await useInventoryStore.getState().fetchPublicSummary((data.products || []).map((p)=>p._id));
                         set({ loading: false });
                 } catch (error) {
                         set({ error: translate("toast.fetchProductsError"), loading: false });
@@ -103,6 +107,7 @@ export const useProductStore = create((set, get) => ({
                                         productDetailsLoading: false,
                                 };
                         });
+                        await useInventoryStore.getState().fetchPublicSummary([data._id]);
                         return data;
                 } catch (error) {
                         set({ productDetailsLoading: false });
@@ -190,6 +195,7 @@ export const useProductStore = create((set, get) => ({
                         const data = await apiClient.get(`/products/search${queryString ? `?${queryString}` : ""}`);
                         const results = Array.isArray(data?.products) ? data.products : [];
                         set({ searchResults: results, searchLoading: false });
+                        await useInventoryStore.getState().fetchPublicSummary(results.map((p)=>p._id));
                         return results;
                 } catch (error) {
                         set({ searchResults: [], searchLoading: false });

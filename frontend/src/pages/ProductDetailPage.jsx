@@ -8,6 +8,7 @@ import { formatMRU } from "../lib/formatMRU";
 import PeopleAlsoBought from "../components/PeopleAlsoBought";
 import useTranslation from "../hooks/useTranslation";
 import { getProductPricing } from "../lib/getProductPricing";
+import { useInventoryStore } from "../stores/useInventoryStore";
 
 const resolveCoverImage = (product) => {
         if (!product) return null;
@@ -249,7 +250,8 @@ const ProductDetailPage = () => {
                                                         </p>
                                                 </div>
 
-                                                <button onClick={handleAddToCart} className='golden-button text-xs uppercase tracking-[0.45em]'>
+                                                <p className='text-sm text-brand-muted'>{available <= 0 ? 'Out of stock' : reserved > 0 ? `${available} available, ${reserved} reserved` : `${available} available`}</p>
+                                                <button disabled={available <= 0} onClick={handleAddToCart} className='golden-button text-xs uppercase tracking-[0.45em] disabled:opacity-50'>
                                                         {t("common.actions.addToCart")}
                                                 </button>
                                         </div>

@@ -4,10 +4,15 @@ import useTranslation from "../hooks/useTranslation";
 import { useCartStore } from "../stores/useCartStore";
 import { formatMRU } from "../lib/formatMRU";
 import { getProductPricing } from "../lib/getProductPricing";
+import { useInventoryStore } from "../stores/useInventoryStore";
 
 const ProductCard = ({ product }) => {
         const { addToCart } = useCartStore();
         const { t } = useTranslation();
+        const inventory = useInventoryStore((state) => state.publicMap[product._id]);
+        const available = inventory?.availableQuantity ?? 0;
+        const reserved = inventory?.reservedQuantity ?? 0;
+        const outOfStock = available <= 0;
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(product);
         const productForCart = {
                 ...product,
@@ -69,7 +74,8 @@ const ProductCard = ({ product }) => {
                                                 <span className='text-2xl font-semibold text-brand-primary'>{formatMRU(price)}</span>
                                         )}
                                 </div>
-                                <button className='golden-button mt-auto text-xs uppercase tracking-[0.35em]' onClick={handleAddToCart}>
+                                <p className="text-xs text-brand-muted">{outOfStock ? "Out of stock" : reserved > 0 ? `${available} available, ${reserved} reserved` : `${available} available`}</p>
+                                <button disabled={outOfStock} className='golden-button mt-auto text-xs uppercase tracking-[0.35em] disabled:opacity-50' onClick={handleAddToCart}>
                                         <ShoppingCart size={18} />
                                         {t("common.actions.addToCart")}
                                 </button>
