@@ -25,8 +25,35 @@ export const useOrderStore = create((set) => ({
       toast.error(error.response?.data?.message || "Failed to load orders");
     }
   },
-  approveOrder: async (id) => apiClient.patch(`/orders/${id}/approve`),
-  rejectOrder: async (id) => apiClient.patch(`/orders/${id}/reject`),
+  approveOrder: async (id) => {
+    try {
+      const data = await apiClient.patch(`/orders/${id}/approve`);
+      set((state) => ({
+        adminOrders: state.adminOrders.map((order) => (order._id === id ? data.order : order)),
+      }));
+      toast.success("Order approved");
+      return data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to approve order");
+      throw error;
+    }
+  },
+  rejectOrder: async (id) => {
+    try {
+      const data = await apiClient.patch(`/orders/${id}/reject`);
+      set((state) => ({
+        adminOrders: state.adminOrders.map((order) => (order._id === id ? (data.order || { ...order, status: "REJECTED" }) : order)),
+      }));
+      toast.success("Order rejected");
+      return data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to reject order");
+      throw error;
+    }
+  },
+  createPosInvoice: async (payload) => {
+    return apiClient.post("/orders/admin/pos-invoice", payload);
+  },
   fetchMyOrders: async () => {
     const data = await apiClient.get("/orders/my");
     set({ myOrders: data.orders || [] });

@@ -7,22 +7,27 @@ export const getAnalyticsData = async () => {
 	const totalProducts = await Product.countDocuments();
 
 	const salesData = await Order.aggregate([
+		{ $match: { status: "APPROVED" } },
 		{
 			$group: {
-				_id: null, // it groups all documents together,
+				_id: null,
 				totalSales: { $sum: 1 },
 				totalRevenue: { $sum: "$totalAmount" },
+				totalCost: { $sum: "$totalCost" },
+				totalProfit: { $sum: "$totalProfit" },
 			},
 		},
 	]);
 
-	const { totalSales, totalRevenue } = salesData[0] || { totalSales: 0, totalRevenue: 0 };
+	const { totalSales, totalRevenue, totalCost, totalProfit } = salesData[0] || { totalSales: 0, totalRevenue: 0, totalCost: 0, totalProfit: 0 };
 
 	return {
 		users: totalUsers,
 		products: totalProducts,
 		totalSales,
 		totalRevenue,
+		totalCost,
+		totalProfit,
 	};
 };
 
@@ -31,6 +36,7 @@ export const getDailySalesData = async (startDate, endDate) => {
 		const dailySalesData = await Order.aggregate([
 			{
 				$match: {
+					status: "APPROVED",
 					createdAt: {
 						$gte: startDate,
 						$lte: endDate,
@@ -42,22 +48,13 @@ export const getDailySalesData = async (startDate, endDate) => {
 					_id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
 					sales: { $sum: 1 },
 					revenue: { $sum: "$totalAmount" },
+					profit: { $sum: "$totalProfit" },
 				},
 			},
 			{ $sort: { _id: 1 } },
 		]);
 
-		// example of dailySalesData
-		// [
-		// 	{
-		// 		_id: "2024-08-18",
-		// 		sales: 12,
-		// 		revenue: 1450.75
-		// 	},
-		// ]
-
 		const dateArray = getDatesInRange(startDate, endDate);
-		// console.log(dateArray) // ['2024-08-18', '2024-08-19', ... ]
 
 		return dateArray.map((date) => {
 			const foundData = dailySalesData.find((item) => item._id === date);
@@ -66,6 +63,7 @@ export const getDailySalesData = async (startDate, endDate) => {
 				date,
 				sales: foundData?.sales || 0,
 				revenue: foundData?.revenue || 0,
+				profit: foundData?.profit || 0,
 			};
 		});
 	} catch (error) {

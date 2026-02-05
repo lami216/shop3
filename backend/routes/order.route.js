@@ -3,6 +3,7 @@ import { adminRoute, protectRoute } from "../middleware/auth.middleware.js";
 import {
   approveOrder,
   createOrder,
+  createPosInvoice,
   getAdminOrders,
   getMyOrders,
   getOrderByTracking,
@@ -19,6 +20,7 @@ router.get("/tracking/:trackingCode", getOrderByTracking);
 router.get("/:id/payment-session", getOrderPaymentSession);
 router.post("/:id/payment-proof", submitPaymentProof);
 router.get("/admin/all", protectRoute, adminRoute, getAdminOrders);
+router.post("/admin/pos-invoice", protectRoute, adminRoute, createPosInvoice);
 router.patch("/:id/approve", protectRoute, adminRoute, approveOrder);
 router.patch("/:id/reject", protectRoute, adminRoute, rejectOrder);
 

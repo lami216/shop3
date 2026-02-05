@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import PaymentMethod from "../models/paymentMethod.model.js";
@@ -36,9 +37,10 @@ export const createOrder = async (req, res) => {
       orderNumber: randomCode("ORD-"),
       trackingCode: randomCode("TRK-"),
       status: "CREATED",
+      source: "ONLINE",
     });
 
-    res.status(201).json({ orderId: order._id, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
+    res.status(201).json({ orderId: order._id, orderNumber: order.orderNumber, trackingCode: order.trackingCode, status: order.status });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -69,21 +71,27 @@ export const submitPaymentProof = async (req, res) => {
     const { paymentMethodId, paymentProofImage, senderAccount } = req.body;
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!paymentProofImage) return res.status(400).json({ message: "Payment proof is required" });
+    if (!order.paymentMethod && !paymentMethodId) {
+      return res.status(400).json({ message: "Payment method is required" });
+    }
     if (!["AWAITING_PAYMENT", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
 
-    const method = await PaymentMethod.findById(paymentMethodId);
-    if (!method) return res.status(400).json({ message: "Payment method invalid" });
+    const method = paymentMethodId ? await PaymentMethod.findById(paymentMethodId) : null;
+    if (paymentMethodId && !method) return res.status(400).json({ message: "Payment method invalid" });
 
-    order.paymentMethod = method._id;
+    if (method?._id) {
+      order.paymentMethod = method._id;
+    }
     order.paymentProofImage = paymentProofImage;
     order.paymentSenderAccount = senderAccount || "";
     order.status = "PAYMENT_SUBMITTED";
     await order.save();
 
     await sendTelegramMessage(`PAYMENT_SUBMITTED ${order.orderNumber} amount ${order.totalAmount}`);
-    res.json({ success: true, status: order.status });
+    res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -100,6 +108,9 @@ export const approveOrder = async (req, res) => {
     if (!order) return res.status(404).json({ message: "Order not found" });
     if (!["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
       return res.status(400).json({ message: "Order status invalid" });
+    }
+    if (order.source !== "POS" && !order.paymentProofImage) {
+      return res.status(400).json({ message: "Payment proof is required before approval" });
     }
 
     const deductions = await deductInventoryFIFO(order);
@@ -140,7 +151,7 @@ export const rejectOrder = async (req, res) => {
   order.reviewedAt = new Date();
   await order.save();
   await releaseOrderReservation(order._id);
-  res.json({ success: true });
+  res.json({ success: true, order });
 };
 
 export const getMyOrders = async (req, res) => {
@@ -152,4 +163,93 @@ export const getOrderByTracking = async (req, res) => {
   const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("paymentMethod", "name accountNumber");
   if (!order) return res.status(404).json({ message: "Order not found" });
   res.json({ order });
+};
+
+export const createPosInvoice = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    const { customerName, phone, address, paymentMethodId, lines } = req.body;
+    if (!Array.isArray(lines) || !lines.length) return res.status(400).json({ message: "Invoice lines are required" });
+
+    const ids = lines.map((line) => line.productId);
+    const products = await Product.find({ _id: { $in: ids } }).select("name").lean();
+    const productMap = new Map(products.map((x) => [x._id.toString(), x]));
+
+    const method = paymentMethodId ? await PaymentMethod.findById(paymentMethodId).lean() : null;
+    if (paymentMethodId && !method) return res.status(400).json({ message: "Payment method invalid" });
+
+    const orderItems = lines.map((line) => {
+      const product = productMap.get(line.productId);
+      if (!product) throw new Error("Product missing");
+      const quantity = Number(line.quantity);
+      const price = Number(line.price);
+      if (!quantity || quantity <= 0) throw new Error("Quantity must be greater than zero");
+      if (Number.isNaN(price) || price < 0) throw new Error("Price is invalid");
+      return {
+        product: line.productId,
+        quantity,
+        price,
+        lineRevenue: quantity * price,
+      };
+    });
+
+    const totalAmount = orderItems.reduce((sum, item) => sum + item.lineRevenue, 0);
+
+    let order;
+    await session.withTransaction(async () => {
+      [order] = await Order.create(
+        [
+          {
+            user: req.user?._id,
+            customer: {
+              name: customerName?.trim() || "Boutique walk-in",
+              phone: phone?.trim() || "N/A",
+              address: address?.trim() || "Boutique POS",
+            },
+            products: orderItems,
+            totalAmount,
+            orderNumber: randomCode("POS-"),
+            trackingCode: randomCode("TRK-"),
+            paymentMethod: method?._id,
+            paymentProofImage: "POS_MANUAL",
+            status: "PAYMENT_SUBMITTED",
+            source: "POS",
+            reviewedAt: new Date(),
+          },
+        ],
+        { session }
+      );
+    });
+
+    const deductions = await deductInventoryFIFO(order);
+    const costMap = new Map(deductions.map((d) => [d.productId, d.lineCost]));
+
+    let totalCost = 0;
+    order.products = order.products.map((item) => {
+      const lineCost = costMap.get(item.product.toString()) || 0;
+      const lineRevenue = item.price * item.quantity;
+      const lineProfit = lineRevenue - lineCost;
+      totalCost += lineCost;
+      return { ...item.toObject(), lineCost, lineRevenue, lineProfit, unitCost: lineCost / item.quantity };
+    });
+
+    order.totalCost = totalCost;
+    order.totalProfit = order.totalAmount - totalCost;
+    order.status = "APPROVED";
+    order.approvedAt = new Date();
+    order.reviewedAt = new Date();
+    await order.save();
+
+    res.status(201).json({
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      trackingCode: order.trackingCode,
+      status: order.status,
+      totalAmount: order.totalAmount,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  } finally {
+    await session.endSession();
+  }
 };

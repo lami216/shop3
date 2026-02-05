@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Users, Package, ShoppingCart, DollarSign } from "lucide-react";
+import { Users, Package, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
 import useTranslation from "../hooks/useTranslation";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import apiClient from "../lib/apiClient";
@@ -13,6 +13,7 @@ const AnalyticsTab = () => {
                 products: 0,
                 totalSales: 0,
                 totalRevenue: 0,
+                totalProfit: 0,
         });
         const [isLoading, setIsLoading] = useState(true);
         const [dailySalesData, setDailySalesData] = useState([]);
@@ -40,7 +41,7 @@ const AnalyticsTab = () => {
 
         return (
                 <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
-                        <div className='mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'>
+                        <div className='mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5'>
                                 <AnalyticsCard
                                         title={t("admin.analytics.cards.users")}
                                         value={formatNumberEn(analyticsData.users)}
@@ -65,6 +66,12 @@ const AnalyticsTab = () => {
                                         icon={DollarSign}
                                         gradient='from-payzone-gold via-payzone-indigo/50 to-payzone-navy'
                                 />
+                                <AnalyticsCard
+                                        title='Profit'
+                                        value={formatMRU(analyticsData.totalProfit || 0)}
+                                        icon={TrendingUp}
+                                        gradient='from-emerald-500/80 via-emerald-400/40 to-payzone-navy'
+                                />
                         </div>
                         <motion.div
                                 className='rounded-xl border border-payzone-indigo/40 bg-white/5 p-6 shadow-lg backdrop-blur-sm'
@@ -75,7 +82,7 @@ const AnalyticsTab = () => {
                                 <ResponsiveContainer width='100%' height={400}>
                                         <LineChart data={dailySalesData}>
                                                 <CartesianGrid stroke='rgba(255,255,255,0.1)' strokeDasharray='3 3' />
-                                                <XAxis dataKey='name' stroke='#F8FAFC' tick={{ fill: "#F8FAFC" }} />
+                                                <XAxis dataKey='date' stroke='#F8FAFC' tick={{ fill: "#F8FAFC" }} />
                                                 <YAxis yAxisId='left' stroke='#F8FAFC' tick={{ fill: "#F8FAFC" }} />
                                                 <YAxis yAxisId='right' orientation='right' stroke='#F8FAFC' tick={{ fill: "#F8FAFC" }} />
                                                 <Tooltip
@@ -99,6 +106,15 @@ const AnalyticsTab = () => {
                                                         strokeWidth={3}
                                                         activeDot={{ r: 8 }}
                                                         name={t("admin.analytics.chart.revenue")}
+                                                />
+                                                <Line
+                                                        yAxisId='right'
+                                                        type='monotone'
+                                                        dataKey='profit'
+                                                        stroke='#10B981'
+                                                        strokeWidth={3}
+                                                        activeDot={{ r: 8 }}
+                                                        name='Profit'
                                                 />
                                         </LineChart>
                                 </ResponsiveContainer>

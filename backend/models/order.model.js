@@ -40,6 +40,7 @@ const orderSchema = new mongoose.Schema(
       index: true,
     },
     paymentMethod: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentMethod", required: false },
+    stripeSessionId: { type: String, required: false, default: undefined },
     reservationExpiresAt: { type: Date, default: null },
     reservationStartedAt: { type: Date, default: null },
     paymentProofImage: { type: String, default: "" },
@@ -49,6 +50,7 @@ const orderSchema = new mongoose.Schema(
     rejectedAt: { type: Date, default: null },
     totalCost: { type: Number, default: 0 },
     totalProfit: { type: Number, default: 0 },
+    source: { type: String, enum: ["ONLINE", "POS"], default: "ONLINE" },
   },
   { timestamps: true }
 );

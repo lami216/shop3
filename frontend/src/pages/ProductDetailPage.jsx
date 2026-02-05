@@ -51,6 +51,9 @@ const ProductDetailPage = () => {
         const { t } = useTranslation();
         const [activeImage, setActiveImage] = useState(null);
         const [quantity, setQuantity] = useState(1);
+        const inventory = useInventoryStore((state) => state.publicMap[id]);
+        const available = inventory?.availableQuantity ?? 0;
+        const reserved = inventory?.reservedQuantity ?? 0;
 
         useEffect(() => {
                 let isMounted = true;
@@ -250,7 +253,7 @@ const ProductDetailPage = () => {
                                                         </p>
                                                 </div>
 
-                                                <p className='text-sm text-brand-muted'>{available <= 0 ? 'Out of stock' : reserved > 0 ? `${available} available, ${reserved} reserved` : `${available} available`}</p>
+                                                <p className='text-sm text-brand-muted'>{available <= 0 ? 'Out of stock' : available <= (inventory?.lowStockThreshold ?? 3) ? `Only ${available} left${reserved > 0 ? `, ${reserved} reserved` : ''}` : reserved > 0 ? `${available} available, ${reserved} reserved` : `${available} available`}</p>
                                                 <button disabled={available <= 0} onClick={handleAddToCart} className='golden-button text-xs uppercase tracking-[0.45em] disabled:opacity-50'>
                                                         {t("common.actions.addToCart")}
                                                 </button>
