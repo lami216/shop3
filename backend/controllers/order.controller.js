@@ -12,6 +12,18 @@ import {
 
 const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
+
+const reserveOrderForPayment = async (order) => {
+  if (order.status === "CREATED") {
+    const expiresAt = await reserveInventoryForOrder(order, 15);
+    order.status = "AWAITING_PAYMENT";
+    order.reservationStartedAt = new Date();
+    order.reservationExpiresAt = expiresAt;
+    await order.save();
+  }
+  return order;
+};
+
 export const createOrder = async (req, res) => {
   try {
     const { customerName, phone, address, items } = req.body;
@@ -51,13 +63,22 @@ export const getOrderPaymentSession = async (req, res) => {
     const order = await Order.findById(req.params.id).populate("products.product", "name image");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (order.status === "CREATED") {
-      const expiresAt = await reserveInventoryForOrder(order, 15);
-      order.status = "AWAITING_PAYMENT";
-      order.reservationStartedAt = new Date();
-      order.reservationExpiresAt = expiresAt;
-      await order.save();
-    }
+    await reserveOrderForPayment(order);
+
+    const methods = await PaymentMethod.find({ isActive: true });
+    res.json({ order, paymentMethods: methods });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+
+export const getOrderPaymentSessionByTracking = async (req, res) => {
+  try {
+    const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("products.product", "name image");
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    await reserveOrderForPayment(order);
 
     const methods = await PaymentMethod.find({ isActive: true });
     res.json({ order, paymentMethods: methods });
@@ -97,6 +118,38 @@ export const submitPaymentProof = async (req, res) => {
   }
 };
 
+
+export const submitPaymentProofByTracking = async (req, res) => {
+  try {
+    const { paymentMethodId, paymentProofImage, senderAccount } = req.body;
+    const order = await Order.findOne({ trackingCode: req.params.trackingCode });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!paymentProofImage) return res.status(400).json({ message: "Payment proof is required" });
+    if (!order.paymentMethod && !paymentMethodId) {
+      return res.status(400).json({ message: "Payment method is required" });
+    }
+    if (!["AWAITING_PAYMENT", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
+      return res.status(400).json({ message: "Order is not payable" });
+    }
+
+    const method = paymentMethodId ? await PaymentMethod.findById(paymentMethodId) : null;
+    if (paymentMethodId && !method) return res.status(400).json({ message: "Payment method invalid" });
+
+    if (method?._id) {
+      order.paymentMethod = method._id;
+    }
+    order.paymentProofImage = paymentProofImage;
+    order.paymentSenderAccount = senderAccount || "";
+    order.status = "PAYMENT_SUBMITTED";
+    await order.save();
+
+    await sendTelegramMessage(`PAYMENT_SUBMITTED ${order.orderNumber} amount ${order.totalAmount}`);
+    res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getAdminOrders = async (_req, res) => {
   const orders = await Order.find({}).sort({ createdAt: -1 }).populate("products.product", "name").populate("paymentMethod");
   res.json({ orders });
@@ -106,7 +159,7 @@ export const approveOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (!["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
+    if (order.status !== "PAYMENT_SUBMITTED") {
       return res.status(400).json({ message: "Order status invalid" });
     }
     if (order.source !== "POS" && !order.paymentProofImage) {
@@ -142,7 +195,7 @@ export const approveOrder = async (req, res) => {
 export const rejectOrder = async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) return res.status(404).json({ message: "Order not found" });
-  if (!["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW", "AWAITING_PAYMENT"].includes(order.status)) {
+  if (order.status !== "PAYMENT_SUBMITTED") {
     return res.status(400).json({ message: "Order status invalid" });
   }
 
