@@ -33,4 +33,13 @@ export const createOfferWhatsAppUrl = ({ title, priceFormatted }) => {
         return url.toString();
 };
 
+
+export const createOrderSupportWhatsAppUrl = ({ trackingCode }) => {
+        const number = getStoreWhatsAppNumber();
+        const message = `مرحباً، أحتاج متابعة للطلب ذو رمز التتبع ${trackingCode}.`;
+        const url = new URL(`https://wa.me/${number}`);
+        url.searchParams.set("text", message);
+        return url.toString();
+};
+
 export default createOfferWhatsAppUrl;

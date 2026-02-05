@@ -12,6 +12,11 @@ import analyticsRoutes from "./routes/analytics.route.js";
 import categoryRoutes from "./routes/category.route.js";
 import publicConfigRoutes from "./routes/publicConfig.route.js";
 import heroSlideRoutes from "./routes/heroSlide.route.js";
+import orderRoutes from "./routes/order.route.js";
+import paymentMethodRoutes from "./routes/paymentMethod.route.js";
+import bundleRoutes from "./routes/bundle.route.js";
+
+import { startOrderMaintenanceJob } from "./jobs/orderMaintenance.job.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -35,6 +40,9 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/public-config", publicConfigRoutes);
 app.use("/api/hero-slides", heroSlideRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/payment-methods", paymentMethodRoutes);
+app.use("/api/bundles", bundleRoutes);
 
 if (process.env.NODE_ENV === "production") {
 	app.use(express.static(path.join(__dirname, "/frontend/dist")));
@@ -46,4 +54,5 @@ if (process.env.NODE_ENV === "production") {
 app.listen(PORT, () => {
 	console.log(`🟢 Server is running on http://localhost:${PORT}`);
 	connectDB();
+	startOrderMaintenanceJob();
 });
