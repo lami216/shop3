@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
 
+const REVIEWABLE_STATUSES = ["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"];
+
 const OrdersTab = () => {
   const { adminOrders, fetchAdminOrders, approveOrder, rejectOrder } = useOrderStore();
 
@@ -10,8 +12,8 @@ const OrdersTab = () => {
   }, [fetchAdminOrders]);
 
   const guardTransition = (order, action) => {
-    if (order.status !== "PAYMENT_SUBMITTED") {
-      toast.error("يجب رفع إثبات الدفع أولاً");
+    if (!REVIEWABLE_STATUSES.includes(order.status)) {
+      toast.error("Order is not ready for review");
       return;
     }
     action();
@@ -20,13 +22,15 @@ const OrdersTab = () => {
   return (
     <div className='space-y-3'>
       {adminOrders.map((order) => {
-        const canReview = order.status === "PAYMENT_SUBMITTED";
+        const canReview = REVIEWABLE_STATUSES.includes(order.status);
+        const hasProof = Boolean(order.paymentProofImage) && order.paymentProofImage !== "POS_MANUAL";
         return (
           <div key={order._id} className='rounded-xl border border-white/10 bg-white/5 p-4 text-white'>
             <div className='flex justify-between'>
               <div>
                 <p className='font-semibold'>{order.orderNumber}</p>
                 <p className='text-xs opacity-70'>Tracking: {order.trackingCode}</p>
+                <p className='text-xs opacity-70'>Source: {order.source}</p>
                 <p className='text-xs opacity-70'>Status: {order.status}</p>
                 <p className='text-xs opacity-70'>Profit: {order.totalProfit || 0}</p>
               </div>
@@ -35,11 +39,11 @@ const OrdersTab = () => {
                 <p className='text-xs opacity-70'>{order.customer?.phone}</p>
               </div>
             </div>
-            {order.paymentProofImage ? <img src={order.paymentProofImage} alt='proof' className='mt-3 h-32 rounded' /> : null}
+            {hasProof ? <img src={order.paymentProofImage} alt='proof' className='mt-3 h-32 rounded' /> : null}
             <div className='mt-3 flex gap-2'>
               <button
                 className='rounded bg-green-600 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50'
-                title={canReview ? "" : "يجب رفع إثبات الدفع أولاً"}
+                title={canReview ? "" : "Order is not ready for review"}
                 disabled={!canReview}
                 onClick={() => guardTransition(order, () => approveOrder(order._id))}
               >
@@ -47,7 +51,7 @@ const OrdersTab = () => {
               </button>
               <button
                 className='rounded bg-red-600 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50'
-                title={canReview ? "" : "يجب رفع إثبات الدفع أولاً"}
+                title={canReview ? "" : "Order is not ready for review"}
                 disabled={!canReview}
                 onClick={() => guardTransition(order, () => rejectOrder(order._id))}
               >

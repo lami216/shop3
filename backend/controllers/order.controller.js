@@ -6,6 +6,7 @@ import sendTelegramMessage from "../services/telegram.service.js";
 import {
   consumeOrderReservation,
   deductInventoryFIFO,
+  getInventorySummaries,
   releaseOrderReservation,
   reserveInventoryForOrder,
 } from "../services/inventory.service.js";
@@ -39,6 +40,16 @@ export const createOrder = async (req, res) => {
       const price = p.isDiscounted && p.discountPercentage > 0 ? Number((p.price * (1 - p.discountPercentage / 100)).toFixed(2)) : p.price;
       return { product: p._id, quantity: item.quantity, price, lineRevenue: price * item.quantity };
     });
+
+    const productIds = orderItems.map((item) => item.product);
+    const summaries = await getInventorySummaries(productIds);
+    for (const item of orderItems) {
+      const summary = summaries.get(item.product.toString()) || { availableQuantity: 0 };
+      if (summary.availableQuantity < item.quantity) {
+        const product = map.get(item.product.toString());
+        return res.status(400).json({ message: `Insufficient stock for ${product?.name || "selected product"}` });
+      }
+    }
 
     const totalAmount = orderItems.reduce((sum, x) => sum + x.price * x.quantity, 0);
     const order = await Order.create({
@@ -159,7 +170,7 @@ export const approveOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (order.status !== "PAYMENT_SUBMITTED") {
+    if (!["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
       return res.status(400).json({ message: "Order status invalid" });
     }
     if (order.source !== "POS" && !order.paymentProofImage) {
@@ -195,7 +206,7 @@ export const approveOrder = async (req, res) => {
 export const rejectOrder = async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) return res.status(404).json({ message: "Order not found" });
-  if (order.status !== "PAYMENT_SUBMITTED") {
+  if (!["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
     return res.status(400).json({ message: "Order status invalid" });
   }
 
@@ -221,21 +232,23 @@ export const getOrderByTracking = async (req, res) => {
 export const createPosInvoice = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-    const { customerName, phone, address, paymentMethodId, lines } = req.body;
-    if (!Array.isArray(lines) || !lines.length) return res.status(400).json({ message: "Invoice lines are required" });
+    const { customerName, phone, address, paymentMethodId, lines, items } = req.body;
+    const invoiceItems = Array.isArray(items) && items.length ? items : lines;
+    if (!Array.isArray(invoiceItems) || !invoiceItems.length) return res.status(400).json({ message: "Invoice items are required" });
+    if (!paymentMethodId) return res.status(400).json({ message: "Payment method is required" });
 
-    const ids = lines.map((line) => line.productId);
+    const ids = invoiceItems.map((line) => line.productId);
     const products = await Product.find({ _id: { $in: ids } }).select("name").lean();
     const productMap = new Map(products.map((x) => [x._id.toString(), x]));
 
-    const method = paymentMethodId ? await PaymentMethod.findById(paymentMethodId).lean() : null;
-    if (paymentMethodId && !method) return res.status(400).json({ message: "Payment method invalid" });
+    const method = await PaymentMethod.findById(paymentMethodId).lean();
+    if (!method) return res.status(400).json({ message: "Payment method invalid" });
 
-    const orderItems = lines.map((line) => {
+    const orderItems = invoiceItems.map((line) => {
       const product = productMap.get(line.productId);
       if (!product) throw new Error("Product missing");
-      const quantity = Number(line.quantity);
-      const price = Number(line.price);
+      const quantity = Number(line.qty ?? line.quantity);
+      const price = Number(line.unitPrice ?? line.price);
       if (!quantity || quantity <= 0) throw new Error("Quantity must be greater than zero");
       if (Number.isNaN(price) || price < 0) throw new Error("Price is invalid");
       return {

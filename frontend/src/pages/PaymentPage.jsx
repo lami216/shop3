@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Copy } from "lucide-react";
 import { useOrderStore } from "../stores/useOrderStore";
@@ -15,7 +15,6 @@ const toBase64 = (file) =>
 
 const PaymentPage = () => {
   const { trackingCode } = useParams();
-  const navigate = useNavigate();
   const { getPaymentSessionByTracking, submitPaymentProofByTracking } = useOrderStore();
   const [session, setSession] = useState(null);
   const [methodId, setMethodId] = useState("");
@@ -25,6 +24,7 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState(null);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -35,14 +35,15 @@ const PaymentPage = () => {
           setMethodId(data.paymentMethods[0]._id);
         }
       } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to load payment session");
-        navigate("/track", { replace: true });
+        const message = error.response?.data?.message || "Failed to load payment session";
+        setLoadError(message);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [trackingCode, getPaymentSessionByTracking, navigate]);
+  }, [trackingCode, getPaymentSessionByTracking]);
 
   const secondsLeft = useMemo(() => {
     if (!session?.order?.reservationExpiresAt) return 0;
@@ -117,7 +118,18 @@ const PaymentPage = () => {
     }
   };
 
-  if (loading || !session) return <div className='container mx-auto max-w-4xl px-4 py-16 text-white'>Loading...</div>;
+  if (loading) return <div className='container mx-auto max-w-4xl px-4 py-16 text-white'>Loading...</div>;
+
+  if (loadError || !session) {
+    return (
+      <div className='container mx-auto max-w-4xl px-4 py-16 text-white'>
+        <div className='rounded-xl border border-red-400/40 bg-red-400/10 p-4'>
+          <p className='mb-2'>{loadError || "Payment session unavailable"}</p>
+          <Link className='text-payzone-gold underline' to='/checkout'>Back to checkout</Link>
+        </div>
+      </div>
+    );
+  }
 
   const isExpired = session.order.status === "EXPIRED" || secondsLeft <= 0;
 
