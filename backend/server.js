@@ -14,6 +14,7 @@ import publicConfigRoutes from "./routes/publicConfig.route.js";
 import heroSlideRoutes from "./routes/heroSlide.route.js";
 import inventoryRoutes from "./routes/inventory.route.js";
 import paymentMethodRoutes from "./routes/paymentMethod.route.js";
+import adminPaymentMethodRoutes from "./routes/adminPaymentMethod.route.js";
 import orderRoutes from "./routes/order.route.js";
 import { startOrderLifecycleJobs } from "./services/orderLifecycle.service.js";
 
@@ -41,6 +42,7 @@ app.use("/api/public-config", publicConfigRoutes);
 app.use("/api/hero-slides", heroSlideRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
+app.use("/api/admin/payment-methods", adminPaymentMethodRoutes);
 app.use("/api/orders", orderRoutes);
 
 if (process.env.NODE_ENV === "production") {

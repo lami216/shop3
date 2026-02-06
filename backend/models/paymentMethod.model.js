@@ -3,7 +3,10 @@ import mongoose from "mongoose";
 const paymentMethodSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    type: { type: String, default: "", trim: true },
+    instructions: { type: String, default: "", trim: true },
     accountNumber: { type: String, required: true, trim: true },
+    holderName: { type: String, default: "", trim: true },
     image: { type: String, default: "" },
     isActive: { type: Boolean, default: true, index: true },
   },

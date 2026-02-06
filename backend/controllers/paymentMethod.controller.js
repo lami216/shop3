@@ -1,15 +1,26 @@
 import PaymentMethod from "../models/paymentMethod.model.js";
 
-export const getPaymentMethods = async (req, res) => {
-  const onlyActive = req.query.active === "1";
-  const filter = onlyActive ? { isActive: true } : {};
-  const methods = await PaymentMethod.find(filter).sort({ createdAt: -1 });
+export const getPublicPaymentMethods = async (_req, res) => {
+  const methods = await PaymentMethod.find({ isActive: true }).sort({ createdAt: -1 });
+  res.json({ methods });
+};
+
+export const getAdminPaymentMethods = async (_req, res) => {
+  const methods = await PaymentMethod.find({}).sort({ createdAt: -1 });
   res.json({ methods });
 };
 
 export const createPaymentMethod = async (req, res) => {
-  const { name, accountNumber, image, isActive } = req.body;
-  const method = await PaymentMethod.create({ name, accountNumber, image, isActive: isActive !== false });
+  const { name, type, instructions, accountNumber, holderName, image, isActive } = req.body;
+  const method = await PaymentMethod.create({
+    name,
+    type,
+    instructions,
+    accountNumber,
+    holderName,
+    image,
+    isActive: isActive !== false,
+  });
   res.status(201).json(method);
 };
 
