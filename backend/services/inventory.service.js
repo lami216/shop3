@@ -7,10 +7,16 @@ export const getInventorySummaries = async (productIds = []) => {
   const [batchAgg, reservedAgg] = await Promise.all([
     InventoryBatch.aggregate([
       { $match: { product: { $in: productIds } } },
-      { $group: { _id: "$product", totalQuantity: { $sum: "$remainingQuantity" } } },
+      {
+        $group: {
+          _id: "$product",
+          totalQuantity: { $sum: "$quantity" },
+          remainingQuantity: { $sum: "$remainingQuantity" },
+        },
+      },
     ]),
     InventoryReservation.aggregate([
-      { $match: { product: { $in: productIds }, status: "ACTIVE", expiresAt: { $gt: new Date() } } },
+      { $match: { product: { $in: productIds }, status: "ACTIVE" } },
       { $group: { _id: "$product", reservedQuantity: { $sum: "$quantity" } } },
     ]),
   ]);
@@ -21,23 +27,26 @@ export const getInventorySummaries = async (productIds = []) => {
     const key = batch._id.toString();
     const reserved = reservedMap.get(key) || 0;
     const total = batch.totalQuantity || 0;
+    const remaining = batch.remainingQuantity || 0;
+    const sold = Math.max(total - remaining, 0);
     map.set(key, {
       totalQuantity: total,
+      soldQuantity: sold,
       reservedQuantity: reserved,
-      availableQuantity: Math.max(total - reserved, 0),
+      availableQuantity: Math.max(total - reserved - sold, 0),
     });
   }
 
   for (const [key, reserved] of reservedMap.entries()) {
     if (!map.has(key)) {
-      map.set(key, { totalQuantity: 0, reservedQuantity: reserved, availableQuantity: 0 });
+      map.set(key, { totalQuantity: 0, soldQuantity: 0, reservedQuantity: reserved, availableQuantity: 0 });
     }
   }
 
   return map;
 };
 
-export const reserveInventoryForOrder = async (order, minutes = 15) => {
+export const reserveInventoryForOrder = async (order, minutes = 15, session = null) => {
   const productIds = order.products.map((i) => i.product);
   const summaries = await getInventorySummaries(productIds);
 
@@ -57,7 +66,8 @@ export const reserveInventoryForOrder = async (order, minutes = 15) => {
       quantity: item.quantity,
       expiresAt,
       status: "ACTIVE",
-    }))
+    })),
+    { session }
   );
 
   return expiresAt;
@@ -69,6 +79,11 @@ export const releaseOrderReservation = async (orderId) => {
 
 export const consumeOrderReservation = async (orderId) => {
   await InventoryReservation.updateMany({ order: orderId, status: "ACTIVE" }, { status: "CONSUMED" });
+};
+
+export const hasActiveReservation = async (orderId) => {
+  const now = new Date();
+  return InventoryReservation.exists({ order: orderId, status: "ACTIVE", expiresAt: { $gt: now } });
 };
 
 export const deductInventoryFIFO = async (order) => {

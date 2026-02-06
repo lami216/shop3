@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
 
-const REVIEWABLE_STATUSES = ["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"];
+const REVIEWABLE_STATUSES = ["UNDER_REVIEW"];
 
 const OrdersTab = () => {
   const { adminOrders, fetchAdminOrders, approveOrder, rejectOrder } = useOrderStore();
