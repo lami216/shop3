@@ -28,15 +28,13 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "CREATED",
-        "AWAITING_PAYMENT",
-        "PAYMENT_SUBMITTED",
+        "PENDING_PAYMENT",
+        "UNDER_REVIEW",
         "APPROVED",
         "REJECTED",
         "EXPIRED",
-        "NEEDS_MANUAL_REVIEW",
       ],
-      default: "CREATED",
+      default: "PENDING_PAYMENT",
       index: true,
     },
     paymentMethod: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentMethod", required: false },

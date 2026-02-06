@@ -7,6 +7,7 @@ import {
   consumeOrderReservation,
   deductInventoryFIFO,
   getInventorySummaries,
+  hasActiveReservation,
   releaseOrderReservation,
   reserveInventoryForOrder,
 } from "../services/inventory.service.js";
@@ -14,18 +15,8 @@ import {
 const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
 
-const reserveOrderForPayment = async (order) => {
-  if (order.status === "CREATED") {
-    const expiresAt = await reserveInventoryForOrder(order, 15);
-    order.status = "AWAITING_PAYMENT";
-    order.reservationStartedAt = new Date();
-    order.reservationExpiresAt = expiresAt;
-    await order.save();
-  }
-  return order;
-};
-
 export const createOrder = async (req, res) => {
+  const session = await mongoose.startSession();
   try {
     const { customerName, phone, address, items } = req.body;
     if (!Array.isArray(items) || !items.length) return res.status(400).json({ message: "Cart is empty" });
@@ -52,20 +43,36 @@ export const createOrder = async (req, res) => {
     }
 
     const totalAmount = orderItems.reduce((sum, x) => sum + x.price * x.quantity, 0);
-    const order = await Order.create({
-      user: req.user?._id,
-      customer: { name: customerName, phone, address },
-      products: orderItems,
-      totalAmount,
-      orderNumber: randomCode("ORD-"),
-      trackingCode: randomCode("TRK-"),
-      status: "CREATED",
-      source: "ONLINE",
+
+    let order;
+    await session.withTransaction(async () => {
+      [order] = await Order.create(
+        [
+          {
+            user: req.user?._id,
+            customer: { name: customerName, phone, address },
+            products: orderItems,
+            totalAmount,
+            orderNumber: randomCode("ORD-"),
+            trackingCode: randomCode("TRK-"),
+            status: "PENDING_PAYMENT",
+            source: "ONLINE",
+          },
+        ],
+        { session }
+      );
+
+      const expiresAt = await reserveInventoryForOrder(order, 15, session);
+      order.reservationStartedAt = new Date();
+      order.reservationExpiresAt = expiresAt;
+      await order.save({ session });
     });
 
     res.status(201).json({ orderId: order._id, orderNumber: order.orderNumber, trackingCode: order.trackingCode, status: order.status });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  } finally {
+    await session.endSession();
   }
 };
 
@@ -73,8 +80,13 @@ export const getOrderPaymentSession = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate("products.product", "name image");
     if (!order) return res.status(404).json({ message: "Order not found" });
-
-    await reserveOrderForPayment(order);
+    if (order.status !== "PENDING_PAYMENT") {
+      return res.status(400).json({ message: "Order is not payable" });
+    }
+    const hasReservation = await hasActiveReservation(order._id);
+    if (!hasReservation) {
+      return res.status(400).json({ message: "Order reservation missing" });
+    }
 
     const methods = await PaymentMethod.find({ isActive: true });
     res.json({ order, paymentMethods: methods });
@@ -88,8 +100,13 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
   try {
     const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("products.product", "name image");
     if (!order) return res.status(404).json({ message: "Order not found" });
-
-    await reserveOrderForPayment(order);
+    if (order.status !== "PENDING_PAYMENT") {
+      return res.status(400).json({ message: "Order is not payable" });
+    }
+    const hasReservation = await hasActiveReservation(order._id);
+    if (!hasReservation) {
+      return res.status(400).json({ message: "Order reservation missing" });
+    }
 
     const methods = await PaymentMethod.find({ isActive: true });
     res.json({ order, paymentMethods: methods });
@@ -107,7 +124,7 @@ export const submitPaymentProof = async (req, res) => {
     if (!order.paymentMethod && !paymentMethodId) {
       return res.status(400).json({ message: "Payment method is required" });
     }
-    if (!["AWAITING_PAYMENT", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
+    if (!["PENDING_PAYMENT"].includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
 
@@ -119,10 +136,10 @@ export const submitPaymentProof = async (req, res) => {
     }
     order.paymentProofImage = paymentProofImage;
     order.paymentSenderAccount = senderAccount || "";
-    order.status = "PAYMENT_SUBMITTED";
+    order.status = "UNDER_REVIEW";
     await order.save();
 
-    await sendTelegramMessage(`PAYMENT_SUBMITTED ${order.orderNumber} amount ${order.totalAmount}`);
+    await sendTelegramMessage(`UNDER_REVIEW ${order.orderNumber} amount ${order.totalAmount}`);
     res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -139,7 +156,7 @@ export const submitPaymentProofByTracking = async (req, res) => {
     if (!order.paymentMethod && !paymentMethodId) {
       return res.status(400).json({ message: "Payment method is required" });
     }
-    if (!["AWAITING_PAYMENT", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
+    if (!["PENDING_PAYMENT"].includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
 
@@ -151,10 +168,10 @@ export const submitPaymentProofByTracking = async (req, res) => {
     }
     order.paymentProofImage = paymentProofImage;
     order.paymentSenderAccount = senderAccount || "";
-    order.status = "PAYMENT_SUBMITTED";
+    order.status = "UNDER_REVIEW";
     await order.save();
 
-    await sendTelegramMessage(`PAYMENT_SUBMITTED ${order.orderNumber} amount ${order.totalAmount}`);
+    await sendTelegramMessage(`UNDER_REVIEW ${order.orderNumber} amount ${order.totalAmount}`);
     res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -170,7 +187,7 @@ export const approveOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (!["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
+    if (order.status !== "UNDER_REVIEW") {
       return res.status(400).json({ message: "Order status invalid" });
     }
     if (order.source !== "POS" && !order.paymentProofImage) {
@@ -206,7 +223,7 @@ export const approveOrder = async (req, res) => {
 export const rejectOrder = async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) return res.status(404).json({ message: "Order not found" });
-  if (!["PAYMENT_SUBMITTED", "NEEDS_MANUAL_REVIEW"].includes(order.status)) {
+  if (order.status !== "UNDER_REVIEW") {
     return res.status(400).json({ message: "Order status invalid" });
   }
 
@@ -278,7 +295,7 @@ export const createPosInvoice = async (req, res) => {
             trackingCode: randomCode("TRK-"),
             paymentMethod: method?._id,
             paymentProofImage: "POS_MANUAL",
-            status: "PAYMENT_SUBMITTED",
+            status: "UNDER_REVIEW",
             source: "POS",
             reviewedAt: new Date(),
           },

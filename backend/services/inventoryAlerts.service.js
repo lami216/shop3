@@ -9,15 +9,26 @@ export const processLowInventoryAlerts = async () => {
   if (now - lastSentAt < 30 * 60 * 1000) return;
 
   const totals = await InventoryBatch.aggregate([
-    { $group: { _id: "$product", total: { $sum: "$remainingQuantity" } } },
+    {
+      $group: {
+        _id: "$product",
+        total: { $sum: "$quantity" },
+        remaining: { $sum: "$remainingQuantity" },
+      },
+    },
   ]);
   const reserved = await InventoryReservation.aggregate([
-    { $match: { status: "ACTIVE", expiresAt: { $gt: new Date() } } },
+    { $match: { status: "ACTIVE" } },
     { $group: { _id: "$product", reserved: { $sum: "$quantity" } } },
   ]);
 
   const reservedMap = new Map(reserved.map((x) => [x._id.toString(), x.reserved]));
-  const lows = totals.filter((x) => (x.total - (reservedMap.get(x._id.toString()) || 0)) <= 3);
+  const lows = totals.filter((x) => {
+    const reservedQty = reservedMap.get(x._id.toString()) || 0;
+    const soldQty = Math.max((x.total || 0) - (x.remaining || 0), 0);
+    const availableQty = (x.total || 0) - reservedQty - soldQty;
+    return availableQty <= 3;
+  });
   if (lows.length) {
     lastSentAt = now;
     await sendTelegramMessage(`Low inventory alert for ${lows.length} products`);
