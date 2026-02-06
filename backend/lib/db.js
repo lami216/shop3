@@ -13,7 +13,7 @@ const dropLegacyStripeSessionIndex = async () => {
 
 export const connectDB = async () => {
 	try {
-		const conn = await mongoose.connect(process.env.MONGO_URI);
+		const conn = await mongoose.connect(process.env.MONGO_URI, { dbName: "test3" });
 		console.log(`MongoDB connected: ${conn.connection.host}`);
 		await dropLegacyStripeSessionIndex();
 	} catch (error) {

@@ -20,6 +20,6 @@ export const usePaymentMethodStore = create((set) => ({
     await apiClient.post("/admin/payment-methods", payload);
   },
   updateMethod: async (id, payload) => {
-    await apiClient.put(`/admin/payment-methods/${id}`, payload);
+    await apiClient.patch(`/admin/payment-methods/${id}`, payload);
   },
 }));

@@ -4,22 +4,15 @@ import { toast } from "react-hot-toast";
 import { Copy } from "lucide-react";
 import { useOrderStore } from "../stores/useOrderStore";
 import { formatMRU } from "../lib/formatMRU";
-
-const toBase64 = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+import apiClient from "../lib/apiClient";
 
 const PaymentPage = () => {
   const { trackingCode } = useParams();
   const { getPaymentSessionByTracking, submitPaymentProofByTracking } = useOrderStore();
   const [session, setSession] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
   const [methodId, setMethodId] = useState("");
   const [proofFile, setProofFile] = useState(null);
-  const [paymentProofImage, setPaymentProofImage] = useState("");
   const [senderAccount, setSenderAccount] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -31,13 +24,23 @@ const PaymentPage = () => {
       try {
         const data = await getPaymentSessionByTracking(trackingCode);
         setSession(data);
-        if (data.paymentMethods?.[0]) {
-          setMethodId(data.paymentMethods[0]._id);
-        }
       } catch (error) {
         const message = error.response?.data?.message || "Failed to load payment session";
         setLoadError(message);
         toast.error(message);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const methodsData = await apiClient.get("/payment-methods");
+        const methods = methodsData.methods || [];
+        setPaymentMethods(methods);
+        if (methods[0]) {
+          setMethodId(methods[0]._id);
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to load payment methods");
       } finally {
         setLoading(false);
       }
@@ -56,8 +59,8 @@ const PaymentPage = () => {
   }, []);
 
   const selectedMethod = useMemo(
-    () => session?.paymentMethods?.find((method) => method._id === methodId) || null,
-    [session, methodId]
+    () => paymentMethods.find((method) => method._id === methodId) || null,
+    [paymentMethods, methodId]
   );
 
   const copyAccount = async () => {
@@ -70,21 +73,9 @@ const PaymentPage = () => {
     }
   };
 
-  const onProofChange = async (event) => {
+  const onProofChange = (event) => {
     const file = event.target.files?.[0];
     setProofFile(file || null);
-    if (!file) {
-      setPaymentProofImage("");
-      return;
-    }
-
-    try {
-      const encoded = await toBase64(file);
-      setPaymentProofImage(encoded);
-    } catch {
-      toast.error("تعذر قراءة صورة الإثبات");
-      setPaymentProofImage("");
-    }
   };
 
   const submit = async (event) => {
@@ -94,18 +85,18 @@ const PaymentPage = () => {
       toast.error("اختر طريقة الدفع");
       return;
     }
-    if (!paymentProofImage) {
+    if (!proofFile) {
       toast.error("يرجى رفع صورة إثبات الدفع");
       return;
     }
 
     setSubmitting(true);
     try {
-      const data = await submitPaymentProofByTracking(trackingCode, {
-        paymentMethodId: methodId,
-        paymentProofImage,
-        senderAccount,
-      });
+      const payload = new FormData();
+      payload.append("paymentMethodId", methodId);
+      payload.append("senderAccount", senderAccount);
+      payload.append("proof", proofFile);
+      const data = await submitPaymentProofByTracking(trackingCode, payload);
       setSubmittedOrder({
         orderNumber: data.orderNumber || session.order.orderNumber,
         trackingCode: data.trackingCode || session.order.trackingCode,
@@ -132,6 +123,7 @@ const PaymentPage = () => {
   }
 
   const isExpired = session.order.status === "EXPIRED" || secondsLeft <= 0;
+  const accountSuffix = selectedMethod?.accountNumber ? selectedMethod.accountNumber.slice(-4) : "";
 
   return (
     <div className='container mx-auto max-w-4xl px-4 py-16 text-white'>
@@ -167,25 +159,35 @@ const PaymentPage = () => {
       ) : (
         <form onSubmit={submit} className='space-y-4 rounded-xl border border-white/10 bg-white/5 p-4'>
           <label className='block text-sm text-white/80'>طريقة الدفع</label>
-          <select
-            className='w-full rounded border border-payzone-indigo/40 bg-payzone-navy/60 p-2 text-white'
-            value={methodId}
-            onChange={(event) => setMethodId(event.target.value)}
-            required
-          >
-            {session.paymentMethods.map((method) => (
-              <option key={method._id} value={method._id}>
-                {method.name}
-              </option>
-            ))}
-          </select>
+          {paymentMethods.length === 0 ? (
+            <p className='rounded border border-white/10 bg-black/20 p-3 text-sm text-white/70'>No payment methods available</p>
+          ) : (
+            <select
+              className='w-full rounded border border-payzone-indigo/40 bg-payzone-navy/60 p-2 text-white'
+              value={methodId}
+              onChange={(event) => setMethodId(event.target.value)}
+              required
+            >
+              {paymentMethods.map((method) => (
+                <option key={method._id} value={method._id}>
+                  {method.name} — ••••{method.accountNumber?.slice(-4)}
+                </option>
+              ))}
+            </select>
+          )}
 
           {selectedMethod ? (
             <div className='rounded border border-white/10 bg-black/20 p-3'>
               <p className='mb-2 text-sm text-white/70'>بيانات التحويل</p>
-              <p className='font-semibold'>{selectedMethod.name}</p>
+              <div className='flex items-center gap-2'>
+                {selectedMethod.imageUrl ? (
+                  <img src={selectedMethod.imageUrl} alt={selectedMethod.name} className='h-10 w-10 rounded object-cover' />
+                ) : null}
+                <p className='font-semibold'>{selectedMethod.name}</p>
+              </div>
               <div className='mt-1 flex items-center gap-2'>
                 <p>{selectedMethod.accountNumber}</p>
+                {accountSuffix ? <span className='text-xs text-white/60'>(••••{accountSuffix})</span> : null}
                 <button
                   type='button'
                   onClick={copyAccount}
@@ -220,7 +222,7 @@ const PaymentPage = () => {
             {proofFile ? <p className='mt-1 text-xs text-white/70'>{proofFile.name}</p> : null}
           </div>
 
-          <button disabled={submitting} className='rounded bg-payzone-gold px-4 py-2 font-semibold text-payzone-navy disabled:opacity-60'>
+          <button disabled={submitting || paymentMethods.length === 0} className='rounded bg-payzone-gold px-4 py-2 font-semibold text-payzone-navy disabled:opacity-60'>
             {submitting ? "جاري الإرسال..." : "إرسال إثبات الدفع"}
           </button>
         </form>

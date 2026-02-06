@@ -88,7 +88,7 @@ export const getOrderPaymentSession = async (req, res) => {
       return res.status(400).json({ message: "Order reservation missing" });
     }
 
-    const methods = await PaymentMethod.find({ isActive: true });
+    const methods = await PaymentMethod.find({ isActive: true }).select("name accountNumber imageUrl");
     res.json({ order, paymentMethods: methods });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -108,7 +108,7 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
       return res.status(400).json({ message: "Order reservation missing" });
     }
 
-    const methods = await PaymentMethod.find({ isActive: true });
+    const methods = await PaymentMethod.find({ isActive: true }).select("name accountNumber imageUrl");
     res.json({ order, paymentMethods: methods });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -117,7 +117,9 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
 
 export const submitPaymentProof = async (req, res) => {
   try {
-    const { paymentMethodId, paymentProofImage, senderAccount } = req.body;
+    const { paymentMethodId, senderAccount } = req.body;
+    const paymentProofImage =
+      req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}` : req.body.paymentProofImage;
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
     if (!paymentProofImage) return res.status(400).json({ message: "Payment proof is required" });
@@ -128,8 +130,9 @@ export const submitPaymentProof = async (req, res) => {
       return res.status(400).json({ message: "Order is not payable" });
     }
 
-    const method = paymentMethodId ? await PaymentMethod.findById(paymentMethodId) : null;
-    if (paymentMethodId && !method) return res.status(400).json({ message: "Payment method invalid" });
+    const methodQuery = paymentMethodId || order.paymentMethod;
+    const method = methodQuery ? await PaymentMethod.findOne({ _id: methodQuery, isActive: true }) : null;
+    if (methodQuery && !method) return res.status(400).json({ message: "Payment method invalid" });
 
     if (method?._id) {
       order.paymentMethod = method._id;
@@ -149,7 +152,9 @@ export const submitPaymentProof = async (req, res) => {
 
 export const submitPaymentProofByTracking = async (req, res) => {
   try {
-    const { paymentMethodId, paymentProofImage, senderAccount } = req.body;
+    const { paymentMethodId, senderAccount } = req.body;
+    const paymentProofImage =
+      req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}` : req.body.paymentProofImage;
     const order = await Order.findOne({ trackingCode: req.params.trackingCode });
     if (!order) return res.status(404).json({ message: "Order not found" });
     if (!paymentProofImage) return res.status(400).json({ message: "Payment proof is required" });
@@ -160,8 +165,9 @@ export const submitPaymentProofByTracking = async (req, res) => {
       return res.status(400).json({ message: "Order is not payable" });
     }
 
-    const method = paymentMethodId ? await PaymentMethod.findById(paymentMethodId) : null;
-    if (paymentMethodId && !method) return res.status(400).json({ message: "Payment method invalid" });
+    const methodQuery = paymentMethodId || order.paymentMethod;
+    const method = methodQuery ? await PaymentMethod.findOne({ _id: methodQuery, isActive: true }) : null;
+    if (methodQuery && !method) return res.status(400).json({ message: "Payment method invalid" });
 
     if (method?._id) {
       order.paymentMethod = method._id;
@@ -179,7 +185,10 @@ export const submitPaymentProofByTracking = async (req, res) => {
 };
 
 export const getAdminOrders = async (_req, res) => {
-  const orders = await Order.find({}).sort({ createdAt: -1 }).populate("products.product", "name").populate("paymentMethod");
+  const orders = await Order.find({})
+    .sort({ createdAt: -1 })
+    .populate("products.product", "name")
+    .populate("paymentMethod", "name accountNumber imageUrl");
   res.json({ orders });
 };
 
@@ -241,7 +250,7 @@ export const getMyOrders = async (req, res) => {
 };
 
 export const getOrderByTracking = async (req, res) => {
-  const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("paymentMethod", "name accountNumber");
+  const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("paymentMethod", "name accountNumber imageUrl");
   if (!order) return res.status(404).json({ message: "Order not found" });
   res.json({ order });
 };
