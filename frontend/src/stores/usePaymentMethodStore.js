@@ -5,10 +5,11 @@ import apiClient from "../lib/apiClient";
 export const usePaymentMethodStore = create((set) => ({
   methods: [],
   loading: false,
-  fetchMethods: async (activeOnly = false) => {
+  fetchMethods: async ({ scope = "public" } = {}) => {
     set({ loading: true });
     try {
-      const data = await apiClient.get(`/payment-methods${activeOnly ? "?active=1" : ""}`);
+      const endpoint = scope === "admin" ? "/admin/payment-methods" : "/payment-methods";
+      const data = await apiClient.get(endpoint);
       set({ methods: data.methods || [], loading: false });
     } catch (error) {
       set({ loading: false });
@@ -16,9 +17,9 @@ export const usePaymentMethodStore = create((set) => ({
     }
   },
   createMethod: async (payload) => {
-    await apiClient.post("/payment-methods", payload);
+    await apiClient.post("/admin/payment-methods", payload);
   },
   updateMethod: async (id, payload) => {
-    await apiClient.put(`/payment-methods/${id}`, payload);
+    await apiClient.put(`/admin/payment-methods/${id}`, payload);
   },
 }));
