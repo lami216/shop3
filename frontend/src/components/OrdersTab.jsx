@@ -39,6 +39,17 @@ const OrdersTab = () => {
                 <p className='text-xs opacity-70'>{order.customer?.phone}</p>
               </div>
             </div>
+            {order.paymentMethod ? (
+              <div className='mt-3 flex items-center gap-3 rounded border border-white/10 bg-black/20 p-3 text-sm'>
+                {order.paymentMethod.imageUrl ? (
+                  <img src={order.paymentMethod.imageUrl} alt={order.paymentMethod.name} className='h-10 w-10 rounded object-cover' />
+                ) : null}
+                <div>
+                  <p className='font-semibold'>{order.paymentMethod.name}</p>
+                  <p className='text-xs opacity-70'>{order.paymentMethod.accountNumber}</p>
+                </div>
+              </div>
+            ) : null}
             {hasProof ? <img src={order.paymentProofImage} alt='proof' className='mt-3 h-32 rounded' /> : null}
             <div className='mt-3 flex gap-2'>
               <button
