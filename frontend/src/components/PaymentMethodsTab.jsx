@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { usePaymentMethodStore } from "../stores/usePaymentMethodStore";
 
 const PaymentMethodsTab = () => {
@@ -9,25 +10,45 @@ const PaymentMethodsTab = () => {
     isActive: true,
   });
   const [imageFile, setImageFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { fetchMethods({ scope: "admin" }); }, [fetchMethods]);
+  useEffect(() => {
+    fetchMethods({ scope: "admin" });
+  }, [fetchMethods]);
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!imageFile) return;
-    const payload = new FormData();
-    payload.append("name", form.name);
-    payload.append("accountNumber", form.accountNumber);
-    payload.append("isActive", String(form.isActive));
-    payload.append("image", imageFile);
-    await createMethod(payload);
-    setForm({
-      name: "",
-      accountNumber: "",
-      isActive: true,
-    });
-    setImageFile(null);
-    fetchMethods({ scope: "admin" });
+    if (submitting) return;
+    if (!imageFile) {
+      toast.error("Image is required");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = new FormData();
+      payload.append("name", form.name);
+      payload.append("accountNumber", form.accountNumber);
+      payload.append("isActive", String(form.isActive));
+      payload.append("image", imageFile);
+      await createMethod(payload);
+      toast.success("Payment method created");
+      setForm({
+        name: "",
+        accountNumber: "",
+        isActive: true,
+      });
+      setImageFile(null);
+      await fetchMethods({ scope: "admin" });
+    } catch (error) {
+      console.error("Failed to create payment method", error, error?.response?.data);
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to create payment method";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -43,7 +64,13 @@ const PaymentMethodsTab = () => {
           required
         />
         <label className='text-white flex items-center gap-2'><input type='checkbox' checked={form.isActive} onChange={(e)=>setForm({...form, isActive:e.target.checked})}/> Active</label>
-        <button className='rounded bg-payzone-gold text-payzone-navy font-semibold'>Add Method</button>
+        <button
+          type='submit'
+          className='rounded bg-payzone-gold text-payzone-navy font-semibold disabled:cursor-not-allowed disabled:opacity-70'
+          disabled={submitting}
+        >
+          {submitting ? "Adding..." : "Add Method"}
+        </button>
       </form>
 
       <div className='space-y-2'>
@@ -52,7 +79,20 @@ const PaymentMethodsTab = () => {
             {m.imageUrl ? <img src={m.imageUrl} alt={m.name} className='h-10 w-10 rounded object-cover' /> : null}
             <div>{m.name} — {m.accountNumber}</div>
           </div>
-          <button className='rounded px-3 py-1 bg-white/10' onClick={async ()=>{await updateMethod(m._id,{isActive:!m.isActive}); fetchMethods({ scope: "admin" });}}>{m.isActive?"Deactivate":"Activate"}</button>
+          <button
+            className='rounded px-3 py-1 bg-white/10'
+            onClick={async () => {
+              try {
+                await updateMethod(m._id, { isActive: !m.isActive });
+                await fetchMethods({ scope: "admin" });
+              } catch (error) {
+                console.error("Failed to update payment method", error, error?.response?.data);
+                toast.error(error?.response?.data?.message || "Failed to update payment method");
+              }
+            }}
+          >
+            {m.isActive ? "Deactivate" : "Activate"}
+          </button>
         </div>)}
       </div>
     </div>

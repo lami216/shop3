@@ -18,12 +18,19 @@ export const getAdminPaymentMethods = async (_req, res) => {
 
 export const createPaymentMethod = async (req, res) => {
   try {
+    console.log(`[payment-methods] create db=${mongoose.connection.name}`);
     const { name, accountNumber, isActive } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
     if (!accountNumber?.trim()) return res.status(400).json({ message: "Account number is required" });
     if (!req.file) return res.status(400).json({ message: "Image is required" });
 
-    const upload = await uploadImage(req.file.buffer, "payment-methods");
+    let upload;
+    try {
+      upload = await uploadImage(req.file.buffer, "payment-methods");
+    } catch (error) {
+      console.error("Failed to upload payment method image", error);
+      return res.status(500).json({ message: "Failed to upload payment method image" });
+    }
     const activeFlag = isActive === undefined ? true : isActive === "true" || isActive === true;
     const method = await PaymentMethod.create({
       name: name.trim(),
@@ -33,7 +40,8 @@ export const createPaymentMethod = async (req, res) => {
     });
     res.status(201).json(method);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Failed to create payment method", error);
+    res.status(500).json({ message: "Failed to create payment method" });
   }
 };
 
