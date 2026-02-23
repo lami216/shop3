@@ -17,6 +17,8 @@ const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
     orderNumber: { type: String, required: true, unique: true },
+    orderNumberSeq: { type: Number, required: false, index: true },
+    orderNumberDisplay: { type: String, required: false },
     trackingCode: { type: String, required: true, unique: true, index: true },
     products: [orderItemSchema],
     totalAmount: { type: Number, required: true, min: 0 },
@@ -43,6 +45,7 @@ const orderSchema = new mongoose.Schema(
     reservationExpiresAt: { type: Date, default: null },
     reservationStartedAt: { type: Date, default: null },
     receiptImageUrl: { type: String, default: "" },
+    receiptSubmittedAt: { type: Date, default: null },
     reviewedAt: { type: Date, default: null },
     approvedAt: { type: Date, default: null },
     rejectedAt: { type: Date, default: null },

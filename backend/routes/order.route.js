@@ -22,7 +22,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post("/", optionalAuth, createOrder);
 router.post("/claim", protectRoute, claimGuestOrder);
 router.get("/my", protectRoute, getMyOrders);
-router.get("/tracking/:trackingCode", getOrderByTracking);
+router.get("/tracking/:trackingCode", optionalAuth, getOrderByTracking);
 router.get("/tracking/:trackingCode/details", optionalAuth, getOrderDetailsByTracking);
 router.get("/tracking/:trackingCode/payment-session", getOrderPaymentSessionByTracking);
 router.get("/:id/payment-session", getOrderPaymentSession);
