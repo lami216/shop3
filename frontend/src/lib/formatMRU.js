@@ -1,5 +1,5 @@
 export const formatMRU = (value) =>
-        new Intl.NumberFormat("en-US", {
+        new Intl.NumberFormat("fr-FR", {
                 style: "currency",
                 currency: "MRU",
                 minimumFractionDigits: 0,

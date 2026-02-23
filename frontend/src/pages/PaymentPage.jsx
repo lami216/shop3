@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Upload } from "lucide-react";
+import { Copy, Upload } from "lucide-react";
 import { useOrderStore } from "../stores/useOrderStore";
 import { formatMRU } from "../lib/formatMRU";
 import apiClient from "../lib/apiClient";
@@ -56,9 +56,7 @@ const PaymentPage = () => {
         const methodsData = await apiClient.get("/payment-methods");
         const methods = methodsData.methods || [];
         setPaymentMethods(methods);
-        if (methods[0]) {
-          setMethodId(methods[0]._id);
-        }
+        setMethodId("");
       } catch (error) {
         toast.error(error.response?.data?.message || "Failed to load payment methods");
       } finally {
@@ -90,7 +88,19 @@ const PaymentPage = () => {
   const copyValue = async (value, successText) => {
     if (!value) return;
     try {
-      await navigator.clipboard.writeText(String(value));
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(String(value));
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = String(value);
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "absolute";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
       toast.success(successText);
     } catch {
       toast.error("تعذر النسخ");
@@ -125,7 +135,7 @@ const PaymentPage = () => {
     event.preventDefault();
 
     if (!methodId) {
-      toast.error("اختر طريقة الدفع");
+      toast.error("اختر وسيلة دفع أولاً");
       return;
     }
     if (!proofFile) {
@@ -229,29 +239,8 @@ const PaymentPage = () => {
           </div>
         </div>
 
-        <div className='rounded-xl border border-payzone-gold/30 bg-payzone-gold/10 p-4'>
-          <h3 className='mb-3 text-lg font-semibold text-payzone-gold'>تعليمات التحويل</h3>
-          <ol className='list-decimal space-y-2 pr-5 text-sm'>
-            <li>افتح تطبيق ({selectedMethod?.name || "Bankili"}).</li>
-            <li>حوّل المبلغ الكامل: {formatMRU(session.order.totalAmount)}.</li>
-            <li>
-              أرسل التحويل إلى الرقم: {selectedMethod?.accountNumber || "01837363"}
-              <div className='mt-2 flex gap-2'>
-                <button type='button' onClick={() => copyValue(selectedMethod?.accountNumber || "01837363", "تم النسخ")} className='rounded bg-white/10 px-2 py-1 text-xs'>
-                  نسخ الرقم
-                </button>
-                <button type='button' onClick={() => copyValue(formatMRU(session.order.totalAmount), "تم النسخ")} className='rounded bg-white/10 px-2 py-1 text-xs'>
-                  نسخ المبلغ
-                </button>
-              </div>
-            </li>
-            <li>صوّر/احفظ إيصال التحويل ثم ارفعه هنا.</li>
-          </ol>
-          <p className='mt-3 text-xs text-white/70'>ملاحظة: الطلب ينتقل للمراجعة فور رفع الإثبات.</p>
-        </div>
-
         <div className='rounded-xl border border-white/10 bg-white/5 p-4'>
-          <label className='mb-2 block text-sm text-white/80'>طريقة الدفع</label>
+          <label className='mb-2 block text-sm text-white/80'>اختر وسيلة الدفع</label>
           {paymentMethods.length === 0 ? (
             <p className='rounded border border-white/10 bg-black/20 p-3 text-sm text-white/70'>No payment methods available</p>
           ) : (
@@ -261,12 +250,46 @@ const PaymentPage = () => {
               onChange={(event) => setMethodId(event.target.value)}
               required
             >
+              <option value=''>— اختر وسيلة الدفع —</option>
               {paymentMethods.map((method) => (
                 <option key={method._id} value={method._id}>
                   {method.name} — {method.accountNumber}
                 </option>
               ))}
             </select>
+          )}
+        </div>
+
+        <div className='rounded-xl border border-payzone-gold/30 bg-payzone-gold/10 p-4'>
+          <h3 className='mb-3 text-lg font-semibold text-payzone-gold'>تعليمات التحويل</h3>
+          {!selectedMethod ? (
+            <p className='text-sm text-white/70'>اختر وسيلة الدفع أولاً لعرض التعليمات.</p>
+          ) : (
+            <>
+              <ol className='list-decimal space-y-2 pr-5 text-sm'>
+                <li>افتح تطبيق ({selectedMethod.name}).</li>
+                <li>حوّل المبلغ الكامل: {formatMRU(session.order.totalAmount)}.</li>
+                <li>أرسل التحويل إلى الرقم: {selectedMethod.accountNumber || "—"}</li>
+                <li>صوّر/احفظ إيصال التحويل ثم ارفعه هنا.</li>
+              </ol>
+              <div className='mt-3 flex flex-wrap gap-2'>
+                <button
+                  type='button'
+                  onClick={() => copyValue(selectedMethod.accountNumber || "", "تم النسخ")}
+                  className='inline-flex items-center gap-2 rounded bg-payzone-indigo px-3 py-2 text-xs font-semibold text-white'
+                >
+                  <Copy size={14} /> نسخ الرقم
+                </button>
+                <button
+                  type='button'
+                  onClick={() => copyValue(formatMRU(session.order.totalAmount), "تم النسخ")}
+                  className='inline-flex items-center gap-2 rounded bg-payzone-gold px-3 py-2 text-xs font-semibold text-payzone-navy'
+                >
+                  <Copy size={14} /> نسخ المبلغ
+                </button>
+              </div>
+              <p className='mt-3 text-xs text-white/70'>ملاحظة: الطلب ينتقل للمراجعة فور رفع الإثبات.</p>
+            </>
           )}
 
           <label htmlFor='receiptImage' className='mt-4 inline-flex cursor-pointer items-center gap-2 rounded bg-payzone-indigo px-3 py-2 text-sm font-semibold'>

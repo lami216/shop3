@@ -5,19 +5,7 @@ import { useOrderStore } from "../stores/useOrderStore";
 import { useUserStore } from "../stores/useUserStore";
 import { formatMRU } from "../lib/formatMRU";
 import { canOpenPaymentPage, formatMmSs, getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
-
-const formatDateTime = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("ar-MR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+import { formatDateTimeFr } from "../lib/localeFormat";
 
 const TrackingPage = () => {
   const { trackOrder, fetchMyOrders, myOrders } = useOrderStore();
@@ -78,7 +66,7 @@ const TrackingPage = () => {
                   <p className='mb-1'>الحالة: {getOrderStatusLabelAr(myOrder.status)}</p>
                   <p className='mb-1'>رقم الطلب: {getOrderDisplayNumber(myOrder)}</p>
                   <p className='mb-1'>رمز التتبع: {myOrder.trackingCode}</p>
-                  <p className='mb-1'>تاريخ الإنشاء: {formatDateTime(myOrder.createdAt)}</p>
+                  <p className='mb-1'>تاريخ الإنشاء: {formatDateTimeFr(myOrder.createdAt)}</p>
                   <p className='mb-3'>المبلغ الإجمالي: {formatMRU(myOrder.totalAmount)}</p>
 
                   {canPay ? (
@@ -117,7 +105,7 @@ const TrackingPage = () => {
           <p className='mb-1'>الحالة: {getOrderStatusLabelAr(order.status)}</p>
           <p className='mb-1'>رقم الطلب: {getOrderDisplayNumber(order)}</p>
           <p className='mb-1'>رمز التتبع: {order.trackingCode}</p>
-          <p className='mb-1'>تاريخ الإنشاء: {formatDateTime(order.createdAt)}</p>
+          <p className='mb-1'>تاريخ الإنشاء: {formatDateTimeFr(order.createdAt)}</p>
           <p className='mb-3'>المبلغ الإجمالي: {formatMRU(order.totalAmount)}</p>
           <Link className='text-payzone-gold underline' to={`/order/${order.trackingCode}`}>
             تفاصيل الطلب
