@@ -29,6 +29,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: [
         "PENDING_PAYMENT",
+        "pending_payment",
         "UNDER_REVIEW",
         "APPROVED",
         "REJECTED",
@@ -41,8 +42,7 @@ const orderSchema = new mongoose.Schema(
     stripeSessionId: { type: String, required: false, default: undefined },
     reservationExpiresAt: { type: Date, default: null },
     reservationStartedAt: { type: Date, default: null },
-    paymentProofImage: { type: String, default: "" },
-    paymentSenderAccount: { type: String, default: "" },
+    receiptImageUrl: { type: String, default: "" },
     reviewedAt: { type: Date, default: null },
     approvedAt: { type: Date, default: null },
     rejectedAt: { type: Date, default: null },

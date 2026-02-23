@@ -12,8 +12,8 @@ export const useOrderStore = create((set) => ({
   getPaymentSessionByTracking: async (trackingCode) => {
     return apiClient.get(`/orders/tracking/${trackingCode}/payment-session`);
   },
-  submitPaymentProofByTracking: async (trackingCode, payload) => {
-    return apiClient.post(`/orders/tracking/${trackingCode}/payment-proof`, payload);
+  submitPaymentProof: async (orderId, payload) => {
+    return apiClient.post(`/orders/${orderId}/payment-proof`, payload);
   },
   fetchAdminOrders: async () => {
     set({ loading: true });

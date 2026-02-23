@@ -8,6 +8,7 @@ import { formatMRU } from "../lib/formatMRU";
 import { formatNumberEn } from "../lib/formatNumberEn";
 import { getProductPricing } from "../lib/getProductPricing";
 import { useOrderStore } from "../stores/useOrderStore";
+import apiClient from "../lib/apiClient";
 
 const CheckoutPage = () => {
   const { cart, total, subtotal, clearCart } = useCartStore();
@@ -15,6 +16,8 @@ const CheckoutPage = () => {
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [paymentMethodId, setPaymentMethodId] = useState("");
   const { t } = useTranslation();
   const { createOrder } = useOrderStore();
 
@@ -25,9 +28,23 @@ const CheckoutPage = () => {
     }
   }, [cart, navigate, t]);
 
+  useEffect(() => {
+    const loadMethods = async () => {
+      try {
+        const data = await apiClient.get("/payment-methods");
+        const methods = data.methods || [];
+        setPaymentMethods(methods);
+        setPaymentMethodId(methods[0]?._id || "");
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to load payment methods");
+      }
+    };
+    loadMethods();
+  }, []);
+
   const normalizedPhoneNumber = phoneNumber.replace(/\D/g, "");
   const isPhoneValid = /^\d{8}$/.test(normalizedPhoneNumber);
-  const isFormValid = customerName.trim() !== "" && address.trim() !== "" && cart.length > 0 && isPhoneValid;
+  const isFormValid = customerName.trim() !== "" && address.trim() !== "" && cart.length > 0 && isPhoneValid && !!paymentMethodId;
   const savings = Math.max(subtotal - total, 0);
 
   const handleSubmit = async (event) => {
@@ -43,6 +60,11 @@ const CheckoutPage = () => {
       return;
     }
 
+    if (!paymentMethodId) {
+      toast.error("اختر وسيلة دفع");
+      return;
+    }
+
     if (cart.length === 0) {
       toast.error(t("common.messages.cartEmpty"));
       navigate("/cart");
@@ -54,6 +76,7 @@ const CheckoutPage = () => {
         customerName: customerName.trim(),
         phone: normalizedPhoneNumber,
         address: address.trim(),
+        paymentMethodId,
         items: cart.map((item) => ({ productId: item._id, quantity: item.quantity })),
       });
       await clearCart();
@@ -87,6 +110,19 @@ const CheckoutPage = () => {
             <div className='space-y-2'>
               <label className='block text-sm font-medium text-white/80' htmlFor='address'>{t("checkout.form.address")}</label>
               <textarea id='address' value={address} onChange={(event) => setAddress(event.target.value)} rows={4} className='w-full rounded-lg border border-payzone-indigo/40 bg-payzone-navy/60 px-4 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo' placeholder={t("checkout.form.addressPlaceholder")} required />
+            </div>
+
+            <div className='space-y-2'>
+              <label className='block text-sm font-medium text-white/80'>وسيلة الدفع</label>
+              {paymentMethods.length === 0 ? (
+                <p className='rounded border border-white/10 bg-black/20 p-3 text-sm text-white/70'>لا توجد وسائل دفع متاحة</p>
+              ) : (
+                <select className='w-full rounded-lg border border-payzone-indigo/40 bg-payzone-navy/60 px-4 py-2 text-white' value={paymentMethodId} onChange={(event) => setPaymentMethodId(event.target.value)} required>
+                  {paymentMethods.map((method) => (
+                    <option key={method._id} value={method._id}>{method.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <motion.button type='submit' disabled={!isFormValid} className='w-full rounded-lg bg-payzone-gold px-5 py-3 text-base font-semibold text-payzone-navy transition duration-300 hover:bg-[#b8873d] focus:outline-none focus:ring-4 focus:ring-payzone-indigo/40 disabled:opacity-50' whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>

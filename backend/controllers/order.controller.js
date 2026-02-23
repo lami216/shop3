@@ -3,6 +3,7 @@ import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import PaymentMethod from "../models/paymentMethod.model.js";
 import sendTelegramMessage from "../services/telegram.service.js";
+import { uploadImage } from "../lib/imagekit.js";
 import {
   consumeOrderReservation,
   deductInventoryFIFO,
@@ -18,8 +19,9 @@ const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice
 export const createOrder = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-    const { customerName, phone, address, items } = req.body;
+    const { customerName, phone, address, paymentMethodId, items } = req.body;
     if (!Array.isArray(items) || !items.length) return res.status(400).json({ message: "Cart is empty" });
+    if (!paymentMethodId) return res.status(400).json({ message: "Payment method is required" });
 
     const ids = items.map((i) => i.productId);
     const products = await Product.find({ _id: { $in: ids } }).lean();
@@ -44,6 +46,9 @@ export const createOrder = async (req, res) => {
 
     const totalAmount = orderItems.reduce((sum, x) => sum + x.price * x.quantity, 0);
 
+    const selectedMethod = await PaymentMethod.findOne({ _id: paymentMethodId, isActive: true }).lean();
+    if (!selectedMethod) return res.status(400).json({ message: "Payment method invalid" });
+
     let order;
     await session.withTransaction(async () => {
       [order] = await Order.create(
@@ -57,6 +62,7 @@ export const createOrder = async (req, res) => {
             trackingCode: randomCode("TRK-"),
             status: "PENDING_PAYMENT",
             source: "ONLINE",
+            paymentMethod: selectedMethod._id,
           },
         ],
         { session }
@@ -88,8 +94,7 @@ export const getOrderPaymentSession = async (req, res) => {
       return res.status(400).json({ message: "Order reservation missing" });
     }
 
-    const methods = await PaymentMethod.find({ isActive: true }).select("name accountNumber imageUrl");
-    res.json({ order, paymentMethods: methods });
+    res.json({ order });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -108,8 +113,7 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
       return res.status(400).json({ message: "Order reservation missing" });
     }
 
-    const methods = await PaymentMethod.find({ isActive: true }).select("name accountNumber imageUrl");
-    res.json({ order, paymentMethods: methods });
+    res.json({ order });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -117,12 +121,10 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
 
 export const submitPaymentProof = async (req, res) => {
   try {
-    const { paymentMethodId, senderAccount } = req.body;
-    const paymentProofImage =
-      req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}` : req.body.paymentProofImage;
+    const { paymentMethodId } = req.body;
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (!paymentProofImage) return res.status(400).json({ message: "Payment proof is required" });
+    if (!req.file) return res.status(400).json({ message: "Receipt image is required" });
     if (!order.paymentMethod && !paymentMethodId) {
       return res.status(400).json({ message: "Payment method is required" });
     }
@@ -137,47 +139,13 @@ export const submitPaymentProof = async (req, res) => {
     if (method?._id) {
       order.paymentMethod = method._id;
     }
-    order.paymentProofImage = paymentProofImage;
-    order.paymentSenderAccount = senderAccount || "";
-    order.status = "UNDER_REVIEW";
+
+    const receiptUpload = await uploadImage(req.file.buffer, "order-receipts");
+    order.receiptImageUrl = receiptUpload.url;
+    order.status = "pending_payment";
     await order.save();
 
-    await sendTelegramMessage(`UNDER_REVIEW ${order.orderNumber} amount ${order.totalAmount}`);
-    res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-export const submitPaymentProofByTracking = async (req, res) => {
-  try {
-    const { paymentMethodId, senderAccount } = req.body;
-    const paymentProofImage =
-      req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}` : req.body.paymentProofImage;
-    const order = await Order.findOne({ trackingCode: req.params.trackingCode });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    if (!paymentProofImage) return res.status(400).json({ message: "Payment proof is required" });
-    if (!order.paymentMethod && !paymentMethodId) {
-      return res.status(400).json({ message: "Payment method is required" });
-    }
-    if (!["PENDING_PAYMENT"].includes(order.status)) {
-      return res.status(400).json({ message: "Order is not payable" });
-    }
-
-    const methodQuery = paymentMethodId || order.paymentMethod;
-    const method = methodQuery ? await PaymentMethod.findOne({ _id: methodQuery, isActive: true }) : null;
-    if (methodQuery && !method) return res.status(400).json({ message: "Payment method invalid" });
-
-    if (method?._id) {
-      order.paymentMethod = method._id;
-    }
-    order.paymentProofImage = paymentProofImage;
-    order.paymentSenderAccount = senderAccount || "";
-    order.status = "UNDER_REVIEW";
-    await order.save();
-
-    await sendTelegramMessage(`UNDER_REVIEW ${order.orderNumber} amount ${order.totalAmount}`);
+    await sendTelegramMessage(`pending_payment ${order.orderNumber} amount ${order.totalAmount}`);
     res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -196,10 +164,10 @@ export const approveOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (order.status !== "UNDER_REVIEW") {
+    if (!["UNDER_REVIEW", "pending_payment"].includes(order.status)) {
       return res.status(400).json({ message: "Order status invalid" });
     }
-    if (order.source !== "POS" && !order.paymentProofImage) {
+    if (order.source !== "POS" && !order.receiptImageUrl) {
       return res.status(400).json({ message: "Payment proof is required before approval" });
     }
 
@@ -303,7 +271,7 @@ export const createPosInvoice = async (req, res) => {
             orderNumber: randomCode("POS-"),
             trackingCode: randomCode("TRK-"),
             paymentMethod: method?._id,
-            paymentProofImage: "POS_MANUAL",
+            receiptImageUrl: "POS_MANUAL",
             status: "UNDER_REVIEW",
             source: "POS",
             reviewedAt: new Date(),

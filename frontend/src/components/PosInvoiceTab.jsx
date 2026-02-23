@@ -17,7 +17,7 @@ const PosInvoiceTab = () => {
 
   useEffect(() => {
     fetchAllProducts();
-    fetchMethods({ scope: "admin" });
+    fetchMethods();
   }, [fetchAllProducts, fetchMethods]);
 
   const filtered = useMemo(() => {
