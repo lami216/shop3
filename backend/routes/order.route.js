@@ -9,6 +9,7 @@ import {
   getAdminOrders,
   getMyOrders,
   getOrderByTracking,
+  getOrderDetailsByTracking,
   getOrderPaymentSession,
   getOrderPaymentSessionByTracking,
   rejectOrder,
@@ -22,6 +23,7 @@ router.post("/", optionalAuth, createOrder);
 router.post("/claim", protectRoute, claimGuestOrder);
 router.get("/my", protectRoute, getMyOrders);
 router.get("/tracking/:trackingCode", getOrderByTracking);
+router.get("/tracking/:trackingCode/details", optionalAuth, getOrderDetailsByTracking);
 router.get("/tracking/:trackingCode/payment-session", getOrderPaymentSessionByTracking);
 router.get("/:id/payment-session", getOrderPaymentSession);
 router.post("/:id/payment-proof", upload.single("receiptImage"), submitPaymentProof);

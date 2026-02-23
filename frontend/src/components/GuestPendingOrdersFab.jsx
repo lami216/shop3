@@ -6,6 +6,7 @@ import { getGuestPendingOrders, setGuestPendingOrders } from "../lib/guestPendin
 import { useUserStore } from "../stores/useUserStore";
 
 const ACTIVE_PENDING_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
+const REFRESH_EVENT = "pending-orders:refresh";
 
 const isActivePendingOrder = (order) => {
   if (!order || !ACTIVE_PENDING_STATUSES.includes(order.status)) return false;
@@ -58,9 +59,11 @@ const GuestPendingOrdersFab = () => {
 
     window.addEventListener("storage", onStorage);
     window.addEventListener("guest-pending-orders:changed", refresh);
+    window.addEventListener(REFRESH_EVENT, refresh);
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("guest-pending-orders:changed", refresh);
+      window.removeEventListener(REFRESH_EVENT, refresh);
     };
   }, [user]);
 
@@ -106,10 +109,12 @@ const GuestPendingOrdersFab = () => {
     };
 
     refreshPendingOrders();
+    window.addEventListener(REFRESH_EVENT, refreshPendingOrders);
     const interval = window.setInterval(refreshPendingOrders, 30 * 1000);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(REFRESH_EVENT, refreshPendingOrders);
       window.clearInterval(interval);
     };
   }, [user]);
