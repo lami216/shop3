@@ -4,19 +4,7 @@ import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
 import { formatMRU } from "../lib/formatMRU";
 import { getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
-
-const formatDateTime = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("ar-MR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+import { formatDateTimeFr } from "../lib/localeFormat";
 
 const OrderDetailsPage = () => {
   const { trackingCode } = useParams();
@@ -52,15 +40,7 @@ const OrderDetailsPage = () => {
         <p>الكود الداخلي: {order.orderNumber || "—"}</p>
         <p>رمز التتبع: {order.trackingCode}</p>
         <p>الحالة: {getOrderStatusLabelAr(order.status)}</p>
-        <p>تاريخ الإنشاء: {formatDateTime(order.createdAt)}</p>
-      </div>
-
-      <div className='rounded-xl border border-payzone-gold/30 bg-payzone-gold/10 p-5'>
-        <h2 className='mb-2 text-xl font-semibold text-payzone-gold'>تعليمات التحويل</h2>
-        <p>1) افتح تطبيق {order.paymentMethod?.name || "Bankili"}</p>
-        <p>2) حوّل المبلغ الكامل: {formatMRU(order.totalAmount)}</p>
-        <p>3) الرقم المستهدف: {order.paymentMethod?.accountNumber || "—"}</p>
-        <p>4) ارفع الإيصال وانتظر المراجعة</p>
+        <p>تاريخ الإنشاء: {formatDateTimeFr(order.createdAt)}</p>
       </div>
 
       <div className='grid gap-4 md:grid-cols-2'>

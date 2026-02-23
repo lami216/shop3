@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Product from "../models/product.model.js";
 import InventoryBatch from "../models/inventoryBatch.model.js";
+import InventoryIntake from "../models/inventoryIntake.model.js";
 import { getInventorySummaries } from "../services/inventory.service.js";
 
 export const getInventoryOverview = async (_req, res) => {
@@ -59,6 +60,81 @@ export const getProductBatches = async (req, res) => {
     res.json({ batches });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const createInventoryIntake = async (req, res) => {
+  try {
+    const { invoiceDate, reference, items } = req.body;
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ message: "items is required" });
+    }
+
+    const parsedItems = items.map((item) => ({
+      product: item.product || item.productId,
+      quantity: Number(item.quantity),
+      unitCost: Number(item.unitCost ?? item.purchasePrice),
+      unitPrice: item.unitPrice === undefined || item.unitPrice === "" ? undefined : Number(item.unitPrice),
+    }));
+
+    for (const item of parsedItems) {
+      if (!mongoose.Types.ObjectId.isValid(item.product)) {
+        return res.status(400).json({ message: "Invalid product in items" });
+      }
+      if (Number.isNaN(item.quantity) || item.quantity <= 0) {
+        return res.status(400).json({ message: "Item quantity must be greater than 0" });
+      }
+      if (Number.isNaN(item.unitCost) || item.unitCost < 0) {
+        return res.status(400).json({ message: "Item unitCost is invalid" });
+      }
+      if (item.unitPrice !== undefined && (Number.isNaN(item.unitPrice) || item.unitPrice < 0)) {
+        return res.status(400).json({ message: "Item unitPrice is invalid" });
+      }
+    }
+
+    const productIds = [...new Set(parsedItems.map((item) => item.product.toString()))];
+    const productsCount = await Product.countDocuments({ _id: { $in: productIds } });
+    if (productsCount !== productIds.length) {
+      return res.status(404).json({ message: "One or more products not found" });
+    }
+
+    await InventoryBatch.insertMany(
+      parsedItems.map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+        remainingQuantity: item.quantity,
+        purchasePrice: item.unitCost,
+      }))
+    );
+
+    const totalQuantity = parsedItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalCost = parsedItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+
+    const intake = await InventoryIntake.create({
+      invoiceDate: invoiceDate || new Date(),
+      reference: reference || "",
+      items: parsedItems,
+      createdBy: req.user?._id,
+      totalQuantity,
+      totalCost,
+    });
+
+    return res.status(201).json({ intake });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const getInventoryIntakes = async (_req, res) => {
+  try {
+    const intakes = await InventoryIntake.find({})
+      .populate("items.product", "name")
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+    return res.json({ intakes });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 

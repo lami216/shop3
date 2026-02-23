@@ -145,7 +145,7 @@ const ProductDetailPage = () => {
                                                         <div className='mt-5 flex gap-3 overflow-x-auto pb-2'>
                                                                 {galleryImages.map((imageUrl, index) => {
                                                                         const isActive = imageUrl === activeImage;
-                                                                        const localizedIndex = new Intl.NumberFormat("ar").format(index + 1);
+                                                                        const localizedIndex = new Intl.NumberFormat("fr-FR").format(index + 1);
                                                                         return (
                                                                                 <button
                                                                                         key={`${imageUrl}-${index}`}

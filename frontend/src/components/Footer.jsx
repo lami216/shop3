@@ -1,7 +1,7 @@
 import SocialLinks from "./SocialLinks";
 
 const Footer = () => {
-        const buildTime = new Date(import.meta.env.VITE_BUILD_TIME).toLocaleString();
+        const buildTime = new Date(import.meta.env.VITE_BUILD_TIME).toLocaleString("fr-FR");
         return (
                 <footer className='mt-24 border-t border-white/10 bg-black/80 text-brand-text'>
                         <div className='mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-12 text-center sm:px-6'>
