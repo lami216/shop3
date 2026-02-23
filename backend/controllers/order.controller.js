@@ -24,17 +24,16 @@ const isReservationActive = (reservationExpiresAt) => {
 };
 
 const getNextOrderNumber = async (session) => {
+  await Counter.updateOne(
+    { _id: "orderNumber" },
+    { $setOnInsert: { seq: 35 } },
+    { upsert: true, session }
+  );
+
   const counter = await Counter.findOneAndUpdate(
     { _id: "orderNumber" },
-    {
-      $setOnInsert: { seq: 35 },
-      $inc: { seq: 1 },
-    },
-    {
-      new: true,
-      upsert: true,
-      session,
-    }
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, session }
   );
 
   return {
