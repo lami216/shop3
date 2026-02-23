@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
 
-const REVIEWABLE_STATUSES = ["UNDER_REVIEW"];
+const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment"];
 
 const OrdersTab = () => {
   const { adminOrders, fetchAdminOrders, approveOrder, rejectOrder } = useOrderStore();
@@ -23,7 +23,7 @@ const OrdersTab = () => {
     <div className='space-y-3'>
       {adminOrders.map((order) => {
         const canReview = REVIEWABLE_STATUSES.includes(order.status);
-        const hasProof = Boolean(order.paymentProofImage) && order.paymentProofImage !== "POS_MANUAL";
+        const hasProof = Boolean(order.receiptImageUrl) && order.receiptImageUrl !== "POS_MANUAL";
         return (
           <div key={order._id} className='rounded-xl border border-white/10 bg-white/5 p-4 text-white'>
             <div className='flex justify-between'>
@@ -50,7 +50,7 @@ const OrdersTab = () => {
                 </div>
               </div>
             ) : null}
-            {hasProof ? <img src={order.paymentProofImage} alt='proof' className='mt-3 h-32 rounded' /> : null}
+            {hasProof ? <img src={order.receiptImageUrl} alt='proof' className='mt-3 h-32 rounded' /> : null}
             <div className='mt-3 flex gap-2'>
               <button
                 className='rounded bg-green-600 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50'

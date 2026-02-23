@@ -12,7 +12,6 @@ import {
   getOrderPaymentSessionByTracking,
   rejectOrder,
   submitPaymentProof,
-  submitPaymentProofByTracking,
 } from "../controllers/order.controller.js";
 
 const router = express.Router();
@@ -22,9 +21,8 @@ router.post("/", createOrder);
 router.get("/my", protectRoute, getMyOrders);
 router.get("/tracking/:trackingCode", getOrderByTracking);
 router.get("/tracking/:trackingCode/payment-session", getOrderPaymentSessionByTracking);
-router.post("/tracking/:trackingCode/payment-proof", upload.single("proof"), submitPaymentProofByTracking);
 router.get("/:id/payment-session", getOrderPaymentSession);
-router.post("/:id/payment-proof", upload.single("proof"), submitPaymentProof);
+router.post("/:id/payment-proof", upload.single("receiptImage"), submitPaymentProof);
 router.get("/admin/all", protectRoute, adminRoute, getAdminOrders);
 router.post("/admin/pos-invoice", protectRoute, adminRoute, createPosInvoice);
 router.patch("/:id/approve", protectRoute, adminRoute, approveOrder);

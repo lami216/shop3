@@ -1,53 +1,114 @@
-import mongoose from "mongoose";
 import PaymentMethod from "../models/paymentMethod.model.js";
-import { uploadImage } from "../lib/imagekit.js";
+import { deleteImage, uploadImage } from "../lib/imagekit.js";
 
-export const getPublicPaymentMethods = async (_req, res) => {
-  const methods = await PaymentMethod.find({ isActive: true })
-    .select("name accountNumber imageUrl")
-    .sort({ createdAt: -1 })
-    .lean();
-  console.log(`[payment-methods] db=${mongoose.connection.name} count=${methods.length}`);
-  res.json({ methods });
+const toBoolean = (value, fallback = true) => {
+  if (value === undefined) return fallback;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.toLowerCase() === "true";
+  return Boolean(value);
 };
 
-export const getAdminPaymentMethods = async (_req, res) => {
-  const methods = await PaymentMethod.find({}).sort({ createdAt: -1 });
+const ensureAdmin = (req, res) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403).json({ message: "Forbidden" });
+    return false;
+  }
+  return true;
+};
+
+export const getPaymentMethods = async (req, res) => {
+  const includeInactive = req.query.includeInactive === "true";
+
+  if (includeInactive) {
+    if (!ensureAdmin(req, res)) return;
+  }
+
+  const filter = includeInactive ? {} : { isActive: true };
+  const methods = await PaymentMethod.find(filter).sort({ createdAt: -1 }).lean();
   res.json({ methods });
 };
 
 export const createPaymentMethod = async (req, res) => {
   try {
-    console.log(`[payment-methods] create db=${mongoose.connection.name}`);
-    const { name, accountNumber, isActive } = req.body;
+    const { name, accountNumber, image, isActive } = req.body;
+
     if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
     if (!accountNumber?.trim()) return res.status(400).json({ message: "Account number is required" });
-    if (!req.file) return res.status(400).json({ message: "Image is required" });
+    if (!image) return res.status(400).json({ message: "Image is required" });
 
-    let upload;
-    try {
-      upload = await uploadImage(req.file.buffer, "payment-methods");
-    } catch (error) {
-      console.error("Failed to upload payment method image", error);
-      return res.status(500).json({ message: "Failed to upload payment method image" });
-    }
-    const activeFlag = isActive === undefined ? true : isActive === "true" || isActive === true;
+    const upload = await uploadImage(image, "payment-methods");
+
     const method = await PaymentMethod.create({
       name: name.trim(),
       accountNumber: accountNumber.trim(),
       imageUrl: upload.url,
-      isActive: activeFlag,
+      imageFileId: upload.fileId || null,
+      isActive: toBoolean(isActive, true),
     });
-    res.status(201).json(method);
+
+    res.status(201).json({ method });
   } catch (error) {
     console.error("Failed to create payment method", error);
     res.status(500).json({ message: "Failed to create payment method" });
   }
 };
 
-export const togglePaymentMethod = async (req, res) => {
-  const { isActive } = req.body;
-  const method = await PaymentMethod.findByIdAndUpdate(req.params.id, { isActive }, { new: true });
-  if (!method) return res.status(404).json({ message: "Payment method not found" });
-  res.json(method);
+export const updatePaymentMethod = async (req, res) => {
+  try {
+    const { name, accountNumber, image, isActive } = req.body;
+
+    const method = await PaymentMethod.findById(req.params.id);
+    if (!method) return res.status(404).json({ message: "Payment method not found" });
+
+    if (name !== undefined) {
+      if (!name.trim()) return res.status(400).json({ message: "Name is required" });
+      method.name = name.trim();
+    }
+
+    if (accountNumber !== undefined) {
+      if (!accountNumber.trim()) return res.status(400).json({ message: "Account number is required" });
+      method.accountNumber = accountNumber.trim();
+    }
+
+    if (isActive !== undefined) {
+      method.isActive = toBoolean(isActive, method.isActive);
+    }
+
+    if (image) {
+      const previousFileId = method.imageFileId;
+      const upload = await uploadImage(image, "payment-methods");
+      method.imageUrl = upload.url;
+      method.imageFileId = upload.fileId || null;
+      if (previousFileId) {
+        await deleteImage(previousFileId).catch((error) => {
+          console.warn("Failed to delete old payment method image", error.message || error);
+        });
+      }
+    }
+
+    await method.save();
+    res.json({ method });
+  } catch (error) {
+    console.error("Failed to update payment method", error);
+    res.status(500).json({ message: "Failed to update payment method" });
+  }
+};
+
+export const deletePaymentMethod = async (req, res) => {
+  try {
+    const method = await PaymentMethod.findById(req.params.id);
+    if (!method) return res.status(404).json({ message: "Payment method not found" });
+
+    if (method.imageFileId) {
+      await deleteImage(method.imageFileId).catch((error) => {
+        console.warn("Failed to delete payment method image", error.message || error);
+      });
+    }
+
+    await method.deleteOne();
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete payment method", error);
+    res.status(500).json({ message: "Failed to delete payment method" });
+  }
 };

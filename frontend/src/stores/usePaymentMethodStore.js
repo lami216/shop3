@@ -5,10 +5,10 @@ import apiClient from "../lib/apiClient";
 export const usePaymentMethodStore = create((set) => ({
   methods: [],
   loading: false,
-  fetchMethods: async ({ scope = "public" } = {}) => {
+  fetchMethods: async ({ includeInactive = false } = {}) => {
     set({ loading: true });
     try {
-      const endpoint = scope === "admin" ? "/admin/payment-methods" : "/payment-methods";
+      const endpoint = includeInactive ? "/payment-methods?includeInactive=true" : "/payment-methods";
       const data = await apiClient.get(endpoint);
       set({ methods: data.methods || [], loading: false });
     } catch (error) {
@@ -17,9 +17,12 @@ export const usePaymentMethodStore = create((set) => ({
     }
   },
   createMethod: async (payload) => {
-    await apiClient.post("/admin/payment-methods", payload);
+    return apiClient.post("/payment-methods", payload);
   },
   updateMethod: async (id, payload) => {
-    await apiClient.patch(`/admin/payment-methods/${id}`, payload);
+    return apiClient.patch(`/payment-methods/${id}`, payload);
+  },
+  deleteMethod: async (id) => {
+    return apiClient.delete(`/payment-methods/${id}`);
   },
 }));

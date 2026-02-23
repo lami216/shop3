@@ -8,12 +8,11 @@ import apiClient from "../lib/apiClient";
 
 const PaymentPage = () => {
   const { trackingCode } = useParams();
-  const { getPaymentSessionByTracking, submitPaymentProofByTracking } = useOrderStore();
+  const { getPaymentSessionByTracking, submitPaymentProof } = useOrderStore();
   const [session, setSession] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [methodId, setMethodId] = useState("");
   const [proofFile, setProofFile] = useState(null);
-  const [senderAccount, setSenderAccount] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState(null);
@@ -94,9 +93,8 @@ const PaymentPage = () => {
     try {
       const payload = new FormData();
       payload.append("paymentMethodId", methodId);
-      payload.append("senderAccount", senderAccount);
-      payload.append("proof", proofFile);
-      const data = await submitPaymentProofByTracking(trackingCode, payload);
+      payload.append("receiptImage", proofFile);
+      const data = await submitPaymentProof(session.order._id, payload);
       setSubmittedOrder({
         orderNumber: data.orderNumber || session.order.orderNumber,
         trackingCode: data.trackingCode || session.order.trackingCode,
@@ -198,17 +196,6 @@ const PaymentPage = () => {
               </div>
             </div>
           ) : null}
-
-          <div>
-            <label className='mb-1 block text-sm text-white/80'>رقم الحساب/الهاتف المرسل منه</label>
-            <input
-              className='w-full rounded border border-payzone-indigo/40 bg-payzone-navy/60 p-2 text-white'
-              placeholder='مثال: 22123456'
-              value={senderAccount}
-              onChange={(event) => setSenderAccount(event.target.value)}
-              required
-            />
-          </div>
 
           <div>
             <label className='mb-1 block text-sm text-white/80'>صورة إثبات الدفع</label>
