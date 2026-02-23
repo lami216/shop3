@@ -42,6 +42,10 @@ export const removeGuestPendingOrder = (trackingCode) => {
   saveGuestPendingOrders(filtered);
 };
 
+export const setGuestPendingOrders = (orders) => {
+  saveGuestPendingOrders(parseStored(JSON.stringify(orders)));
+};
+
 export const getLatestGuestPendingOrder = () => {
   const [latest] = getGuestPendingOrders();
   return latest || null;

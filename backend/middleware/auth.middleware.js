@@ -32,6 +32,25 @@ export const protectRoute = async (req, res, next) => {
 	}
 };
 
+export const optionalAuth = async (req, _res, next) => {
+	try {
+		const accessToken = req.cookies.accessToken;
+		if (!accessToken) {
+			return next();
+		}
+
+		const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+		const user = await User.findById(decoded.userId).select("-password");
+		if (user) {
+			req.user = user;
+		}
+	} catch (_error) {
+		// Intentionally ignore auth errors so guest checkout keeps working.
+	}
+
+	next();
+};
+
 export const adminRoute = (req, res, next) => {
 	if (req.user && req.user.role === "admin") {
 		next();

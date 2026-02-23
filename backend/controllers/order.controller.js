@@ -14,6 +14,7 @@ import {
 } from "../services/inventory.service.js";
 
 const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT"];
 
 
 export const createOrder = async (req, res) => {
@@ -164,7 +165,7 @@ export const approveOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (!["UNDER_REVIEW", "pending_payment"].includes(order.status)) {
+    if (!REVIEWABLE_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order status invalid" });
     }
     if (order.source !== "POS" && !order.receiptImageUrl) {
@@ -183,8 +184,9 @@ export const approveOrder = async (req, res) => {
       return { ...item.toObject(), lineCost, lineRevenue, lineProfit, unitCost: lineCost / item.quantity };
     });
 
+    const totalRevenue = Number(order.totalAmount) || 0;
     order.totalCost = totalCost;
-    order.totalProfit = order.totalAmount - totalCost;
+    order.totalProfit = totalRevenue - totalCost;
     order.status = "APPROVED";
     order.approvedAt = new Date();
     order.reviewedAt = new Date();
@@ -200,7 +202,7 @@ export const approveOrder = async (req, res) => {
 export const rejectOrder = async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) return res.status(404).json({ message: "Order not found" });
-  if (order.status !== "UNDER_REVIEW") {
+  if (!REVIEWABLE_STATUSES.includes(order.status)) {
     return res.status(400).json({ message: "Order status invalid" });
   }
 
@@ -320,8 +322,9 @@ export const createPosInvoice = async (req, res) => {
       return { ...item.toObject(), lineCost, lineRevenue, lineProfit, unitCost: lineCost / item.quantity };
     });
 
+    const totalRevenue = Number(order.totalAmount) || 0;
     order.totalCost = totalCost;
-    order.totalProfit = order.totalAmount - totalCost;
+    order.totalProfit = totalRevenue - totalCost;
     order.status = "APPROVED";
     order.approvedAt = new Date();
     order.reviewedAt = new Date();

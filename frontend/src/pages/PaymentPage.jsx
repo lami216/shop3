@@ -123,8 +123,6 @@ const PaymentPage = () => {
   }
 
   const isExpired = session.order.status === "EXPIRED" || secondsLeft <= 0;
-  const accountSuffix = selectedMethod?.accountNumber ? selectedMethod.accountNumber.slice(-4) : "";
-
   return (
     <div className='container mx-auto max-w-4xl px-4 py-16 text-white'>
       <h1 className='mb-4 text-3xl font-bold text-payzone-gold'>إتمام الدفع</h1>
@@ -174,7 +172,7 @@ const PaymentPage = () => {
             >
               {paymentMethods.map((method) => (
                 <option key={method._id} value={method._id}>
-                  {method.name} — ••••{method.accountNumber?.slice(-4)}
+                  {method.name} — {method.accountNumber}
                 </option>
               ))}
             </select>
@@ -194,7 +192,6 @@ const PaymentPage = () => {
               </p>
               <div className='mt-2 flex items-center gap-2'>
                 <p>{selectedMethod.accountNumber}</p>
-                {accountSuffix ? <span className='text-xs text-white/60'>(••••{accountSuffix})</span> : null}
                 <button
                   type='button'
                   onClick={copyAccount}

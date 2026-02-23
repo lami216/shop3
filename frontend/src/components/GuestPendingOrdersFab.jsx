@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock3 } from "lucide-react";
-import { getGuestPendingOrders } from "../lib/guestPendingOrders";
+import apiClient from "../lib/apiClient";
+import { getGuestPendingOrders, setGuestPendingOrders } from "../lib/guestPendingOrders";
+
+const ACTIVE_PENDING_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
+
+const isActivePendingOrder = (order) => {
+  if (!order || !ACTIVE_PENDING_STATUSES.includes(order.status)) return false;
+  if (!order.reservationExpiresAt) return true;
+  return new Date(order.reservationExpiresAt).getTime() > Date.now();
+};
 
 const GuestPendingOrdersFab = () => {
   const navigate = useNavigate();
@@ -22,6 +31,40 @@ const GuestPendingOrdersFab = () => {
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("guest-pending-orders:changed", refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const cleanupInactiveOrders = async () => {
+      const currentOrders = getGuestPendingOrders();
+      if (!currentOrders.length) return;
+
+      const checks = await Promise.all(
+        currentOrders.map(async (entry) => {
+          try {
+            const data = await apiClient.get(`/orders/tracking/${entry.trackingCode}`);
+            return isActivePendingOrder(data.order) ? entry : null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      if (cancelled) return;
+      const nextOrders = checks.filter(Boolean);
+      if (nextOrders.length !== currentOrders.length) {
+        setGuestPendingOrders(nextOrders);
+      }
+    };
+
+    cleanupInactiveOrders();
+    const interval = window.setInterval(cleanupInactiveOrders, 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
     };
   }, []);
 
