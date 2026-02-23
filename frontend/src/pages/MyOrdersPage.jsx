@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useOrderStore } from "../stores/useOrderStore";
+import { getOrderDisplayNumber } from "../lib/orderStatus";
 
 const PENDING_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
 
@@ -29,7 +30,7 @@ const MyOrdersPage = () => {
           <div className='space-y-3'>
             {pendingOrders.map((order) => (
               <div key={order._id} className='rounded border border-white/10 bg-white/5 p-4'>
-                <p className='font-medium'>#{order.orderNumber}</p>
+                <p className='font-medium'>#{getOrderDisplayNumber(order)}</p>
                 <p className='text-sm opacity-80'>الحالة: {order.status}</p>
                 <p className='text-xs opacity-70'>Tracking: {order.trackingCode}</p>
                 <Link
@@ -49,8 +50,8 @@ const MyOrdersPage = () => {
         <div className='space-y-3'>
           {myOrders.map((order) => (
             <div key={order._id} className='rounded border border-white/10 bg-white/5 p-4'>
-              <p>
-                {order.orderNumber} - {order.status}
+                <p>
+                {getOrderDisplayNumber(order)} - {order.status}
               </p>
               <p className='text-xs opacity-70'>Tracking: {order.trackingCode}</p>
               {PENDING_STATUSES.includes(order.status) ? (

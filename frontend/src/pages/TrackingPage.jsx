@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
 import { useUserStore } from "../stores/useUserStore";
 import { formatMRU } from "../lib/formatMRU";
-import { canOpenPaymentPage, getOrderStatusLabelAr } from "../lib/orderStatus";
+import { canOpenPaymentPage, formatMmSs, getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -25,6 +25,7 @@ const TrackingPage = () => {
   const [searchParams] = useSearchParams();
   const [trackingCode, setTrackingCode] = useState("");
   const [order, setOrder] = useState(null);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     const fromQuery = searchParams.get("code");
@@ -37,6 +38,11 @@ const TrackingPage = () => {
     if (!user) return;
     fetchMyOrders();
   }, [fetchMyOrders, user]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const search = async (event) => {
     event.preventDefault();
@@ -64,20 +70,26 @@ const TrackingPage = () => {
           {sortedOrders.length ? (
             sortedOrders.map((myOrder) => {
               const canPay = canOpenPaymentPage(myOrder);
+              const remaining = myOrder.reservationExpiresAt
+                ? Math.max(new Date(myOrder.reservationExpiresAt).getTime() - now, 0)
+                : 0;
               return (
                 <div key={myOrder._id} className='rounded border border-white/10 bg-white/5 p-4'>
                   <p className='mb-1'>الحالة: {getOrderStatusLabelAr(myOrder.status)}</p>
-                  <p className='mb-1'>رقم الطلب: {myOrder.orderNumber}</p>
+                  <p className='mb-1'>رقم الطلب: {getOrderDisplayNumber(myOrder)}</p>
                   <p className='mb-1'>رمز التتبع: {myOrder.trackingCode}</p>
                   <p className='mb-1'>تاريخ الإنشاء: {formatDateTime(myOrder.createdAt)}</p>
                   <p className='mb-3'>المبلغ الإجمالي: {formatMRU(myOrder.totalAmount)}</p>
 
                   {canPay ? (
-                    <Link className='text-payzone-gold underline' to={`/pay/${myOrder.trackingCode}`}>
-                      فتح صفحة الدفع
-                    </Link>
+                    <div className='flex items-center gap-3'>
+                      <Link className='rounded bg-payzone-gold px-3 py-1.5 font-semibold text-payzone-navy' to={`/pay/${myOrder.trackingCode}`}>
+                        إكمال الدفع
+                      </Link>
+                      <span className='text-sm text-payzone-gold'>المتبقي: {formatMmSs(remaining)}</span>
+                    </div>
                   ) : (
-                    <Link className='text-payzone-gold underline' to={`/order/${myOrder.trackingCode}`}>
+                    <Link className='rounded border border-payzone-gold/60 px-3 py-1.5 text-payzone-gold' to={`/order/${myOrder.trackingCode}`}>
                       تفاصيل الطلب
                     </Link>
                   )}
@@ -103,7 +115,7 @@ const TrackingPage = () => {
       {!user && order && (
         <div className='rounded border border-white/10 bg-white/5 p-4 text-white'>
           <p className='mb-1'>الحالة: {getOrderStatusLabelAr(order.status)}</p>
-          <p className='mb-1'>رقم الطلب: {order.orderNumber}</p>
+          <p className='mb-1'>رقم الطلب: {getOrderDisplayNumber(order)}</p>
           <p className='mb-1'>رمز التتبع: {order.trackingCode}</p>
           <p className='mb-1'>تاريخ الإنشاء: {formatDateTime(order.createdAt)}</p>
           <p className='mb-3'>المبلغ الإجمالي: {formatMRU(order.totalAmount)}</p>

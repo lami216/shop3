@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Order from "../models/order.model.js";
+import Counter from "../models/counter.model.js";
 import Product from "../models/product.model.js";
 import PaymentMethod from "../models/paymentMethod.model.js";
 import sendTelegramMessage from "../services/telegram.service.js";
@@ -15,6 +16,32 @@ import {
 
 const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT"];
+const PENDING_PAYMENT_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
+
+const isReservationActive = (reservationExpiresAt) => {
+  if (!reservationExpiresAt) return false;
+  return new Date(reservationExpiresAt).getTime() > Date.now();
+};
+
+const getNextOrderNumber = async (session) => {
+  const counter = await Counter.findOneAndUpdate(
+    { _id: "orderNumber" },
+    {
+      $setOnInsert: { seq: 35 },
+      $inc: { seq: 1 },
+    },
+    {
+      new: true,
+      upsert: true,
+      session,
+    }
+  );
+
+  return {
+    orderNumberSeq: counter.seq,
+    orderNumberDisplay: String(counter.seq).padStart(5, "0"),
+  };
+};
 
 
 export const createOrder = async (req, res) => {
@@ -59,6 +86,7 @@ export const createOrder = async (req, res) => {
 
     let order;
     await session.withTransaction(async () => {
+      const orderNumber = await getNextOrderNumber(session);
       [order] = await Order.create(
         [
           {
@@ -67,6 +95,8 @@ export const createOrder = async (req, res) => {
             products: orderItems,
             totalAmount,
             orderNumber: randomCode("ORD-"),
+            orderNumberSeq: orderNumber.orderNumberSeq,
+            orderNumberDisplay: orderNumber.orderNumberDisplay,
             trackingCode: randomCode("TRK-"),
             status: "PENDING_PAYMENT",
             source: "ONLINE",
@@ -94,7 +124,10 @@ export const getOrderPaymentSession = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate("products.product", "name image");
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (order.status !== "PENDING_PAYMENT") {
+    if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
+      return res.status(400).json({ message: "Order is not payable" });
+    }
+    if (!isReservationActive(order.reservationExpiresAt)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
     const hasReservation = await hasActiveReservation(order._id);
@@ -113,7 +146,13 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
   try {
     const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("products.product", "name image");
     if (!order) return res.status(404).json({ message: "Order not found" });
-    if (order.status !== "PENDING_PAYMENT") {
+    if (order.status === "UNDER_REVIEW") {
+      return res.status(400).json({ message: "Order is under review" });
+    }
+    if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
+      return res.status(400).json({ message: "Order is not payable" });
+    }
+    if (!isReservationActive(order.reservationExpiresAt)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
     const hasReservation = await hasActiveReservation(order._id);
@@ -136,7 +175,7 @@ export const submitPaymentProof = async (req, res) => {
     if (!order.paymentMethod && !paymentMethodId) {
       return res.status(400).json({ message: "Payment method is required" });
     }
-    if (!["PENDING_PAYMENT"].includes(order.status)) {
+    if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
 
@@ -150,10 +189,11 @@ export const submitPaymentProof = async (req, res) => {
 
     const receiptUpload = await uploadImage(req.file.buffer, "order-receipts");
     order.receiptImageUrl = receiptUpload.url;
-    order.status = "pending_payment";
+    order.receiptSubmittedAt = new Date();
+    order.status = "UNDER_REVIEW";
     await order.save();
 
-    await sendTelegramMessage(`pending_payment ${order.orderNumber} amount ${order.totalAmount}`);
+    await sendTelegramMessage(`under_review ${order.orderNumber} amount ${order.totalAmount}`);
     res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -227,8 +267,15 @@ export const getMyOrders = async (req, res) => {
 };
 
 export const getOrderByTracking = async (req, res) => {
-  const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("paymentMethod", "name accountNumber");
+  const order = await Order.findOne({ trackingCode: req.params.trackingCode })
+    .populate("paymentMethod", "name accountNumber")
+    .populate("products.product", "name price image");
   if (!order) return res.status(404).json({ message: "Order not found" });
+
+  if (req.user && String(order.user || "") !== String(req.user._id)) {
+    return res.status(403).json({ message: "Not allowed to view this order" });
+  }
+
   res.json({ order });
 };
 
