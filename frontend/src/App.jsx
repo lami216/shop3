@@ -21,6 +21,7 @@ import PurchaseCancelPage from "./pages/PurchaseCancelPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import PaymentPage from "./pages/PaymentPage";
 import TrackingPage from "./pages/TrackingPage";
+import OrderDetailsPage from "./pages/OrderDetailsPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import GuestPendingOrdersFab from "./components/GuestPendingOrdersFab";
 
@@ -67,6 +68,7 @@ function App() {
                                         <Route path='/pay/:trackingCode' element={<PaymentPage />} />
                                         <Route path='/track' element={<TrackingPage />} />
                                         <Route path='/track-order' element={<TrackingPage />} />
+                                        <Route path='/order/:trackingCode' element={<OrderDetailsPage />} />
                                         <Route path='/my-orders' element={user ? <MyOrdersPage /> : <Navigate to='/login' />} />
                                         <Route path='/purchase-success' element={<PurchaseSuccessPage />} />
                                         <Route path='/purchase-cancel' element={<PurchaseCancelPage />} />

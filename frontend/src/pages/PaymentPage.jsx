@@ -6,6 +6,7 @@ import { useOrderStore } from "../stores/useOrderStore";
 import { formatMRU } from "../lib/formatMRU";
 import apiClient from "../lib/apiClient";
 import { removeGuestPendingOrder } from "../lib/guestPendingOrders";
+import { isPayableOrderStatus } from "../lib/orderStatus";
 
 const PaymentPage = () => {
   const { trackingCode } = useParams();
@@ -27,6 +28,8 @@ const PaymentPage = () => {
       } catch (error) {
         const message = error.response?.data?.message || "Failed to load payment session";
         setLoadError(message);
+        removeGuestPendingOrder(trackingCode);
+        window.dispatchEvent(new CustomEvent("pending-orders:refresh"));
         toast.error(message);
         setLoading(false);
         return;
@@ -97,6 +100,8 @@ const PaymentPage = () => {
       payload.append("receiptImage", proofFile);
       const data = await submitPaymentProof(session.order._id, payload);
       removeGuestPendingOrder(session.order.trackingCode);
+      window.dispatchEvent(new CustomEvent("guest-pending-orders:changed"));
+      window.dispatchEvent(new CustomEvent("pending-orders:refresh"));
       setSubmittedOrder({
         orderNumber: data.orderNumber || session.order.orderNumber,
         trackingCode: data.trackingCode || session.order.trackingCode,
@@ -122,7 +127,7 @@ const PaymentPage = () => {
     );
   }
 
-  const isExpired = session.order.status === "EXPIRED" || secondsLeft <= 0;
+  const isExpired = !isPayableOrderStatus(session.order.status) || secondsLeft <= 0;
   return (
     <div className='container mx-auto max-w-4xl px-4 py-16 text-white'>
       <h1 className='mb-4 text-3xl font-bold text-payzone-gold'>إتمام الدفع</h1>

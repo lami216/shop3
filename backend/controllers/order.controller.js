@@ -22,7 +22,6 @@ export const createOrder = async (req, res) => {
   try {
     const { customerName, phone, address, paymentMethodId, items } = req.body;
     if (!Array.isArray(items) || !items.length) return res.status(400).json({ message: "Cart is empty" });
-    if (!paymentMethodId) return res.status(400).json({ message: "Payment method is required" });
 
     const ids = items.map((i) => i.productId);
     const products = await Product.find({ _id: { $in: ids } }).lean();
@@ -47,8 +46,16 @@ export const createOrder = async (req, res) => {
 
     const totalAmount = orderItems.reduce((sum, x) => sum + x.price * x.quantity, 0);
 
-    const selectedMethod = await PaymentMethod.findOne({ _id: paymentMethodId, isActive: true }).lean();
-    if (!selectedMethod) return res.status(400).json({ message: "Payment method invalid" });
+    const activeMethods = await PaymentMethod.find({ isActive: true }).sort({ createdAt: 1 }).lean();
+    if (!activeMethods.length) return res.status(400).json({ message: "No payment methods available" });
+
+    let selectedMethod = null;
+    if (paymentMethodId) {
+      selectedMethod = activeMethods.find((method) => method._id.toString() === String(paymentMethodId));
+      if (!selectedMethod) return res.status(400).json({ message: "Payment method invalid" });
+    } else {
+      selectedMethod = activeMethods[0];
+    }
 
     let order;
     await session.withTransaction(async () => {
@@ -222,6 +229,20 @@ export const getMyOrders = async (req, res) => {
 export const getOrderByTracking = async (req, res) => {
   const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("paymentMethod", "name accountNumber");
   if (!order) return res.status(404).json({ message: "Order not found" });
+  res.json({ order });
+};
+
+export const getOrderDetailsByTracking = async (req, res) => {
+  const order = await Order.findOne({ trackingCode: req.params.trackingCode })
+    .populate("paymentMethod", "name accountNumber")
+    .populate("products.product", "name price");
+
+  if (!order) return res.status(404).json({ message: "Order not found" });
+
+  if (req.user && String(order.user || "") !== String(req.user._id)) {
+    return res.status(403).json({ message: "Not allowed to view this order" });
+  }
+
   res.json({ order });
 };
 

@@ -1,8 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
 import { useUserStore } from "../stores/useUserStore";
+import { formatMRU } from "../lib/formatMRU";
+import { canOpenPaymentPage, getOrderStatusLabelAr } from "../lib/orderStatus";
+
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("ar-MR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const TrackingPage = () => {
   const { trackOrder, fetchMyOrders, myOrders } = useOrderStore();
@@ -34,25 +49,41 @@ const TrackingPage = () => {
     }
   };
 
+  const sortedOrders = useMemo(
+    () => [...myOrders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [myOrders]
+  );
+
   return (
-    <div className='container mx-auto max-w-2xl px-4 py-16 text-white'>
+    <div className='container mx-auto max-w-3xl px-4 py-16 text-white'>
       <h1 className='mb-4 text-3xl font-bold text-payzone-gold'>تتبع الطلب</h1>
 
       {user ? (
         <div className='mb-6 space-y-3'>
           <h2 className='text-lg font-semibold'>طلباتك</h2>
-          {myOrders.length ? (
-            myOrders.map((myOrder) => (
-              <div key={myOrder._id} className='rounded border border-white/10 bg-white/5 p-4'>
-                <p className='mb-1'>الحالة: {myOrder.status}</p>
-                <p className='mb-1'>رقم الطلب: {myOrder.orderNumber}</p>
-                <p className='mb-1'>رمز التتبع: {myOrder.trackingCode}</p>
-                <p className='mb-2'>المبلغ الإجمالي: {myOrder.totalAmount}</p>
-                <Link className='text-payzone-gold underline' to={`/pay/${myOrder.trackingCode}`}>
-                  فتح صفحة الدفع
-                </Link>
-              </div>
-            ))
+          {sortedOrders.length ? (
+            sortedOrders.map((myOrder) => {
+              const canPay = canOpenPaymentPage(myOrder);
+              return (
+                <div key={myOrder._id} className='rounded border border-white/10 bg-white/5 p-4'>
+                  <p className='mb-1'>الحالة: {getOrderStatusLabelAr(myOrder.status)}</p>
+                  <p className='mb-1'>رقم الطلب: {myOrder.orderNumber}</p>
+                  <p className='mb-1'>رمز التتبع: {myOrder.trackingCode}</p>
+                  <p className='mb-1'>تاريخ الإنشاء: {formatDateTime(myOrder.createdAt)}</p>
+                  <p className='mb-3'>المبلغ الإجمالي: {formatMRU(myOrder.totalAmount)}</p>
+
+                  {canPay ? (
+                    <Link className='text-payzone-gold underline' to={`/pay/${myOrder.trackingCode}`}>
+                      فتح صفحة الدفع
+                    </Link>
+                  ) : (
+                    <Link className='text-payzone-gold underline' to={`/order/${myOrder.trackingCode}`}>
+                      تفاصيل الطلب
+                    </Link>
+                  )}
+                </div>
+              );
+            })
           ) : (
             <p className='rounded border border-white/10 bg-white/5 p-4 text-sm text-white/70'>لا توجد طلبات مرتبطة بحسابك.</p>
           )}
@@ -71,10 +102,14 @@ const TrackingPage = () => {
 
       {!user && order && (
         <div className='rounded border border-white/10 bg-white/5 p-4 text-white'>
-          <p className='mb-1'>الحالة: {order.status}</p>
+          <p className='mb-1'>الحالة: {getOrderStatusLabelAr(order.status)}</p>
           <p className='mb-1'>رقم الطلب: {order.orderNumber}</p>
           <p className='mb-1'>رمز التتبع: {order.trackingCode}</p>
-          <p className='mb-3'>المبلغ الإجمالي: {order.totalAmount}</p>
+          <p className='mb-1'>تاريخ الإنشاء: {formatDateTime(order.createdAt)}</p>
+          <p className='mb-3'>المبلغ الإجمالي: {formatMRU(order.totalAmount)}</p>
+          <Link className='text-payzone-gold underline' to={`/order/${order.trackingCode}`}>
+            تفاصيل الطلب
+          </Link>
         </div>
       )}
     </div>

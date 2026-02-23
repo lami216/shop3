@@ -59,4 +59,5 @@ export const useOrderStore = create((set) => ({
     set({ myOrders: data.orders || [] });
   },
   trackOrder: async (trackingCode) => apiClient.get(`/orders/tracking/${trackingCode}`),
+  getOrderDetailsByTracking: async (trackingCode) => apiClient.get(`/orders/tracking/${trackingCode}/details`),
 }));
