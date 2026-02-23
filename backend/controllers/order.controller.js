@@ -223,6 +223,33 @@ export const getOrderByTracking = async (req, res) => {
   res.json({ order });
 };
 
+
+export const claimGuestOrder = async (req, res) => {
+  try {
+    const { trackingCode, phone } = req.body;
+    if (!trackingCode || !phone) {
+      return res.status(400).json({ message: "trackingCode and phone are required" });
+    }
+
+    const order = await Order.findOne({ trackingCode: trackingCode.trim() });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.user) return res.status(400).json({ message: "Order already linked to a user" });
+
+    const normalizedInputPhone = String(phone).replace(/\D/g, "");
+    const normalizedOrderPhone = String(order.customer?.phone || "").replace(/\D/g, "");
+    if (!normalizedInputPhone || normalizedInputPhone !== normalizedOrderPhone) {
+      return res.status(400).json({ message: "Phone does not match order owner" });
+    }
+
+    order.user = req.user._id;
+    await order.save();
+
+    res.json({ success: true, orderId: order._id, trackingCode: order.trackingCode, user: order.user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const createPosInvoice = async (req, res) => {
   const session = await mongoose.startSession();
   try {

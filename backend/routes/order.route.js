@@ -3,6 +3,7 @@ import multer from "multer";
 import { adminRoute, protectRoute } from "../middleware/auth.middleware.js";
 import {
   approveOrder,
+  claimGuestOrder,
   createOrder,
   createPosInvoice,
   getAdminOrders,
@@ -18,6 +19,7 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/", createOrder);
+router.post("/claim", protectRoute, claimGuestOrder);
 router.get("/my", protectRoute, getMyOrders);
 router.get("/tracking/:trackingCode", getOrderByTracking);
 router.get("/tracking/:trackingCode/payment-session", getOrderPaymentSessionByTracking);

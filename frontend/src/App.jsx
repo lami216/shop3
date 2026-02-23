@@ -22,6 +22,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import PaymentPage from "./pages/PaymentPage";
 import TrackingPage from "./pages/TrackingPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
+import GuestPendingOrdersFab from "./components/GuestPendingOrdersFab";
 
 function App() {
         const user = useUserStore((state) => state.user);
@@ -71,6 +72,7 @@ function App() {
                                         <Route path='/purchase-cancel' element={<PurchaseCancelPage />} />
                                 </Routes>
                         </div>
+                        <GuestPendingOrdersFab />
                         <Toaster />
                         <Footer />
                 </div>
