@@ -100,14 +100,15 @@ export const deductInventoryFIFO = async (order) => {
       batch.remainingQuantity -= taken;
       await batch.save();
       needed -= taken;
-      lineCost += taken * batch.purchasePrice;
+      const unitCost = Math.abs(Number(batch.purchasePrice) || 0);
+      lineCost += taken * unitCost;
     }
 
     if (needed > 0) {
       throw new Error(`FIFO stock error for product ${item.product.toString()}`);
     }
 
-    deductions.push({ productId: item.product.toString(), lineCost });
+    deductions.push({ productId: item.product.toString(), lineCost: Math.max(lineCost, 0) });
   }
 
   return deductions;
