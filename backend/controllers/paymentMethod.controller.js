@@ -1,5 +1,4 @@
 import PaymentMethod from "../models/paymentMethod.model.js";
-import { deleteImage, uploadImage } from "../lib/imagekit.js";
 
 const toBoolean = (value, fallback = true) => {
   if (value === undefined) return fallback;
@@ -30,19 +29,14 @@ export const getPaymentMethods = async (req, res) => {
 
 export const createPaymentMethod = async (req, res) => {
   try {
-    const { name, accountNumber, image, isActive } = req.body;
+    const { name, accountNumber, isActive } = req.body;
 
     if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
     if (!accountNumber?.trim()) return res.status(400).json({ message: "Account number is required" });
-    if (!image) return res.status(400).json({ message: "Image is required" });
-
-    const upload = await uploadImage(image, "payment-methods");
 
     const method = await PaymentMethod.create({
       name: name.trim(),
       accountNumber: accountNumber.trim(),
-      imageUrl: upload.url,
-      imageFileId: upload.fileId || null,
       isActive: toBoolean(isActive, true),
     });
 
@@ -55,7 +49,7 @@ export const createPaymentMethod = async (req, res) => {
 
 export const updatePaymentMethod = async (req, res) => {
   try {
-    const { name, accountNumber, image, isActive } = req.body;
+    const { name, accountNumber, isActive } = req.body;
 
     const method = await PaymentMethod.findById(req.params.id);
     if (!method) return res.status(404).json({ message: "Payment method not found" });
@@ -74,18 +68,6 @@ export const updatePaymentMethod = async (req, res) => {
       method.isActive = toBoolean(isActive, method.isActive);
     }
 
-    if (image) {
-      const previousFileId = method.imageFileId;
-      const upload = await uploadImage(image, "payment-methods");
-      method.imageUrl = upload.url;
-      method.imageFileId = upload.fileId || null;
-      if (previousFileId) {
-        await deleteImage(previousFileId).catch((error) => {
-          console.warn("Failed to delete old payment method image", error.message || error);
-        });
-      }
-    }
-
     await method.save();
     res.json({ method });
   } catch (error) {
@@ -98,12 +80,6 @@ export const deletePaymentMethod = async (req, res) => {
   try {
     const method = await PaymentMethod.findById(req.params.id);
     if (!method) return res.status(404).json({ message: "Payment method not found" });
-
-    if (method.imageFileId) {
-      await deleteImage(method.imageFileId).catch((error) => {
-        console.warn("Failed to delete payment method image", error.message || error);
-      });
-    }
 
     await method.deleteOne();
     res.json({ success: true });

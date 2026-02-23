@@ -119,7 +119,7 @@ const CheckoutPage = () => {
               ) : (
                 <select className='w-full rounded-lg border border-payzone-indigo/40 bg-payzone-navy/60 px-4 py-2 text-white' value={paymentMethodId} onChange={(event) => setPaymentMethodId(event.target.value)} required>
                   {paymentMethods.map((method) => (
-                    <option key={method._id} value={method._id}>{method.name}</option>
+                    <option key={method._id} value={method._id}>{method.name} — {method.accountNumber}</option>
                   ))}
                 </select>
               )}
