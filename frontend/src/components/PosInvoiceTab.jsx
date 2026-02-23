@@ -159,7 +159,7 @@ const PosInvoiceTab = () => {
           <option value=''>Select payment method</option>
           {methods.map((m) => (
             <option key={m._id} value={m._id}>
-              {m.name}
+              {m.name} — {m.accountNumber}
             </option>
           ))}
         </select>

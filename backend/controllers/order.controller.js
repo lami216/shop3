@@ -156,7 +156,7 @@ export const getAdminOrders = async (_req, res) => {
   const orders = await Order.find({})
     .sort({ createdAt: -1 })
     .populate("products.product", "name")
-    .populate("paymentMethod", "name accountNumber imageUrl");
+    .populate("paymentMethod", "name accountNumber");
   res.json({ orders });
 };
 
@@ -218,7 +218,7 @@ export const getMyOrders = async (req, res) => {
 };
 
 export const getOrderByTracking = async (req, res) => {
-  const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("paymentMethod", "name accountNumber imageUrl");
+  const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("paymentMethod", "name accountNumber");
   if (!order) return res.status(404).json({ message: "Order not found" });
   res.json({ order });
 };
