@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
 
-const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment"];
+const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT"];
 
 const OrdersTab = () => {
   const { adminOrders, fetchAdminOrders, approveOrder, rejectOrder } = useOrderStore();
@@ -24,6 +24,7 @@ const OrdersTab = () => {
       {adminOrders.map((order) => {
         const canReview = REVIEWABLE_STATUSES.includes(order.status);
         const hasProof = Boolean(order.receiptImageUrl) && order.receiptImageUrl !== "POS_MANUAL";
+        const computedProfit = (Number(order.totalAmount) || 0) - (Number(order.totalCost) || 0);
         return (
           <div key={order._id} className='rounded-xl border border-white/10 bg-white/5 p-4 text-white'>
             <div className='flex justify-between'>
@@ -32,7 +33,7 @@ const OrdersTab = () => {
                 <p className='text-xs opacity-70'>Tracking: {order.trackingCode}</p>
                 <p className='text-xs opacity-70'>Source: {order.source}</p>
                 <p className='text-xs opacity-70'>Status: {order.status}</p>
-                <p className='text-xs opacity-70'>Profit: {order.totalProfit || 0}</p>
+                <p className='text-xs opacity-70'>Profit: {computedProfit}</p>
               </div>
               <div className='text-right'>
                 <p>{order.customer?.name}</p>

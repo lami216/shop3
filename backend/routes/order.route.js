@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { adminRoute, protectRoute } from "../middleware/auth.middleware.js";
+import { adminRoute, optionalAuth, protectRoute } from "../middleware/auth.middleware.js";
 import {
   approveOrder,
   claimGuestOrder,
@@ -18,7 +18,7 @@ import {
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/", createOrder);
+router.post("/", optionalAuth, createOrder);
 router.post("/claim", protectRoute, claimGuestOrder);
 router.get("/my", protectRoute, getMyOrders);
 router.get("/tracking/:trackingCode", getOrderByTracking);

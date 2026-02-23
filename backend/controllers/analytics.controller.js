@@ -14,7 +14,7 @@ export const getAnalyticsData = async () => {
 				totalSales: { $sum: 1 },
 				totalRevenue: { $sum: "$totalAmount" },
 				totalCost: { $sum: "$totalCost" },
-				totalProfit: { $sum: "$totalProfit" },
+				totalProfit: { $sum: { $subtract: ["$totalAmount", "$totalCost"] } },
 			},
 		},
 	]);
@@ -48,7 +48,7 @@ export const getDailySalesData = async (startDate, endDate) => {
 					_id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
 					sales: { $sum: 1 },
 					revenue: { $sum: "$totalAmount" },
-					profit: { $sum: "$totalProfit" },
+					profit: { $sum: { $subtract: ["$totalAmount", "$totalCost"] } },
 				},
 			},
 			{ $sort: { _id: 1 } },
