@@ -5,6 +5,7 @@ import { Copy } from "lucide-react";
 import { useOrderStore } from "../stores/useOrderStore";
 import { formatMRU } from "../lib/formatMRU";
 import apiClient from "../lib/apiClient";
+import { removeGuestPendingOrder } from "../lib/guestPendingOrders";
 
 const PaymentPage = () => {
   const { trackingCode } = useParams();
@@ -95,6 +96,7 @@ const PaymentPage = () => {
       payload.append("paymentMethodId", methodId);
       payload.append("receiptImage", proofFile);
       const data = await submitPaymentProof(session.order._id, payload);
+      removeGuestPendingOrder(session.order.trackingCode);
       setSubmittedOrder({
         orderNumber: data.orderNumber || session.order.orderNumber,
         trackingCode: data.trackingCode || session.order.trackingCode,
@@ -126,14 +128,6 @@ const PaymentPage = () => {
   return (
     <div className='container mx-auto max-w-4xl px-4 py-16 text-white'>
       <h1 className='mb-4 text-3xl font-bold text-payzone-gold'>إتمام الدفع</h1>
-      <div className='mb-6 rounded-xl border border-white/10 bg-white/5 p-4'>
-        <p className='mb-1'>رقم الطلب: {session.order.orderNumber}</p>
-        <p className='mb-1'>رمز التتبع: {session.order.trackingCode}</p>
-        <p className='mb-2 text-lg font-semibold'>الإجمالي: {formatMRU(session.order.totalAmount)}</p>
-        <p className='text-red-300'>
-          وقت الحجز المتبقي 15 دقيقة — {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
-        </p>
-      </div>
 
       {submittedOrder ? (
         <div className='rounded-xl border border-emerald-400/40 bg-emerald-400/10 p-5'>
@@ -156,6 +150,18 @@ const PaymentPage = () => {
         </div>
       ) : (
         <form onSubmit={submit} className='space-y-4 rounded-xl border border-white/10 bg-white/5 p-4'>
+          <div className='rounded-xl border border-payzone-indigo/40 bg-payzone-navy/30 p-4'>
+            <p className='mb-1 text-sm text-white/70'>رقم الطلب</p>
+            <p className='mb-2 text-lg font-semibold'>{session.order.orderNumber}</p>
+            <p className='mb-1 text-sm text-white/70'>رمز التتبع</p>
+            <p className='mb-2 font-medium'>{session.order.trackingCode}</p>
+            <p className='mb-1 text-sm text-white/70'>المبلغ المطلوب تحويله</p>
+            <p className='text-xl font-bold text-payzone-gold'>{formatMRU(session.order.totalAmount)}</p>
+            <p className='mt-3 text-sm text-red-300'>
+              وقت الحجز المتبقي 15 دقيقة — {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+            </p>
+          </div>
+
           <label className='block text-sm text-white/80'>طريقة الدفع</label>
           {paymentMethods.length === 0 ? (
             <p className='rounded border border-white/10 bg-black/20 p-3 text-sm text-white/70'>No payment methods available</p>
@@ -175,15 +181,18 @@ const PaymentPage = () => {
           )}
 
           {selectedMethod ? (
-            <div className='rounded border border-white/10 bg-black/20 p-3'>
-              <p className='mb-2 text-sm text-white/70'>بيانات التحويل</p>
+            <div className='rounded-xl border border-payzone-gold/30 bg-payzone-gold/10 p-4'>
+              <p className='mb-2 text-sm text-white/70'>تعليمات التحويل</p>
               <div className='flex items-center gap-2'>
                 {selectedMethod.imageUrl ? (
                   <img src={selectedMethod.imageUrl} alt={selectedMethod.name} className='h-10 w-10 rounded object-cover' />
                 ) : null}
-                <p className='font-semibold'>{selectedMethod.name}</p>
+                <p className='font-semibold text-payzone-gold'>{selectedMethod.name}</p>
               </div>
-              <div className='mt-1 flex items-center gap-2'>
+              <p className='mt-2 text-sm text-white/80'>
+                قم بتحويل المبلغ الكامل ثم ارفع صورة الإثبات أدناه.
+              </p>
+              <div className='mt-2 flex items-center gap-2'>
                 <p>{selectedMethod.accountNumber}</p>
                 {accountSuffix ? <span className='text-xs text-white/60'>(••••{accountSuffix})</span> : null}
                 <button

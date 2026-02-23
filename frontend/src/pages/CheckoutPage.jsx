@@ -9,6 +9,8 @@ import { formatNumberEn } from "../lib/formatNumberEn";
 import { getProductPricing } from "../lib/getProductPricing";
 import { useOrderStore } from "../stores/useOrderStore";
 import apiClient from "../lib/apiClient";
+import { useUserStore } from "../stores/useUserStore";
+import { addGuestPendingOrder } from "../lib/guestPendingOrders";
 
 const CheckoutPage = () => {
   const { cart, total, subtotal, clearCart } = useCartStore();
@@ -20,6 +22,7 @@ const CheckoutPage = () => {
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const { t } = useTranslation();
   const { createOrder } = useOrderStore();
+  const user = useUserStore((state) => state.user);
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -80,6 +83,9 @@ const CheckoutPage = () => {
         items: cart.map((item) => ({ productId: item._id, quantity: item.quantity })),
       });
       await clearCart();
+      if (!user) {
+        addGuestPendingOrder(order.trackingCode);
+      }
       navigate(`/pay/${order.trackingCode}`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create order");
