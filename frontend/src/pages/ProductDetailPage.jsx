@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useProductStore } from "../stores/useProductStore";
@@ -34,8 +34,6 @@ const mapGalleryImages = (product) => {
 
 const ProductDetailPage = () => {
         const { id } = useParams();
-        const imageSectionRef = useRef(null);
-        const [showStickyAddToCart, setShowStickyAddToCart] = useState(false);
 
         const { selectedProduct, fetchProductById, productDetailsLoading, clearSelectedProduct } = useProductStore((state) => ({
                 selectedProduct: state.selectedProduct,
@@ -78,32 +76,6 @@ const ProductDetailPage = () => {
                 }
         }, [selectedProduct]);
 
-        useEffect(() => {
-                if (!selectedProduct) return undefined;
-
-                const handleScroll = () => {
-                        const imageSection = imageSectionRef.current;
-                        const footer = document.querySelector("footer");
-                        if (!imageSection) return;
-
-                        const imageBottom = imageSection.getBoundingClientRect().bottom;
-                        const footerTop = footer ? footer.getBoundingClientRect().top : Number.POSITIVE_INFINITY;
-                        const passedImage = imageBottom <= 0;
-                        const closeToFooter = footerTop <= window.innerHeight + 16;
-
-                        setShowStickyAddToCart(passedImage && !closeToFooter);
-                };
-
-                handleScroll();
-                window.addEventListener("scroll", handleScroll, { passive: true });
-                window.addEventListener("resize", handleScroll);
-
-                return () => {
-                        window.removeEventListener("scroll", handleScroll);
-                        window.removeEventListener("resize", handleScroll);
-                };
-        }, [selectedProduct]);
-
         if (productDetailsLoading && !selectedProduct) {
                 return <LoadingSpinner />;
         }
@@ -137,10 +109,10 @@ const ProductDetailPage = () => {
         };
 
         return (
-                <div className='min-h-screen bg-[#fafafa] text-[#111111]'>
+                <div className='min-h-screen bg-[#fafafa] pb-24 text-[#111111]'>
                         <section className='mx-auto max-w-6xl px-4 py-10'>
                                 <div className='grid gap-8 lg:grid-cols-2'>
-                                        <div ref={imageSectionRef}>
+                                        <div>
                                                 <div className='overflow-hidden rounded-2xl bg-white shadow-sm'>
                                                         {activeImage ? (
                                                                 <img src={activeImage} alt={selectedProduct.name} className='h-[360px] w-full object-cover' />
@@ -172,9 +144,9 @@ const ProductDetailPage = () => {
                                         <div className='space-y-6'>
                                                 <h1 className='text-2xl font-semibold'>{selectedProduct.name}</h1>
 
-                                                <div className='flex items-baseline gap-2'>
-                                                        {isDiscounted && <span className='text-sm text-[#6b7280] line-through'>{formatMRU(price)}</span>}
-                                                        <span className='text-3xl font-semibold text-brand-primary'>{formatMRU(currentPrice)}</span>
+                                                <div className='my-4 flex items-baseline gap-2 py-1'>
+                                                        {isDiscounted && <span className='text-xs text-[#6b7280] line-through'>{formatMRU(price)}</span>}
+                                                        <span className='text-[2rem] font-semibold text-brand-primary'>{formatMRU(currentPrice)}</span>
                                                 </div>
 
                                                 <div className='flex items-center gap-3'>
@@ -199,13 +171,6 @@ const ProductDetailPage = () => {
                                                         </button>
                                                 </div>
 
-                                                <div className='space-y-2 py-2'>
-                                                        <h2 className='text-lg font-semibold text-[#111111]'>{t("products.detail.descriptionTitle")}</h2>
-                                                        <p className='text-sm leading-relaxed text-[#6b7280]'>
-                                                                {selectedProduct.description || t("products.detail.descriptionFallback")}
-                                                        </p>
-                                                </div>
-
                                                 <button
                                                         disabled={available <= 0}
                                                         onClick={handleAddToCart}
@@ -213,29 +178,37 @@ const ProductDetailPage = () => {
                                                 >
                                                         {t("common.actions.addToCart")}
                                                 </button>
+
+                                                <div className='space-y-1 text-xs text-[#6b7280]'>
+                                                        <p>✔ منتج أصلي 100%</p>
+                                                        <p>✔ شحن سريع</p>
+                                                        <p>✔ دفع آمن</p>
+                                                </div>
+
+                                                <div className='space-y-2 py-2'>
+                                                        <h2 className='text-lg font-medium text-[#111111]'>عن المنتج</h2>
+                                                        <p className='text-sm leading-relaxed text-[#6b7280]'>
+                                                                {selectedProduct.description || t("products.detail.descriptionFallback")}
+                                                        </p>
+                                                </div>
                                         </div>
                                 </div>
 
                                 <PeopleAlsoBought productId={selectedProduct._id} category={selectedProduct.category} />
                         </section>
 
-                        {showStickyAddToCart && (
-                                <div className='fixed inset-x-0 bottom-0 z-40 bg-white px-4 py-3 shadow-[0_-4px_16px_rgba(17,17,17,0.08)]'>
-                                        <div className='mx-auto flex max-w-6xl items-center justify-between gap-3'>
-                                                <div className='min-w-0'>
-                                                        <p className='truncate text-xs text-[#6b7280]'>{selectedProduct.name}</p>
-                                                        <p className='text-lg font-semibold text-brand-primary'>{formatMRU(currentPrice)}</p>
-                                                </div>
-                                                <button
-                                                        disabled={available <= 0}
-                                                        onClick={handleAddToCart}
-                                                        className='golden-button h-11 min-w-[9rem] rounded-md px-4 py-0 text-sm disabled:opacity-50'
-                                                >
-                                                        إضافة للسلة
-                                                </button>
-                                        </div>
+                        <div className='fixed inset-x-0 bottom-0 z-40 bg-white px-4 py-3 shadow-[0_-2px_10px_rgba(17,17,17,0.08)]'>
+                                <div className='mx-auto flex max-w-6xl items-center justify-between gap-3'>
+                                        <p className='text-xl font-semibold text-brand-primary'>{formatMRU(currentPrice)}</p>
+                                        <button
+                                                disabled={available <= 0}
+                                                onClick={handleAddToCart}
+                                                className='golden-button h-11 min-w-[9rem] rounded-lg px-4 py-0 text-sm disabled:opacity-50'
+                                        >
+                                                إضافة للسلة
+                                        </button>
                                 </div>
-                        )}
+                        </div>
                 </div>
         );
 };
