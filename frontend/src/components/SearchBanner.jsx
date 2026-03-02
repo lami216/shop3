@@ -1,14 +1,10 @@
 import { Loader2, Search, X } from "lucide-react";
-import useTranslation from "../hooks/useTranslation";
-
 const SearchBanner = ({
         query,
         onQueryChange,
         onClear,
         isLoading = false,
 }) => {
-        const { t } = useTranslation();
-
         return (
                 <section className='relative z-10 w-full rounded-3xl border border-brand-primary/25 bg-white p-4 shadow-sm sm:p-6'>
                         <div className='w-full'>
@@ -36,9 +32,6 @@ const SearchBanner = ({
                                         {isLoading && <Loader2 className='h-5 w-5 animate-spin text-brand-primary' />}
                                 </div>
                         </div>
-                        <p className='mt-3 text-xs text-brand-muted'>
-                                {t("home.hero.offerFallback")}
-                        </p>
                 </section>
         );
 };

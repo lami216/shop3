@@ -11,7 +11,6 @@ const ProductCard = ({ product }) => {
         const { t } = useTranslation();
         const inventory = useInventoryStore((state) => state.publicMap[product._id]);
         const available = inventory?.availableQuantity ?? 0;
-        const reserved = inventory?.reservedQuantity ?? 0;
         const outOfStock = available <= 0;
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(product);
         const productForCart = {
@@ -32,55 +31,47 @@ const ProductCard = ({ product }) => {
                 addToCart(productForCart);
         };
 
+        const volumeValue = product.size ?? product.volume ?? product.capacity ?? "";
+        const volumeText = volumeValue ? `${volumeValue} مل` : "";
+
         return (
-                <div className='group relative flex w-full flex-col overflow-hidden rounded-3xl border border-brand-primary/25 bg-white p-3 text-brand-text shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-golden sm:p-4'>
+                <article className='flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white p-4 text-brand-text shadow-sm'>
                         <Link
                                 to={`/products/${product._id}`}
-                                className='relative block overflow-hidden rounded-2xl bg-white'
+                                className='relative block overflow-hidden rounded-xl bg-[#fafafa]'
                                 aria-label={t("product.viewDetails", { name: product.name })}
                         >
-                                {isDiscounted && (
-                                        <span className='absolute right-4 top-4 z-10 rounded-full bg-brand-accent px-3 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-brand-text shadow-golden'>
-                                                -{discountPercentage}%
-                                        </span>
-                                )}
                                 {coverImage ? (
-                                        <img
-                                                className='h-44 w-full object-cover transition duration-500 ease-out group-hover:scale-105 sm:h-60'
-                                                src={coverImage}
-                                                alt={product.name}
-                                        />
+                                        <img className='h-44 w-full object-cover sm:h-52' src={coverImage} alt={product.name} />
                                 ) : (
-                                        <div className='flex h-60 w-full items-center justify-center bg-brand-bg text-sm text-brand-muted'>
+                                        <div className='flex h-44 w-full items-center justify-center text-sm text-brand-muted sm:h-52'>
                                                 {t("common.status.noImage")}
                                         </div>
                                 )}
                         </Link>
 
-                        <div className='flex flex-1 flex-col gap-3 pt-4 sm:gap-4 sm:pt-6'>
-                                <Link to={`/products/${product._id}`} className='transition duration-150 ease-out hover:text-brand-primary'>
-                                        <h5 className='text-base font-semibold tracking-wide sm:text-lg'>{product.name}</h5>
+                        <div className='flex flex-1 flex-col gap-2 pt-4'>
+                                <Link to={`/products/${product._id}`}>
+                                        <h5 className='text-sm font-semibold text-[#111111] sm:text-base'>{product.name}</h5>
                                 </Link>
-                                <p className='min-h-[2.5rem] text-sm leading-relaxed text-brand-muted sm:min-h-[3.5rem]'>
-                                        {product.description || t("products.detail.descriptionFallback")}
-                                </p>
-                                <div className='flex flex-wrap items-baseline gap-3'>
-                                        {isDiscounted ? (
-                                                <>
-                                                        <span className='text-sm text-brand-muted line-through'>{formatMRU(price)}</span>
-                                                        <span className='text-2xl font-semibold text-brand-primary'>{formatMRU(discountedPrice)}</span>
-                                                </>
-                                        ) : (
-                                                <span className='text-2xl font-semibold text-brand-primary'>{formatMRU(price)}</span>
-                                        )}
+                                {volumeText && <p className='text-xs text-[#6b7280]'>{volumeText}</p>}
+                                <div className='flex items-baseline gap-2'>
+                                        {isDiscounted && <span className='text-xs text-[#6b7280] line-through'>{formatMRU(price)}</span>}
+                                        <span className='text-xl font-semibold text-brand-primary sm:text-2xl'>
+                                                {formatMRU(isDiscounted ? discountedPrice : price)}
+                                        </span>
                                 </div>
-                                <p className="text-xs text-brand-muted">{outOfStock ? 'Out of stock' : available <= (inventory?.lowStockThreshold ?? 3) ? `Only ${available} left${reserved > 0 ? `, ${reserved} reserved` : ''}` : reserved > 0 ? `${available} available, ${reserved} reserved` : `${available} available`}</p>
-                                <button disabled={outOfStock} className='golden-button mt-auto text-xs uppercase tracking-[0.35em] disabled:opacity-50' onClick={handleAddToCart}>
+                                <button
+                                        disabled={outOfStock}
+                                        className='golden-button mt-auto w-full rounded-lg py-3 text-sm disabled:opacity-50'
+                                        onClick={handleAddToCart}
+                                >
                                         <ShoppingCart size={18} />
-                                        {t("common.actions.addToCart")}
+                                        إضافة للسلة
                                 </button>
                         </div>
-                </div>
+                </article>
         );
 };
+
 export default ProductCard;
