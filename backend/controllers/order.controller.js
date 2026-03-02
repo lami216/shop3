@@ -121,7 +121,9 @@ export const createOrder = async (req, res) => {
 
 export const getOrderPaymentSession = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate("products.product", "name image");
+    const order = await Order.findById(req.params.id)
+      .populate("products.product", "name image")
+      .populate("paymentMethod", "name accountNumber");
     if (!order) return res.status(404).json({ message: "Order not found" });
     if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
@@ -143,7 +145,9 @@ export const getOrderPaymentSession = async (req, res) => {
 
 export const getOrderPaymentSessionByTracking = async (req, res) => {
   try {
-    const order = await Order.findOne({ trackingCode: req.params.trackingCode }).populate("products.product", "name image");
+    const order = await Order.findOne({ trackingCode: req.params.trackingCode })
+      .populate("products.product", "name image")
+      .populate("paymentMethod", "name accountNumber");
     if (!order) return res.status(404).json({ message: "Order not found" });
     if (order.status === "UNDER_REVIEW") {
       return res.status(400).json({ message: "Order is under review" });
