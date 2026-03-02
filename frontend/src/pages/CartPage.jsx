@@ -12,7 +12,7 @@ const CartPage = () => {
         const leadText = t("cart.summary.lead");
 
         return (
-                <div className='min-h-screen bg-brand-bg py-10 text-brand-text sm:py-16' dir='rtl'>
+                <div className='min-h-screen bg-brand-bg py-12 text-brand-text sm:py-20' dir='rtl'>
                         <div className='mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8'>
                                 <header className='space-y-2 text-center md:text-right'>
                                         <h1 className='text-[clamp(2rem,4vw,2.6rem)] font-bold text-brand-text'>{t("cart.title")}</h1>
