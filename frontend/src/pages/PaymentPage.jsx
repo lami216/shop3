@@ -202,7 +202,7 @@ const PaymentPage = () => {
   }
 
   const accountNumber = session?.order?.paymentMethod?.accountNumber || "01837363";
-  const paymentMethodName = session?.order?.paymentMethod?.name || "وسيلة الدفع";
+  const paymentMethodName = session?.order?.paymentMethod?.name;
   const normalizedAmount = Number(session?.order?.totalAmount ?? 0);
   const copyableAmount = Number.isFinite(normalizedAmount) ? String(Math.trunc(normalizedAmount)) : "0";
   const displayAmount = `MRU ${copyableAmount}`;
@@ -225,27 +225,29 @@ const PaymentPage = () => {
 
           <div className='rounded-2xl border border-brand-primary/10 bg-white p-5 shadow-sm'>
             <h3 className='mb-3 text-lg font-semibold text-[#111111]'>خطوات التحويل</h3>
-            <p className='text-sm leading-7 text-[#111111]'>
-              حوّل المبلغ{" "}
-              <button
-                type='button'
-                onClick={() => copyValue(copyableAmount, "تم نسخ المبلغ")}
-                className='mx-1 inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] px-3 py-2 align-middle text-sm text-[#111111]'
-              >
-                <span className='font-medium'>{displayAmount}</span>
-                <Copy size={14} className='text-[#6b7280]' />
-              </button>
-              عبر {paymentMethodName} إلى الرقم{" "}
-              <button
-                type='button'
-                onClick={() => copyValue(accountNumber, "تم نسخ الرقم")}
-                className='mx-1 inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] px-3 py-2 align-middle text-sm text-[#111111]'
-              >
-                <span className='font-medium'>{accountNumber}</span>
-                <Copy size={14} className='text-[#6b7280]' />
-              </button>
-              ثم ارفع لقطة شاشة الدفع هنا
-            </p>
+            {paymentMethodName ? (
+              <p className='text-sm leading-7 text-[#111111]'>
+                حوّل المبلغ{" "}
+                <button
+                  type='button'
+                  onClick={() => copyValue(copyableAmount, "تم نسخ المبلغ")}
+                  className='mx-1 inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] px-3 py-2 align-middle text-sm text-[#111111]'
+                >
+                  <span className='font-medium'>{displayAmount}</span>
+                  <Copy size={14} className='text-[#6b7280]' />
+                </button>
+                باستخدام {paymentMethodName} إلى الرقم{" "}
+                <button
+                  type='button'
+                  onClick={() => copyValue(accountNumber, "تم نسخ الرقم")}
+                  className='mx-1 inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] px-3 py-2 align-middle text-sm text-[#111111]'
+                >
+                  <span className='font-medium'>{accountNumber}</span>
+                  <Copy size={14} className='text-[#6b7280]' />
+                </button>
+                ثم ارفع لقطة شاشة الدفع هنا
+              </p>
+            ) : null}
 
             <p className='mt-4 text-center text-xs text-[#9ca3af]' aria-hidden='true'>
               ↓
