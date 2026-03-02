@@ -32,22 +32,24 @@ const ProductCard = ({ product }) => {
         const volumeText = volumeValue ? `${volumeValue} مل` : "";
 
         return (
-                <article className='flex h-full min-h-[21rem] w-full flex-col overflow-hidden rounded-xl bg-white p-4 shadow-sm'>
+                <article className='flex h-full min-h-[21rem] w-full flex-col justify-between overflow-hidden rounded-xl bg-white p-0 shadow-sm'>
                         <Link
                                 to={`/products/${product._id}`}
-                                className='flex-[0_0_72%] overflow-hidden rounded-lg bg-[#fafafa] p-2'
+                                className='w-full'
                                 aria-label={t("product.viewDetails", { name: product.name })}
                         >
-                                {coverImage ? (
-                                        <img className='h-full w-full rounded-md object-cover' src={coverImage} alt={product.name} />
-                                ) : (
-                                        <div className='flex h-full w-full items-center justify-center text-sm text-[#6b7280]'>
-                                                {t("common.status.noImage")}
-                                        </div>
-                                )}
+                                <div className='aspect-square w-full overflow-hidden bg-[#fafafa]'>
+                                        {coverImage ? (
+                                                <img className='h-full w-full object-cover' src={coverImage} alt={product.name} />
+                                        ) : (
+                                                <div className='flex h-full w-full items-center justify-center text-sm text-[#6b7280]'>
+                                                        {t("common.status.noImage")}
+                                                </div>
+                                        )}
+                                </div>
                         </Link>
 
-                        <div className='flex flex-1 flex-col gap-2 pt-3'>
+                        <div className='flex flex-1 flex-col gap-2 p-4'>
                                 <Link to={`/products/${product._id}`}>
                                         <h5 className='text-sm font-semibold text-[#111111]'>{product.name}</h5>
                                 </Link>
