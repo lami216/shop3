@@ -32,22 +32,22 @@ const ProductCard = ({ product }) => {
         const volumeText = volumeValue ? `${volumeValue} مل` : "";
 
         return (
-                <article className='flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white p-4 shadow-sm'>
+                <article className='flex h-full min-h-[21rem] w-full flex-col overflow-hidden rounded-xl bg-white p-4 shadow-sm'>
                         <Link
                                 to={`/products/${product._id}`}
-                                className='block overflow-hidden rounded-xl bg-[#fafafa]'
+                                className='flex-[0_0_72%] overflow-hidden rounded-lg bg-[#fafafa] p-2'
                                 aria-label={t("product.viewDetails", { name: product.name })}
                         >
                                 {coverImage ? (
-                                        <img className='h-40 w-full object-cover' src={coverImage} alt={product.name} />
+                                        <img className='h-full w-full rounded-md object-cover' src={coverImage} alt={product.name} />
                                 ) : (
-                                        <div className='flex h-40 w-full items-center justify-center text-sm text-[#6b7280]'>
+                                        <div className='flex h-full w-full items-center justify-center text-sm text-[#6b7280]'>
                                                 {t("common.status.noImage")}
                                         </div>
                                 )}
                         </Link>
 
-                        <div className='flex flex-1 flex-col gap-2 pt-4'>
+                        <div className='flex flex-1 flex-col gap-2 pt-3'>
                                 <Link to={`/products/${product._id}`}>
                                         <h5 className='text-sm font-semibold text-[#111111]'>{product.name}</h5>
                                 </Link>
@@ -62,7 +62,7 @@ const ProductCard = ({ product }) => {
 
                                 <button
                                         disabled={outOfStock}
-                                        className='golden-button mt-auto w-full rounded-md py-3 text-sm disabled:opacity-50'
+                                        className='mt-auto inline-flex w-full items-center justify-center rounded-md bg-brand-primary py-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50'
                                         onClick={() => addToCart(productForCart)}
                                 >
                                         إضافة للسلة
