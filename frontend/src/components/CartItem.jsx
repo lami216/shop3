@@ -10,7 +10,7 @@ const CartItem = ({ item }) => {
         const { removeFromCart, updateQuantity } = useCartStore();
         const { t } = useTranslation();
 
-        const { price: originalPrice, discountedPrice, isDiscounted, discountPercentage } =
+        const { price: originalPrice, discountedPrice, isDiscounted } =
                 getProductPricing(item);
         const priceValue = Number(discountedPrice) || 0;
         const quantityValue = Number(item.quantity) || 0;
@@ -29,12 +29,12 @@ const CartItem = ({ item }) => {
 
         return (
                 <article
-                        className='grid grid-cols-[88px_minmax(0,1fr)] items-center gap-4 rounded-2xl border border-brand-primary/20 bg-white p-4 text-brand-text shadow-sm transition duration-300 hover:shadow-golden sm:grid-cols-[96px_minmax(0,1fr)] sm:p-5'
+                        className='grid grid-cols-[104px_minmax(0,1fr)] items-center gap-4 rounded-2xl border border-brand-primary/15 bg-white p-5 text-brand-text shadow-sm sm:grid-cols-[112px_minmax(0,1fr)] sm:p-6'
                         dir='rtl'
                 >
                         <Link
                                 to={`/products/${item._id}`}
-                                className='block h-20 w-20 overflow-hidden rounded-xl border border-brand-primary/20 bg-brand-bg shadow-inner transition hover:border-brand-primary sm:h-24 sm:w-24'
+                                className='block h-24 w-24 overflow-hidden rounded-2xl border border-brand-primary/15 bg-brand-bg sm:h-28 sm:w-28'
                         >
                                 {item.image ? (
                                         <img src={item.image} alt={item.name} className='h-full w-full object-cover' />
@@ -47,23 +47,18 @@ const CartItem = ({ item }) => {
 
                         <div className='flex flex-col gap-3'>
                                 <div className='flex items-start justify-between gap-3'>
-                                        <h3 className='text-[clamp(1.05rem,2.4vw,1.25rem)] font-semibold text-brand-text'>{item.name}</h3>
-                                        {isDiscounted && (
-                                                <span className='rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700'>
-                                                        -{discountPercentage}%
-                                                </span>
-                                        )}
+                                        <h3 className='text-[clamp(1rem,2.2vw,1.15rem)] font-semibold text-[#111111]'>{item.name}</h3>
                                 </div>
 
                                 <div className='flex flex-wrap items-center gap-2 text-sm text-brand-muted'>
                                         <span>{t("cart.item.unitPrice")}</span>
-                                        <div className='flex items-center gap-2 text-lg font-semibold text-payzone-gold'>
+                                        <div className='flex items-center gap-2 text-xl font-semibold text-payzone-gold'>
                                                 {isDiscounted && (
                                                         <span className='text-xs font-medium text-brand-muted line-through'>
                                                                 {formatMRU(originalPrice)}
                                                         </span>
                                                 )}
-                                                <span className='text-[clamp(1rem,2.2vw,1.15rem)]'>{formatMRU(priceValue)}</span>
+                                                <span className='text-[clamp(1.2rem,2.8vw,1.35rem)]'>{formatMRU(priceValue)}</span>
                                         </div>
                                 </div>
 
