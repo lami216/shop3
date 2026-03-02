@@ -64,7 +64,8 @@
         }
 
         .golden-button {
-                @apply inline-flex items-center justify-center gap-2 rounded-lg border-0 bg-brand-primary px-6 py-3.5 text-sm font-semibold text-white transition-colors duration-150 ease-out;
+                @apply inline-flex items-center justify-center gap-2 rounded-lg border-0 bg-brand-primary px-6 py-3.5 text-sm font-semibold transition-colors duration-150 ease-out;
+                color: #ffffff !important;
         }
 
         .golden-button:hover {
