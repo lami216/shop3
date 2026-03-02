@@ -208,7 +208,10 @@ const PaymentPage = () => {
           <div className='rounded-2xl border border-brand-primary/10 bg-white p-5 shadow-sm'>
             <p className='text-sm text-[#6b7280]'>المبلغ المطلوب</p>
             <p className='my-3 text-3xl font-bold text-payzone-gold'>{formatMRU(session.order.totalAmount)}</p>
-            <p className='text-sm text-[#6b7280]'>أكمل التحويل خلال: {formatMmSs(secondsLeft * 1000)}</p>
+            <div className='my-5'>
+              <p className='text-sm text-[#6b7280]'>يرجى إتمام التحويل خلال</p>
+              <p className='mt-2 text-3xl font-bold text-[#111111]'>{formatMmSs(secondsLeft * 1000)}</p>
+            </div>
             <p className='mt-1 text-sm text-[#6b7280]'>رقم الطلب: {getOrderDisplayNumber(session.order)}</p>
             <p className='mt-1 text-sm text-[#6b7280]'>رمز التتبع: {session.order.trackingCode}</p>
           </div>
@@ -217,29 +220,30 @@ const PaymentPage = () => {
             <h3 className='mb-3 text-lg font-semibold text-[#111111]'>خطوات التحويل</h3>
             <ol className='list-decimal space-y-2 pr-5 text-sm text-[#111111]'>
               <li>افتح تطبيق Bankili</li>
-              <li>حوّل المبلغ: {formatMRU(session.order.totalAmount)}</li>
-              <li>أرسل إلى الرقم: {accountNumber}</li>
+              <li>حوّل البيانات التالية</li>
             </ol>
 
-            <div className='mt-4 flex gap-2'>
-              <button
-                type='button'
-                onClick={() => copyValue(accountNumber, "تم نسخ الرقم")}
-                className='inline-flex items-center gap-2 rounded-lg border border-payzone-gold/70 bg-white px-3 py-2 text-xs font-semibold text-payzone-gold'
-              >
-                <Copy size={14} /> نسخ الرقم
-              </button>
+            <div className='mt-4 space-y-3'>
               <button
                 type='button'
                 onClick={() => copyValue(formatMRU(session.order.totalAmount), "تم نسخ المبلغ")}
-                className='inline-flex items-center gap-2 rounded-lg border border-payzone-gold/70 bg-white px-3 py-2 text-xs font-semibold text-payzone-gold'
+                className='flex w-full items-center justify-between rounded-xl border border-payzone-gold/70 bg-white px-4 py-3 text-sm'
               >
-                <Copy size={14} /> نسخ المبلغ
+                <span className='font-semibold text-payzone-gold'>{formatMRU(session.order.totalAmount)}</span>
+                <Copy size={16} className='text-payzone-gold' />
+              </button>
+              <button
+                type='button'
+                onClick={() => copyValue(accountNumber, "تم نسخ الرقم")}
+                className='flex w-full items-center justify-between rounded-xl border border-payzone-gold/70 bg-white px-4 py-3 text-sm'
+              >
+                <span className='font-medium text-[#111111]'>{accountNumber}</span>
+                <Copy size={16} className='text-payzone-gold' />
               </button>
             </div>
 
             <label htmlFor='receiptImage' className='mt-5 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-payzone-gold px-4 py-2.5 text-sm font-semibold text-white'>
-              <Camera size={16} /> 📷 رفع صورة التحويل (لقطة شاشة)
+              <Camera size={16} /> ارفع لقطة شاشة الدفع
             </label>
             <input id='receiptImage' type='file' accept='image/*' className='hidden' onChange={onProofChange} required />
             {proofFile ? <p className='mt-2 text-xs text-[#6b7280]'>{proofFile.name}</p> : <p className='mt-2 text-xs text-[#6b7280]'>PNG / JPG حتى 5MB</p>}
