@@ -130,7 +130,7 @@ const PaymentPage = () => {
         trackingCode: data.trackingCode || session.order.trackingCode,
       });
       setSession(null);
-      toast.success("تم استلام إثبات الدفع");
+      toast.success("طلبك قيد المراجعة");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to submit payment proof");
     } finally {
@@ -147,9 +147,13 @@ const PaymentPage = () => {
         <h1 className='mb-4 text-3xl font-bold text-[#111111]'>حالة الطلب</h1>
         <div className='rounded-2xl border border-brand-primary/10 bg-white p-6 shadow-sm'>
           <div className='mb-4 h-1.5 w-20 rounded-full bg-payzone-gold' />
-          <h2 className='mb-3 text-xl font-semibold text-[#111111]'>تم استلام إثبات التحويل</h2>
-          <p className='mb-4 text-[#6b7280]'>يجري التحقق من الدفع حالياً. سيتم تأكيد الطلب عبر واتساب خلال وقت قصير.</p>
-          <p className='mb-1 text-[#111111]'>الحالة: {getOrderStatusLabelAr(displayOrder.status || "UNDER_REVIEW")}</p>
+          <h2 className='mb-3 text-xl font-semibold text-[#111111]'>طلبك قيد المراجعة</h2>
+          <p className='text-[#6b7280]'>نقوم حالياً بالتحقق من عملية الدفع.</p>
+          <p className='mb-4 text-[#6b7280]'>سيتم تأكيد الطلب وإشعارك عبر واتساب خلال وقت قصير.</p>
+          <p className='mb-1 flex items-center gap-2 text-[#111111]'>
+            <span className='inline-block h-1.5 w-1.5 rounded-full bg-payzone-gold/80' aria-hidden='true' />
+            الحالة: {getOrderStatusLabelAr(displayOrder.status || "UNDER_REVIEW")}
+          </p>
           <p className='mb-1 text-[#111111]'>رقم الطلب: {getOrderDisplayNumber(displayOrder)}</p>
           <p className='mb-5 text-[#111111]'>رمز التتبع: {displayOrder.trackingCode}</p>
           <div className='flex flex-col gap-3 sm:flex-row'>
