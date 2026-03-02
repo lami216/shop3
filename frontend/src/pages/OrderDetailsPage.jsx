@@ -154,18 +154,12 @@ const OrderDetailsPage = () => {
           )}
         </section>
 
-        <div className='mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end'>
-          <button
-            type='button'
-            className='rounded-lg bg-[#c8a45d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b8934d]'
-          >
-            تحميل الفاتورة
-          </button>
+        <div className='mt-6'>
           <Link
             to='/'
-            className='rounded-lg border border-[#c8a45d] px-5 py-2.5 text-center text-sm font-semibold text-[#c8a45d] transition hover:bg-[#faf6ec]'
+            className='flex h-[52px] w-full items-center justify-center rounded-xl bg-[#c8a45d] text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#b8934d]'
           >
-            العودة للمتجر
+            العودة إلى المتجر
           </Link>
         </div>
       </div>
