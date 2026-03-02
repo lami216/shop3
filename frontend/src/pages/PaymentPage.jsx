@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Camera, Copy } from "lucide-react";
 import { useOrderStore } from "../stores/useOrderStore";
-import { formatMRU } from "../lib/formatMRU";
 import { removeGuestPendingOrder } from "../lib/guestPendingOrders";
 import { canOpenPaymentPage, formatMmSs, getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
 
@@ -204,6 +203,9 @@ const PaymentPage = () => {
 
   const accountNumber = session?.order?.paymentMethod?.accountNumber || "01837363";
   const paymentMethodName = session?.order?.paymentMethod?.name || "وسيلة الدفع";
+  const normalizedAmount = Number(session?.order?.totalAmount ?? 0);
+  const copyableAmount = Number.isFinite(normalizedAmount) ? String(Math.trunc(normalizedAmount)) : "0";
+  const displayAmount = `MRU ${copyableAmount}`;
   return (
     <div className='bg-[#fafafa] py-12'>
       <div className='container mx-auto max-w-4xl px-4 text-[#111111]'>
@@ -212,7 +214,7 @@ const PaymentPage = () => {
         <form onSubmit={submit} className='mt-6 space-y-5'>
           <div className='rounded-2xl border border-brand-primary/10 bg-white p-5 shadow-sm'>
             <p className='text-sm text-[#6b7280]'>المبلغ المطلوب</p>
-            <p className='my-3 text-3xl font-bold text-payzone-gold'>{formatMRU(session.order.totalAmount)}</p>
+            <p className='my-3 text-3xl font-bold text-payzone-gold'>{displayAmount}</p>
             <div className='my-5'>
               <p className='text-sm text-[#6b7280]'>يرجى إتمام الدفع خلال</p>
               <p className='mt-2 text-3xl font-bold text-[#111111]'>{formatMmSs(secondsLeft * 1000)}</p>
@@ -224,13 +226,13 @@ const PaymentPage = () => {
           <div className='rounded-2xl border border-brand-primary/10 bg-white p-5 shadow-sm'>
             <h3 className='mb-3 text-lg font-semibold text-[#111111]'>خطوات التحويل</h3>
             <p className='text-sm leading-7 text-[#111111]'>
-              حول المبلغ{" "}
+              حوّل المبلغ{" "}
               <button
                 type='button'
-                onClick={() => copyValue(formatMRU(session.order.totalAmount), "تم نسخ المبلغ")}
+                onClick={() => copyValue(copyableAmount, "تم نسخ المبلغ")}
                 className='mx-1 inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] px-3 py-2 align-middle text-sm text-[#111111]'
               >
-                <span className='font-medium'>{formatMRU(session.order.totalAmount)}</span>
+                <span className='font-medium'>{displayAmount}</span>
                 <Copy size={14} className='text-[#6b7280]' />
               </button>
               عبر {paymentMethodName} إلى الرقم{" "}
@@ -249,7 +251,7 @@ const PaymentPage = () => {
               ↓
             </p>
 
-            <label htmlFor='receiptImage' className='mt-5 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-payzone-gold px-4 py-2.5 text-sm font-semibold text-white'>
+            <label htmlFor='receiptImage' className='mt-5 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-brand-primary/20 bg-white px-4 py-2.5 text-sm font-semibold text-[#111111] transition-colors duration-200 hover:bg-[#faf7f1]'>
               <Camera size={16} /> رفع لقطة شاشة الدفع
             </label>
             <input id='receiptImage' type='file' accept='image/*' className='hidden' onChange={onProofChange} required />
