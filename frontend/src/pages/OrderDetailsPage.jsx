@@ -33,21 +33,21 @@ const OrderDetailsPage = () => {
   const isUnderReview = String(order?.status || "").toUpperCase() === "UNDER_REVIEW";
   const subtotal = lines.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
 
-  if (loading) return <div className='min-h-[60vh] bg-[#fafafa] px-4 py-16 text-center text-[#6b7280]'>Loading...</div>;
-  if (!order) return <div className='min-h-[60vh] bg-[#fafafa] px-4 py-16 text-center text-[#6b7280]'>لم يتم العثور على الطلب</div>;
+  if (loading) return <div className='min-h-[60vh] bg-white px-4 py-16 text-center text-[#6b7280]'>Loading...</div>;
+  if (!order) return <div className='min-h-[60vh] bg-white px-4 py-16 text-center text-[#6b7280]'>لم يتم العثور على الطلب</div>;
 
   return (
     <div className='min-h-screen bg-white px-4 py-8 sm:py-12'>
       <div className='mx-auto w-full max-w-4xl bg-white'>
-        <header className='pb-6 text-center'>
-          <p className='text-lg font-semibold tracking-[0.18em] text-[#111111]'>الصاحب</p>
-          <p className='mt-1 text-sm font-medium tracking-[0.4em] text-[#111111]'>MAISON DE PARFUM</p>
-          <p className='mt-3 text-xs text-[#6b7280]'>فاتورة طلب</p>
-          <div className='mx-auto mt-4 h-px w-28 bg-[#c8a45d]/70' />
-        </header>
+        <section className='border-b border-[#f1f1f1] pb-8 text-right'>
+          <header className='text-center'>
+            <p className='text-lg font-semibold tracking-[0.18em] text-[#111111]'>الصاحب</p>
+            <p className='mt-1 text-sm font-medium tracking-[0.4em] text-[#111111]'>MAISON DE PARFUM</p>
+            <p className='mt-3 text-sm text-[#111111]'>فاتورة طلب</p>
+            <div className='mx-auto mt-4 h-px w-20 bg-[#c8a45d]/70' />
+          </header>
 
-        <section className='mt-2 grid gap-6 border-b border-[#f1f1f1] pb-6 text-right md:grid-cols-2'>
-          <div className='space-y-4'>
+          <div className='mt-8 grid gap-5 md:justify-items-end'>
             <div>
               <p className={labelClassName}>رقم الطلب</p>
               <p className={valueClassName}>{getOrderDisplayNumber(order)}</p>
@@ -58,7 +58,7 @@ const OrderDetailsPage = () => {
             </div>
             <div>
               <p className={labelClassName}>الحالة</p>
-              <p className='mt-1 inline-flex items-center gap-2 rounded-full bg-[#f8f6f2] px-3 py-1 text-sm font-semibold text-[#111111]'>
+              <p className='mt-1 inline-flex items-center gap-2 rounded-full bg-[#f7f4ec] px-3 py-1 text-sm font-semibold text-[#111111]'>
                 {isUnderReview ? <span className='h-1.5 w-1.5 rounded-full bg-[#c8a45d]' /> : null}
                 {getOrderStatusLabelAr(order.status)}
               </p>
@@ -72,10 +72,12 @@ const OrderDetailsPage = () => {
               <p className={valueClassName}>{order.paymentMethod?.name || "—"}</p>
             </div>
           </div>
+        </section>
 
-          {(order.customer?.name || order.customer?.phone || order.customer?.address) ? (
+        {(order.customer?.name || order.customer?.phone || order.customer?.address) ? (
+          <section className='border-b border-[#f1f1f1] py-8 text-right'>
+            <h2 className='mb-5 text-base font-bold text-[#111111]'>بيانات العميل</h2>
             <div className='space-y-4'>
-              <h2 className='text-base font-bold text-[#111111]'>بيانات العميل</h2>
               <div>
                 <p className={labelClassName}>الاسم</p>
                 <p className={valueClassName}>{order.customer?.name || "—"}</p>
@@ -89,19 +91,19 @@ const OrderDetailsPage = () => {
                 <p className={valueClassName}>{order.customer?.address || "—"}</p>
               </div>
             </div>
-          ) : null}
-        </section>
+          </section>
+        ) : null}
 
-        <section className='mt-6 border-b border-[#f1f1f1] pb-6 text-right'>
+        <section className='border-b border-[#f1f1f1] py-8 text-right'>
           <h2 className='mb-4 text-base font-bold text-[#111111]'>المنتجات</h2>
           <div className='overflow-x-auto'>
-            <table className='w-full min-w-[560px] text-sm'>
+            <table className='w-full min-w-[540px] text-sm'>
               <thead>
                 <tr className='border-b border-[#f1f1f1] text-[#6b7280]'>
-                  <th className='py-2 text-right font-medium'>المنتج</th>
-                  <th className='py-2 text-right font-medium'>الكمية</th>
-                  <th className='py-2 text-right font-medium'>سعر الوحدة</th>
-                  <th className='py-2 text-right font-medium'>الإجمالي</th>
+                  <th className='py-3 text-right font-medium'>المنتج</th>
+                  <th className='py-3 text-right font-medium'>الكمية</th>
+                  <th className='py-3 text-right font-medium'>سعر الوحدة</th>
+                  <th className='py-3 text-right font-medium'>الإجمالي</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,10 +111,10 @@ const OrderDetailsPage = () => {
                   const lineTotal = Number(item.price || 0) * Number(item.quantity || 0);
                   return (
                     <tr key={`${item.product?._id || item.product || index}`} className='border-b border-[#f1f1f1] text-[#111111]'>
-                      <td className='py-3'>{item.product?.name || "—"}</td>
-                      <td className='py-3'>{item.quantity || 0}</td>
-                      <td className='py-3'>{formatMRU(item.price)}</td>
-                      <td className='py-3 font-medium'>{formatMRU(lineTotal)}</td>
+                      <td className='py-3.5 font-semibold'>{item.product?.name || "—"}</td>
+                      <td className='py-3.5 tabular-nums'>{item.quantity || 0}</td>
+                      <td className='py-3.5 tabular-nums'>{formatMRU(item.price)}</td>
+                      <td className='py-3.5 font-medium tabular-nums'>{formatMRU(lineTotal)}</td>
                     </tr>
                   );
                 })}
@@ -121,7 +123,7 @@ const OrderDetailsPage = () => {
           </div>
         </section>
 
-        <section className='mt-6 pb-6 text-right'>
+        <section className='py-8 text-right'>
           <div className='ml-auto w-full max-w-sm space-y-3'>
             <div className='flex items-center justify-between gap-2 text-sm text-[#6b7280]'>
               <span>المجموع الفرعي</span>
@@ -139,7 +141,7 @@ const OrderDetailsPage = () => {
           </div>
         </section>
 
-        <div className='mt-6'>
+        <div className='pt-2'>
           <Link
             to='/'
             className='flex h-[52px] w-full items-center justify-center rounded-xl bg-[#c8a45d] text-center text-sm font-semibold text-white transition hover:bg-[#b8934d]'
