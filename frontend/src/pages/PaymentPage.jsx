@@ -226,7 +226,7 @@ const PaymentPage = () => {
 
         <form onSubmit={submit} className='mt-6 space-y-5'>
           <div className='rounded-2xl border border-brand-primary/10 bg-white p-5 shadow-sm'>
-            <p className='text-sm text-[#6b7280]'>المبلغ المطلوب</p>
+            <p className='text-sm text-[#6b7280]'>المبلغ الإجمالي</p>
             <p className='my-3 text-3xl font-bold text-payzone-gold'>{displayAmount}</p>
             <div className='my-5'>
               <p className='text-sm text-[#6b7280]'>يرجى إتمام الدفع خلال</p>
@@ -237,7 +237,6 @@ const PaymentPage = () => {
           </div>
 
           <div className='rounded-2xl border border-brand-primary/10 bg-white p-5 shadow-sm'>
-            <h3 className='mb-3 text-lg font-semibold text-[#111111]'>خطوات التحويل</h3>
             <p className='text-sm leading-7 text-[#111111]'>
               حوّل المبلغ{" "}
               <button

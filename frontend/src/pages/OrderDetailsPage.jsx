@@ -37,16 +37,16 @@ const OrderDetailsPage = () => {
   if (!order) return <div className='min-h-[60vh] bg-[#fafafa] px-4 py-16 text-center text-[#6b7280]'>لم يتم العثور على الطلب</div>;
 
   return (
-    <div className='min-h-screen bg-[#fafafa] px-4 py-8 sm:py-12'>
-      <div className='mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-[0_12px_30px_rgba(17,17,17,0.08)]'>
-        <header className='pb-4 text-center'>
+    <div className='min-h-screen bg-white px-4 py-8 sm:py-12'>
+      <div className='mx-auto w-full max-w-4xl bg-white'>
+        <header className='pb-6 text-center'>
           <p className='text-lg font-semibold tracking-[0.18em] text-[#111111]'>الصاحب</p>
           <p className='mt-1 text-sm font-medium tracking-[0.4em] text-[#111111]'>MAISON DE PARFUM</p>
-          <p className='mt-2 text-xs text-[#6b7280]'>فاتورة طلب</p>
-          <div className='mx-auto mt-4 h-px w-28 bg-[#c8a45d]/60' />
+          <p className='mt-3 text-xs text-[#6b7280]'>فاتورة طلب</p>
+          <div className='mx-auto mt-4 h-px w-28 bg-[#c8a45d]/70' />
         </header>
 
-        <section className='mt-5 grid gap-6 border-b border-[#ececec] pb-5 text-right md:grid-cols-2'>
+        <section className='mt-2 grid gap-6 border-b border-[#f1f1f1] pb-6 text-right md:grid-cols-2'>
           <div className='space-y-4'>
             <div>
               <p className={labelClassName}>رقم الطلب</p>
@@ -58,14 +58,11 @@ const OrderDetailsPage = () => {
             </div>
             <div>
               <p className={labelClassName}>الحالة</p>
-              <p className='mt-1 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]'>
-                {isUnderReview ? <span className='h-2 w-2 rounded-full bg-[#c8a45d]' /> : null}
+              <p className='mt-1 inline-flex items-center gap-2 rounded-full bg-[#f8f6f2] px-3 py-1 text-sm font-semibold text-[#111111]'>
+                {isUnderReview ? <span className='h-1.5 w-1.5 rounded-full bg-[#c8a45d]' /> : null}
                 {getOrderStatusLabelAr(order.status)}
               </p>
             </div>
-          </div>
-
-          <div className='space-y-4'>
             <div>
               <p className={labelClassName}>رمز التتبع</p>
               <p className={valueClassName}>{order.trackingCode || "—"}</p>
@@ -75,32 +72,32 @@ const OrderDetailsPage = () => {
               <p className={valueClassName}>{order.paymentMethod?.name || "—"}</p>
             </div>
           </div>
+
+          {(order.customer?.name || order.customer?.phone || order.customer?.address) ? (
+            <div className='space-y-4'>
+              <h2 className='text-base font-bold text-[#111111]'>بيانات العميل</h2>
+              <div>
+                <p className={labelClassName}>الاسم</p>
+                <p className={valueClassName}>{order.customer?.name || "—"}</p>
+              </div>
+              <div>
+                <p className={labelClassName}>رقم الهاتف</p>
+                <p className={valueClassName}>{order.customer?.phone || "—"}</p>
+              </div>
+              <div>
+                <p className={labelClassName}>العنوان</p>
+                <p className={valueClassName}>{order.customer?.address || "—"}</p>
+              </div>
+            </div>
+          ) : null}
         </section>
 
-        <section className='mt-5 border-b border-[#ececec] pb-5 text-right'>
-          <h2 className='mb-4 text-base font-bold text-[#111111]'>بيانات العميل</h2>
-          <div className='space-y-3'>
-            <div>
-              <p className={labelClassName}>الاسم</p>
-              <p className={valueClassName}>{order.customer?.name || "—"}</p>
-            </div>
-            <div>
-              <p className={labelClassName}>رقم الهاتف</p>
-              <p className={valueClassName}>{order.customer?.phone || "—"}</p>
-            </div>
-            <div>
-              <p className={labelClassName}>العنوان</p>
-              <p className={valueClassName}>{order.customer?.address || "—"}</p>
-            </div>
-          </div>
-        </section>
-
-        <section className='mt-5 border-b border-[#ececec] pb-5 text-right'>
+        <section className='mt-6 border-b border-[#f1f1f1] pb-6 text-right'>
           <h2 className='mb-4 text-base font-bold text-[#111111]'>المنتجات</h2>
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[560px] text-sm'>
               <thead>
-                <tr className='border-b border-[#ececec] text-[#6b7280]'>
+                <tr className='border-b border-[#f1f1f1] text-[#6b7280]'>
                   <th className='py-2 text-right font-medium'>المنتج</th>
                   <th className='py-2 text-right font-medium'>الكمية</th>
                   <th className='py-2 text-right font-medium'>سعر الوحدة</th>
@@ -124,17 +121,17 @@ const OrderDetailsPage = () => {
           </div>
         </section>
 
-        <section className='mt-5 border-b border-[#ececec] pb-5 text-right'>
+        <section className='mt-6 pb-6 text-right'>
           <div className='ml-auto w-full max-w-sm space-y-3'>
             <div className='flex items-center justify-between gap-2 text-sm text-[#6b7280]'>
-              <span>Subtotal</span>
+              <span>المجموع الفرعي</span>
               <span className='text-[#111111]'>{formatMRU(subtotal)}</span>
             </div>
             <div className='flex items-center justify-between gap-2 text-sm text-[#6b7280]'>
-              <span>Shipping</span>
+              <span>الشحن</span>
               <span className='text-[#111111]'>{formatMRU(0)}</span>
             </div>
-            <div className='h-px bg-[#ececec]' />
+            <div className='h-px bg-[#f1f1f1]' />
             <div className='flex items-center justify-between gap-2 pt-1'>
               <span className='text-base font-semibold text-[#111111]'>الإجمالي الكلي</span>
               <span className='text-xl font-bold text-[#c8a45d]'>{formatMRU(order.totalAmount)}</span>
@@ -142,22 +139,10 @@ const OrderDetailsPage = () => {
           </div>
         </section>
 
-        <section className='mt-5 border-b border-[#ececec] pb-5 text-right'>
-          <h2 className='mb-3 text-base font-bold text-[#111111]'>إثبات الدفع</h2>
-          {order.receiptImageUrl ? (
-            <a href={order.receiptImageUrl} target='_blank' rel='noreferrer' className='inline-block rounded-xl border border-[#ececec] p-3'>
-              <img src={order.receiptImageUrl} alt='إيصال الدفع' className='h-44 w-44 rounded-lg object-cover' />
-              <p className='mt-2 text-xs text-[#6b7280]'>اضغط للتكبير</p>
-            </a>
-          ) : (
-            <p className='text-sm text-[#6b7280]'>لا يوجد إيصال مرفوع</p>
-          )}
-        </section>
-
         <div className='mt-6'>
           <Link
             to='/'
-            className='flex h-[52px] w-full items-center justify-center rounded-xl bg-[#c8a45d] text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#b8934d]'
+            className='flex h-[52px] w-full items-center justify-center rounded-xl bg-[#c8a45d] text-center text-sm font-semibold text-white transition hover:bg-[#b8934d]'
           >
             العودة إلى المتجر
           </Link>
