@@ -6,8 +6,22 @@ import { formatMRU } from "../lib/formatMRU";
 import { getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
 import { formatDateTimeFr } from "../lib/localeFormat";
 
-const labelClassName = "text-xs font-medium text-[#6b7280]";
-const valueClassName = "mt-1 text-sm font-semibold text-[#111111]";
+const blockBorderClass = "border border-[#dcdcdc]";
+const sectionBarClass = "flex h-9 items-center bg-[#0f766e] px-4 text-sm font-bold text-white";
+
+const MetaGridRow = ({ label, value }) => (
+  <div className='grid grid-cols-2 border-b border-[#dcdcdc] text-sm last:border-b-0'>
+    <div className='border-l border-[#dcdcdc] px-3 py-3 font-semibold text-[#111111]'>{value}</div>
+    <div className='px-3 py-3 text-[#6b7280]'>{label}</div>
+  </div>
+);
+
+const InfoGridRow = ({ label, value }) => (
+  <div className='grid grid-cols-2 border-b border-[#dcdcdc] text-sm last:border-b-0'>
+    <div className='border-l border-[#dcdcdc] px-3 py-3 font-semibold text-[#111111]'>{value || "—"}</div>
+    <div className='px-3 py-3 text-[#6b7280]'>{label}</div>
+  </div>
+);
 
 const OrderDetailsPage = () => {
   const { trackingCode } = useParams();
@@ -36,85 +50,73 @@ const OrderDetailsPage = () => {
   if (loading) return <div className='min-h-[60vh] bg-white px-4 py-16 text-center text-[#6b7280]'>Loading...</div>;
   if (!order) return <div className='min-h-[60vh] bg-white px-4 py-16 text-center text-[#6b7280]'>لم يتم العثور على الطلب</div>;
 
+  const statusBadge = (
+    <span className='inline-flex items-center gap-2 rounded-full bg-[#f0f5f4] px-2.5 py-1 text-xs font-semibold text-[#111111]'>
+      {isUnderReview ? <span className='h-1.5 w-1.5 rounded-full bg-[#c8a45d]' /> : null}
+      {getOrderStatusLabelAr(order.status)}
+    </span>
+  );
+
   return (
     <div className='min-h-screen bg-white px-4 py-8 sm:py-12'>
-      <div className='mx-auto w-full max-w-4xl bg-white'>
-        <section className='border-b border-[#f1f1f1] pb-8 text-right'>
-          <header className='text-center'>
-            <p className='text-lg font-semibold tracking-[0.18em] text-[#111111]'>الصاحب</p>
-            <p className='mt-1 text-sm font-medium tracking-[0.4em] text-[#111111]'>MAISON DE PARFUM</p>
-            <p className='mt-3 text-sm text-[#111111]'>فاتورة طلب</p>
-            <div className='mx-auto mt-4 h-px w-20 bg-[#c8a45d]/70' />
-          </header>
+      <div className='mx-auto w-full max-w-5xl text-right'>
+        <header className='mb-8 text-center'>
+          <p className='text-lg font-semibold tracking-[0.18em] text-[#111111]'>الصاحب</p>
+          <p className='mt-1 text-sm font-medium tracking-[0.4em] text-[#111111]'>MAISON DE PARFUM</p>
+          <p className='mt-3 text-sm text-[#111111]'>فاتورة طلب</p>
+          <div className='mx-auto mt-4 h-px w-20 bg-[#c8a45d]/80' />
+        </header>
 
-          <div className='mt-8 grid gap-5 md:justify-items-end'>
-            <div>
-              <p className={labelClassName}>رقم الطلب</p>
-              <p className={valueClassName}>{getOrderDisplayNumber(order)}</p>
+        <div className='grid gap-6 md:grid-cols-2'>
+          <section className={blockBorderClass}>
+            <div className={sectionBarClass}>بيانات الطلب</div>
+            <div className='bg-white'>
+              <MetaGridRow label='رقم الطلب' value={getOrderDisplayNumber(order)} />
+              <MetaGridRow label='تاريخ الإنشاء' value={formatDateTimeFr(order.createdAt)} />
+              <MetaGridRow label='الحالة' value={statusBadge} />
+              <MetaGridRow label='رمز التتبع' value={order.trackingCode || "—"} />
+              <MetaGridRow label='وسيلة الدفع' value={order.paymentMethod?.name || "غير محددة"} />
             </div>
-            <div>
-              <p className={labelClassName}>تاريخ الإنشاء</p>
-              <p className={valueClassName}>{formatDateTimeFr(order.createdAt)}</p>
+          </section>
+
+          <section className={blockBorderClass}>
+            <div className={sectionBarClass}>بيانات البائع</div>
+            <div className='bg-white'>
+              <InfoGridRow label='اسم المتجر' value='الصاحب | MAISON DE PARFUM' />
             </div>
-            <div>
-              <p className={labelClassName}>الحالة</p>
-              <p className='mt-1 inline-flex items-center gap-2 rounded-full bg-[#f7f4ec] px-3 py-1 text-sm font-semibold text-[#111111]'>
-                {isUnderReview ? <span className='h-1.5 w-1.5 rounded-full bg-[#c8a45d]' /> : null}
-                {getOrderStatusLabelAr(order.status)}
-              </p>
-            </div>
-            <div>
-              <p className={labelClassName}>رمز التتبع</p>
-              <p className={valueClassName}>{order.trackingCode || "—"}</p>
-            </div>
-            <div>
-              <p className={labelClassName}>وسيلة الدفع</p>
-              <p className={valueClassName}>{order.paymentMethod?.name || "—"}</p>
-            </div>
+          </section>
+        </div>
+
+        <section className='mt-6 border border-[#dcdcdc]'>
+          <div className={sectionBarClass}>بيانات العميل</div>
+          <div className='bg-white'>
+            <InfoGridRow label='الاسم' value={order.customer?.name || "—"} />
+            <InfoGridRow label='رقم الهاتف' value={order.customer?.phone || "—"} />
+            <InfoGridRow label='العنوان' value={order.customer?.address || "—"} />
           </div>
         </section>
 
-        {(order.customer?.name || order.customer?.phone || order.customer?.address) ? (
-          <section className='border-b border-[#f1f1f1] py-8 text-right'>
-            <h2 className='mb-5 text-base font-bold text-[#111111]'>بيانات العميل</h2>
-            <div className='space-y-4'>
-              <div>
-                <p className={labelClassName}>الاسم</p>
-                <p className={valueClassName}>{order.customer?.name || "—"}</p>
-              </div>
-              <div>
-                <p className={labelClassName}>رقم الهاتف</p>
-                <p className={valueClassName}>{order.customer?.phone || "—"}</p>
-              </div>
-              <div>
-                <p className={labelClassName}>العنوان</p>
-                <p className={valueClassName}>{order.customer?.address || "—"}</p>
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        <section className='border-b border-[#f1f1f1] py-8 text-right'>
-          <h2 className='mb-4 text-base font-bold text-[#111111]'>المنتجات</h2>
+        <section className='mt-6 border border-[#dcdcdc]'>
+          <div className={sectionBarClass}>البيان / المنتجات</div>
           <div className='overflow-x-auto'>
-            <table className='w-full min-w-[540px] text-sm'>
+            <table className='w-full min-w-[580px] text-sm'>
               <thead>
-                <tr className='border-b border-[#f1f1f1] text-[#6b7280]'>
-                  <th className='py-3 text-right font-medium'>المنتج</th>
-                  <th className='py-3 text-right font-medium'>الكمية</th>
-                  <th className='py-3 text-right font-medium'>سعر الوحدة</th>
-                  <th className='py-3 text-right font-medium'>الإجمالي</th>
+                <tr className='bg-[#edf5f4] text-[#111111]'>
+                  <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>البيان</th>
+                  <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>السعر</th>
+                  <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>الكمية</th>
+                  <th className='border-b border-[#dcdcdc] px-3 py-3 text-right font-bold'>الإجمالي</th>
                 </tr>
               </thead>
               <tbody>
                 {lines.map((item, index) => {
                   const lineTotal = Number(item.price || 0) * Number(item.quantity || 0);
                   return (
-                    <tr key={`${item.product?._id || item.product || index}`} className='border-b border-[#f1f1f1] text-[#111111]'>
-                      <td className='py-3.5 font-semibold'>{item.product?.name || "—"}</td>
-                      <td className='py-3.5 tabular-nums'>{item.quantity || 0}</td>
-                      <td className='py-3.5 tabular-nums'>{formatMRU(item.price)}</td>
-                      <td className='py-3.5 font-medium tabular-nums'>{formatMRU(lineTotal)}</td>
+                    <tr key={`${item.product?._id || item.product || index}`} className='text-[#111111]'>
+                      <td className='border-b border-l border-[#dcdcdc] px-3 py-3.5 font-semibold'>{item.product?.name || "—"}</td>
+                      <td className='border-b border-l border-[#dcdcdc] px-3 py-3.5 tabular-nums'>{formatMRU(item.price)}</td>
+                      <td className='border-b border-l border-[#dcdcdc] px-3 py-3.5 tabular-nums'>{item.quantity || 0}</td>
+                      <td className='border-b border-[#dcdcdc] px-3 py-3.5 font-medium tabular-nums'>{formatMRU(lineTotal)}</td>
                     </tr>
                   );
                 })}
@@ -123,25 +125,26 @@ const OrderDetailsPage = () => {
           </div>
         </section>
 
-        <section className='py-8 text-right'>
-          <div className='ml-auto w-full max-w-sm space-y-3'>
-            <div className='flex items-center justify-between gap-2 text-sm text-[#6b7280]'>
-              <span>المجموع الفرعي</span>
-              <span className='text-[#111111]'>{formatMRU(subtotal)}</span>
+        <section className='mt-6 flex justify-end'>
+          <div className='w-full max-w-sm border border-[#dcdcdc]'>
+            <div className={sectionBarClass}>الإجماليات</div>
+            <div className='grid grid-cols-2 border-b border-[#dcdcdc] text-sm'>
+              <span className='border-l border-[#dcdcdc] px-3 py-3 font-semibold text-[#111111]'>{formatMRU(subtotal)}</span>
+              <span className='px-3 py-3 text-[#6b7280]'>المجموع الفرعي</span>
             </div>
-            <div className='flex items-center justify-between gap-2 text-sm text-[#6b7280]'>
-              <span>الشحن</span>
-              <span className='text-[#111111]'>{formatMRU(0)}</span>
+            <div className='grid grid-cols-2 border-b border-[#dcdcdc] text-sm'>
+              <span className='border-l border-[#dcdcdc] px-3 py-3 font-semibold text-[#111111]'>{formatMRU(0)}</span>
+              <span className='px-3 py-3 text-[#6b7280]'>الشحن</span>
             </div>
-            <div className='h-px bg-[#f1f1f1]' />
-            <div className='flex items-center justify-between gap-2 pt-1'>
-              <span className='text-base font-semibold text-[#111111]'>الإجمالي الكلي</span>
-              <span className='text-xl font-bold text-[#c8a45d]'>{formatMRU(order.totalAmount)}</span>
+            <div className='h-0.5 bg-[#c8a45d]/60' />
+            <div className='grid grid-cols-2 text-sm'>
+              <span className='border-l border-[#dcdcdc] px-3 py-3 text-lg font-bold tabular-nums text-[#c8a45d]'>{formatMRU(order.totalAmount)}</span>
+              <span className='px-3 py-3 font-semibold text-[#111111]'>الإجمالي الكلي</span>
             </div>
           </div>
         </section>
 
-        <div className='pt-2'>
+        <div className='mt-8'>
           <Link
             to='/'
             className='flex h-[52px] w-full items-center justify-center rounded-xl bg-[#c8a45d] text-center text-sm font-semibold text-white transition hover:bg-[#b8934d]'
