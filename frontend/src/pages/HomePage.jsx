@@ -11,7 +11,7 @@ import { useHeroSliderStore } from "../stores/useHeroSliderStore";
 
 const HomePage = () => {
         const {
-                fetchAllProducts,
+                fetchFeaturedProducts,
                 products,
                 loading: productsLoading,
                 searchResults,
@@ -27,8 +27,8 @@ const HomePage = () => {
         const [searchQuery, setSearchQuery] = useState("");
 
         useEffect(() => {
-                fetchAllProducts();
-        }, [fetchAllProducts]);
+                fetchFeaturedProducts();
+        }, [fetchFeaturedProducts]);
 
         useEffect(() => {
                 fetchCategories();
@@ -71,33 +71,13 @@ const HomePage = () => {
         const showOnlySearchResults = normalizedQuery.length > 0;
 
         const bestSellerProducts = useMemo(() => {
-                if (!Array.isArray(products) || products.length === 0) return [];
-
-                const productsWithSales = products
-                        .slice()
-                        .sort((a, b) => Number(b?.totalSales || 0) - Number(a?.totalSales || 0));
-
-                const topProduct = productsWithSales[0];
-
-                if (Number(topProduct?.totalSales || 0) >= 2) {
-                        return productsWithSales.slice(0, 4);
-                }
-
-                const randomizedProducts = products.slice();
-                for (let index = randomizedProducts.length - 1; index > 0; index -= 1) {
-                        const randomIndex = Math.floor(Math.random() * (index + 1));
-                        [randomizedProducts[index], randomizedProducts[randomIndex]] = [
-                                randomizedProducts[randomIndex],
-                                randomizedProducts[index],
-                        ];
-                }
-
-                return randomizedProducts.slice(0, 4);
+                if (!Array.isArray(products)) return [];
+                return products.slice(0, 4);
         }, [products]);
 
-        const featuredOffers = useMemo(() => {
+        const selectedProducts = useMemo(() => {
                 if (!Array.isArray(products)) return [];
-                return products.filter((product) => product?.isFeatured === true);
+                return products.slice(4, 10);
         }, [products]);
 
         const handleQueryChange = (value) => {
@@ -194,13 +174,13 @@ const HomePage = () => {
                                                                 </div>
                                                         </section>
 
-                                                        {!productsLoading && featuredOffers.length > 0 && (
+                                                        {!productsLoading && selectedProducts.length > 0 && (
                                                                 <section className='space-y-6 py-10'>
                                                                         <header className='text-right'>
-                                                                                <h2 className='text-2xl font-semibold text-[#111111]'>العروض المميزة</h2>
+                                                                                <h2 className='text-2xl font-semibold text-[#111111]'>منتجات مختارة</h2>
                                                                         </header>
                                                                         <div className='grid gap-4 grid-cols-2 lg:grid-cols-3'>
-                                                                                {featuredOffers.slice(0, 6).map((product) => (
+                                                                                {selectedProducts.map((product) => (
                                                                                         <ProductCard key={product._id} product={product} />
                                                                                 ))}
                                                                         </div>
