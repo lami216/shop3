@@ -7,7 +7,7 @@ import { getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus
 import { formatDateTimeFr } from "../lib/localeFormat";
 
 const blockBorderClass = "border border-[#dcdcdc]";
-const sectionBarClass = "flex h-9 items-center bg-[#c8a96a] px-4 text-sm font-bold text-white";
+const sectionBarClass = "flex h-9 items-center bg-[#0f766e] px-4 text-sm font-bold text-white";
 
 const MetaGridRow = ({ label, value }) => (
   <div className='grid grid-cols-2 border-b border-[#dcdcdc] text-sm last:border-b-0'>
@@ -101,7 +101,7 @@ const OrderDetailsPage = () => {
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[580px] text-sm'>
               <thead>
-                <tr className='bg-[#f8f2e8] text-[#111111]'>
+                <tr className='bg-[#edf5f4] text-[#111111]'>
                   <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>البيان</th>
                   <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>السعر</th>
                   <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>الكمية</th>
