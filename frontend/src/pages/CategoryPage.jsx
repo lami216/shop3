@@ -53,12 +53,22 @@ const CategoryPage = () => {
                 return fallback;
         }, [currentCategory, category]);
 
+        const categoryDescription = useMemo(() => {
+                if (!currentCategory?.description) {
+                        return "";
+                }
+
+                return currentCategory.description.trim();
+        }, [currentCategory]);
+
         return (
                 <div className='min-h-screen bg-[#fafafa] text-[#111111]'>
                         <section className='mx-auto max-w-6xl px-4 py-10'>
                                 <div className='mb-8 text-center'>
                                         <h1 className='text-3xl font-semibold text-[#111111]'>{categoryName}</h1>
-                                        <p className='mt-2 text-sm text-[#6b7280]'>{t("home.subtitle")}</p>
+                                        {categoryDescription && (
+                                                <p className='mt-2 text-sm text-[#6b7280]'>{categoryDescription}</p>
+                                        )}
                                 </div>
 
                                 {products?.length === 0 ? (
