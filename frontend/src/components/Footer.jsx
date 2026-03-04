@@ -67,15 +67,11 @@ const Footer = () => {
         </section>
 
         <section>
-          <div className='flex items-center justify-center gap-3'>
+          <div className='payment-methods'>
             {paymentMethods.map((method) => (
-              <img
-                key={method}
-                src={`/payments/${method}.png`}
-                alt={method}
-                className='h-10 w-auto object-contain'
-                loading='lazy'
-              />
+              <div key={method} className='payment-card'>
+                <img src={`/payments/${method}.png`} alt={method} loading='lazy' />
+              </div>
             ))}
           </div>
         </section>
