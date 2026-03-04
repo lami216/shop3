@@ -103,16 +103,6 @@ const HomePage = () => {
                                 {offersSectionData.length > 0 && <HeroSlider slides={offersSectionData} />}
 
                                 <div className='space-y-10'>
-                                        <div className='flex justify-center'>
-                                                <a
-                                                        href='/products'
-                                                        className='golden-button w-full max-w-sm justify-center text-base font-semibold'
-                                                        onClick={handleClearSearch}
-                                                >
-                                                        كل المنتجات
-                                                </a>
-                                        </div>
-
                                         {showOnlySearchResults ? (
                                                 <section className='space-y-6 py-10'>
                                                         <header className='text-right'>
@@ -137,6 +127,16 @@ const HomePage = () => {
                                         ) : (
                                                 <>
                                                         <FeaturedProducts featuredProducts={bestSellerProducts} />
+
+                                                        <div className='flex justify-center'>
+                                                                <a
+                                                                        href='/products'
+                                                                        className='golden-button w-full max-w-sm justify-center text-base font-semibold'
+                                                                        onClick={handleClearSearch}
+                                                                >
+                                                                        كل المنتجات
+                                                                </a>
+                                                        </div>
 
                                                         <section className='space-y-6 py-10'>
                                                                 <header className='text-right'>

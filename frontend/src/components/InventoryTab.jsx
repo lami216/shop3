@@ -282,21 +282,21 @@ const InventoryTab = () => {
         <h3 className='text-lg font-semibold text-payzone-gold'>سجل إدخالات المخزون</h3>
         <div className='overflow-auto rounded border border-white/10'>
           <table className='min-w-full text-sm text-white'>
-            <thead className='bg-white/10'>
+            <thead className='bg-white/10 border-b border-[#e5e5e5]'>
               <tr>
-                <th className='p-2 text-left'>التاريخ</th>
-                <th className='p-2 text-center'>عدد البنود</th>
-                <th className='p-2 text-center'>إجمالي التكلفة</th>
+                <th className='p-2 text-left border-r border-[#e5e5e5]'>التاريخ</th>
+                <th className='p-2 text-center border-r border-[#e5e5e5]'>عدد البنود</th>
+                <th className='p-2 text-center border-r border-[#e5e5e5]'>إجمالي التكلفة</th>
                 <th className='p-2 text-center'>إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {intakes.map((intake) => (
                 <Fragment key={intake._id}>
-                  <tr className='border-t border-white/10 hover:bg-white/5'>
-                    <td className='p-2'>{formatFrDate(intake.invoiceDate || intake.createdAt)}</td>
-                    <td className='p-2 text-center'>{formatFrNumber(intake.items?.length || 0)}</td>
-                    <td className='p-2 text-center'>{formatFrNumber(intake.totalCost || 0)}</td>
+                  <tr className='border-b border-[#e5e5e5] hover:bg-white/5'>
+                    <td className='p-2 border-r border-[#e5e5e5]'>{formatFrDate(intake.invoiceDate || intake.createdAt)}</td>
+                    <td className='p-2 text-center border-r border-[#e5e5e5]'>{formatFrNumber(intake.items?.length || 0)}</td>
+                    <td className='p-2 text-center border-r border-[#e5e5e5]'>{formatFrNumber(intake.totalCost || 0)}</td>
                     <td className='p-2 text-center'>
                       <button
                         type='button'
@@ -308,24 +308,24 @@ const InventoryTab = () => {
                     </td>
                   </tr>
                   {selectedIntakeId === intake._id ? (
-                    <tr className='border-t border-white/10 bg-payzone-navy/40'>
+                    <tr className='border-b border-[#e5e5e5] bg-payzone-navy/40'>
                       <td className='p-2' colSpan={4}>
                         <div className='overflow-auto rounded border border-white/10'>
                           <table className='min-w-full text-sm text-white'>
-                            <thead className='bg-white/10'>
+                            <thead className='bg-white/10 border-b border-[#e5e5e5]'>
                               <tr>
-                                <th className='p-2 text-left'>المنتج</th>
-                                <th className='p-2 text-center'>الكمية</th>
-                                <th className='p-2 text-center'>تكلفة الوحدة</th>
+                                <th className='p-2 text-left border-r border-[#e5e5e5]'>المنتج</th>
+                                <th className='p-2 text-center border-r border-[#e5e5e5]'>الكمية</th>
+                                <th className='p-2 text-center border-r border-[#e5e5e5]'>تكلفة الوحدة</th>
                                 <th className='p-2 text-center'>الإجمالي</th>
                               </tr>
                             </thead>
                             <tbody>
                               {(intake.items || []).map((item, index) => (
-                                <tr key={`${item.product?._id || item.product}-${index}`} className='border-t border-white/10'>
-                                  <td className='p-2'>{item.product?.name || "—"}</td>
-                                  <td className='p-2 text-center'>{formatFrNumber(item.quantity)}</td>
-                                  <td className='p-2 text-center'>{formatFrNumber(item.unitCost || 0)}</td>
+                                <tr key={`${item.product?._id || item.product}-${index}`} className='border-b border-[#e5e5e5]'>
+                                  <td className='p-2 border-r border-[#e5e5e5]'>{item.product?.name || "—"}</td>
+                                  <td className='p-2 text-center border-r border-[#e5e5e5]'>{formatFrNumber(item.quantity)}</td>
+                                  <td className='p-2 text-center border-r border-[#e5e5e5]'>{formatFrNumber(item.unitCost || 0)}</td>
                                   <td className='p-2 text-center'>{formatFrNumber((item.quantity || 0) * (item.unitCost || 0))}</td>
                                 </tr>
                               ))}
