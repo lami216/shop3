@@ -7,7 +7,7 @@ import { getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus
 import { formatDateTimeFr } from "../lib/localeFormat";
 
 const blockBorderClass = "border border-[#dcdcdc]";
-const sectionBarClass = "flex h-9 items-center bg-[#0f766e] px-4 text-sm font-bold text-white";
+const sectionBarClass = "flex h-9 items-center bg-[#C8A96A] px-4 text-sm font-bold text-white";
 
 const MetaGridRow = ({ label, value }) => (
   <div className='grid grid-cols-2 border-b border-[#dcdcdc] text-sm last:border-b-0'>
@@ -64,7 +64,7 @@ const OrderDetailsPage = () => {
           <p className='text-lg font-semibold tracking-[0.18em] text-[#111111]'>الصاحب</p>
           <p className='mt-1 text-sm font-medium tracking-[0.4em] text-[#111111]'>MAISON DE PARFUM</p>
           <p className='mt-3 text-sm text-[#111111]'>فاتورة طلب</p>
-          <div className='mx-auto mt-4 h-px w-20 bg-[#c8a45d]/80' />
+          <div className='mx-auto mt-4 h-px w-20 bg-[#C8A96A]/80' />
         </header>
 
         <div className='grid gap-6 md:grid-cols-2'>
@@ -101,7 +101,7 @@ const OrderDetailsPage = () => {
           <div className='overflow-x-auto'>
             <table className='w-full min-w-[580px] text-sm'>
               <thead>
-                <tr className='bg-[#edf5f4] text-[#111111]'>
+                <tr className='bg-[#C8A96A]/15 text-[#111111]'>
                   <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>البيان</th>
                   <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>السعر</th>
                   <th className='border-b border-l border-[#dcdcdc] px-3 py-3 text-right font-bold'>الكمية</th>
@@ -136,9 +136,9 @@ const OrderDetailsPage = () => {
               <span className='border-l border-[#dcdcdc] px-3 py-3 font-semibold text-[#111111]'>{formatMRU(0)}</span>
               <span className='px-3 py-3 text-[#6b7280]'>الشحن</span>
             </div>
-            <div className='h-0.5 bg-[#c8a45d]/60' />
-            <div className='grid grid-cols-2 text-sm'>
-              <span className='border-l border-[#dcdcdc] px-3 py-3 text-lg font-bold tabular-nums text-[#c8a45d]'>{formatMRU(order.totalAmount)}</span>
+            <div className='h-0.5 bg-[#C8A96A]/60' />
+            <div className='grid grid-cols-2 bg-[#C8A96A]/10 text-sm'>
+              <span className='border-l border-[#dcdcdc] px-3 py-3 text-lg font-bold tabular-nums text-[#C8A96A]'>{formatMRU(order.totalAmount)}</span>
               <span className='px-3 py-3 font-semibold text-[#111111]'>الإجمالي الكلي</span>
             </div>
           </div>
@@ -147,7 +147,7 @@ const OrderDetailsPage = () => {
         <div className='mt-8'>
           <Link
             to='/'
-            className='flex h-[52px] w-full items-center justify-center rounded-xl bg-[#c8a45d] text-center text-sm font-semibold text-white transition hover:bg-[#b8934d]'
+            className='flex h-[52px] w-full items-center justify-center rounded-xl bg-[#C8A96A] text-center text-sm font-semibold text-white transition hover:bg-[#b8934d]'
           >
             العودة إلى المتجر
           </Link>

@@ -33,11 +33,12 @@ const ProductsList = ({ onEdit }) => {
 
         return (
                 <motion.div
-                        className='mx-auto max-w-4xl overflow-hidden rounded-xl border border-payzone-indigo/40 bg-white/5 shadow-lg backdrop-blur-sm'
+                        className='mx-auto max-w-4xl rounded-xl border border-payzone-indigo/40 bg-white/5 shadow-lg backdrop-blur-sm'
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
                 >
+                        <div className='overflow-x-auto'>
                         <table className='min-w-full divide-y divide-white/10'>
                                 <thead className='bg-payzone-navy/80'>
                                         <tr>
@@ -150,6 +151,7 @@ const ProductsList = ({ onEdit }) => {
                                         ))}
                                 </tbody>
                         </table>
+                </div>
                 </motion.div>
         );
 };

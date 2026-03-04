@@ -38,41 +38,21 @@ const HomePage = () => {
                 fetchSlides();
         }, [fetchSlides]);
 
-        const productSlides = useMemo(() => {
-                if (!Array.isArray(products)) return [];
-
-                return products.slice(0, 5).map((product) => {
-                        const coverImage =
-                                product.image ||
-                                (Array.isArray(product.images) && product.images.length > 0
-                                        ? typeof product.images[0] === "string"
-                                                ? product.images[0]
-                                                : product.images[0]?.url
-                                        : "");
-
-                        return {
-                                ...product,
-                                title: product.name,
-                                description: product.description,
-                                image: coverImage,
-                        };
-                });
-        }, [products]);
-
-        const slides = useMemo(() => {
-                if (Array.isArray(heroSlides) && heroSlides.length) {
-                        return heroSlides;
-                }
-
-                return productSlides;
-        }, [heroSlides, productSlides]);
+        const offersSectionData = useMemo(() => (Array.isArray(heroSlides) ? heroSlides : []), [heroSlides]);
 
         const normalizedQuery = searchQuery.trim().toLowerCase();
         const showOnlySearchResults = normalizedQuery.length > 0;
 
         const bestSellerProducts = useMemo(() => {
                 if (!Array.isArray(products)) return [];
-                return products.slice(0, 4);
+
+                const rankedBestSellers = products.filter((product) => product?.isFeatured).slice(0, 4);
+                if (rankedBestSellers.length > 0) {
+                        return rankedBestSellers;
+                }
+
+                const shuffledProducts = [...products].sort(() => Math.random() - 0.5);
+                return shuffledProducts.slice(0, 4);
         }, [products]);
 
         const selectedProducts = useMemo(() => {
@@ -113,7 +93,7 @@ const HomePage = () => {
                                         isLoading={showOnlySearchResults && searchLoading}
                                 />
 
-                                <HeroSlider slides={slides} />
+                                {offersSectionData.length > 0 && <HeroSlider slides={offersSectionData} />}
 
                                 <div className='space-y-10'>
                                         <div className='flex justify-center'>
@@ -149,9 +129,7 @@ const HomePage = () => {
                                                 </section>
                                         ) : (
                                                 <>
-                                                        {!productsLoading && bestSellerProducts.length > 0 && (
-                                                                <FeaturedProducts featuredProducts={bestSellerProducts} />
-                                                        )}
+                                                        <FeaturedProducts featuredProducts={bestSellerProducts} />
 
                                                         <section className='space-y-6 py-10'>
                                                                 <header className='text-right'>
