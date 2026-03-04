@@ -202,12 +202,12 @@ const InventoryTab = () => {
 
         <div className='overflow-auto rounded border border-white/10'>
           <table className='min-w-full text-sm text-white'>
-            <thead className='bg-white/10'>
+            <thead className='bg-white/10 border-b-2 border-[#d6d6d6]'>
               <tr>
-                <th className='p-2 text-left'>المنتج</th>
-                <th className='p-2 text-center'>الكمية</th>
-                <th className='p-2 text-center'>تكلفة الوحدة</th>
-                <th className='p-2 text-center'>الإجمالي</th>
+                <th className='p-2 text-left border-r border-[#e5e5e5]'>المنتج</th>
+                <th className='p-2 text-center border-r border-[#e5e5e5]'>الكمية</th>
+                <th className='p-2 text-center border-r border-[#e5e5e5]'>تكلفة الوحدة</th>
+                <th className='p-2 text-center border-r border-[#e5e5e5]'>الإجمالي</th>
                 <th className='p-2 text-center'>إجراءات</th>
               </tr>
             </thead>
@@ -216,11 +216,11 @@ const InventoryTab = () => {
                 rows.map((row, index) => {
                   const productName = adminItems.find((item) => item.product._id === row.productId)?.product?.name || "—";
                   return (
-                    <tr key={`${row.productId}-${index}`} className='border-t border-white/10'>
-                      <td className='p-2'>{productName}</td>
-                      <td className='p-2 text-center'>{formatFrNumber(row.quantity)}</td>
-                      <td className='p-2 text-center'>{formatFrNumber(row.unitCost)}</td>
-                      <td className='p-2 text-center'>{formatFrNumber(row.quantity * row.unitCost)}</td>
+                    <tr key={`${row.productId}-${index}`} className='border-b border-[#e5e5e5]'>
+                      <td className='p-2 border-r border-[#e5e5e5]'>{productName}</td>
+                      <td className='p-2 text-center border-r border-[#e5e5e5]'>{formatFrNumber(row.quantity)}</td>
+                      <td className='p-2 text-center border-r border-[#e5e5e5]'>{formatFrNumber(row.unitCost)}</td>
+                      <td className='p-2 text-center border-r border-[#e5e5e5]'>{formatFrNumber(row.quantity * row.unitCost)}</td>
                       <td className='p-2 text-center'>
                         <div className='flex justify-center gap-2'>
                           <button type='button' className='rounded border border-payzone-gold/50 px-2 py-1 text-payzone-gold' onClick={() => startEdit(index)}>
@@ -260,14 +260,20 @@ const InventoryTab = () => {
 
       <div className='overflow-auto rounded-xl border border-white/10'>
         <table className='min-w-full text-sm text-white'>
-          <thead className='bg-white/10'><tr><th className='p-2 text-left'>Product</th><th>Total</th><th>Reserved</th><th>Available</th></tr></thead>
+          <thead className='bg-white/10 border-b-2 border-[#d6d6d6]'><tr><th className='p-2 text-left border-r border-[#e5e5e5]'>Product</th><th className='border-r border-[#e5e5e5]'>Total</th><th className='border-r border-[#e5e5e5]'>Reserved</th><th className='border-r border-[#e5e5e5]'>Available</th><th>Sold</th></tr></thead>
           <tbody>
-            {adminItems.map((row) => (<tr key={row.product._id} className='border-t border-white/10'>
-              <td className='p-2'>{row.product.name}</td>
-              <td className='text-center'>{row.totalQuantity}</td>
-              <td className='text-center'>{row.reservedQuantity}</td>
-              <td className='text-center'>{row.availableQuantity}</td>
-            </tr>))}
+            {adminItems.map((row) => {
+              const soldQuantity = Math.max(0, Number(row.totalQuantity || 0) - Number(row.availableQuantity || 0) - Number(row.reservedQuantity || 0));
+              return (
+                <tr key={row.product._id} className='border-b border-[#e5e5e5]'>
+                  <td className='p-2 border-r border-[#e5e5e5]'>{row.product.name}</td>
+                  <td className='text-center border-r border-[#e5e5e5]'>{row.totalQuantity}</td>
+                  <td className='text-center border-r border-[#e5e5e5]'>{row.reservedQuantity}</td>
+                  <td className='text-center border-r border-[#e5e5e5]'>{row.availableQuantity}</td>
+                  <td className='text-center'>{soldQuantity}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
