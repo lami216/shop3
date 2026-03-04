@@ -11,7 +11,7 @@ import { useHeroSliderStore } from "../stores/useHeroSliderStore";
 
 const HomePage = () => {
         const {
-                fetchFeaturedProducts,
+                fetchAllProducts,
                 products,
                 loading: productsLoading,
                 searchResults,
@@ -27,8 +27,8 @@ const HomePage = () => {
         const [searchQuery, setSearchQuery] = useState("");
 
         useEffect(() => {
-                fetchFeaturedProducts();
-        }, [fetchFeaturedProducts]);
+                fetchAllProducts();
+        }, [fetchAllProducts]);
 
         useEffect(() => {
                 fetchCategories();
@@ -46,9 +46,16 @@ const HomePage = () => {
         const bestSellerProducts = useMemo(() => {
                 if (!Array.isArray(products)) return [];
 
-                const rankedBestSellers = products.filter((product) => product?.isFeatured).slice(0, 4);
-                if (rankedBestSellers.length > 0) {
-                        return rankedBestSellers;
+                const sortedProducts = [...products].sort(
+                        (a, b) => Number(b?.totalSales || 0) - Number(a?.totalSales || 0)
+                );
+
+                const topSales = Number(sortedProducts[0]?.totalSales || 0);
+                const secondSales = Number(sortedProducts[1]?.totalSales || 0);
+                const hasRealBestSeller = sortedProducts.length > 0 && topSales > secondSales;
+
+                if (hasRealBestSeller) {
+                        return sortedProducts.slice(0, 4);
                 }
 
                 const shuffledProducts = [...products].sort(() => Math.random() - 0.5);
