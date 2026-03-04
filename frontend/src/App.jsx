@@ -24,6 +24,8 @@ import TrackingPage from "./pages/TrackingPage";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import GuestPendingOrdersFab from "./components/GuestPendingOrdersFab";
+import AboutPage from "./pages/AboutPage";
+import PrivacyPage from "./pages/PrivacyPage";
 
 function App() {
         const user = useUserStore((state) => state.user);
@@ -72,6 +74,8 @@ function App() {
                                         <Route path='/my-orders' element={user ? <MyOrdersPage /> : <Navigate to='/login' />} />
                                         <Route path='/purchase-success' element={<PurchaseSuccessPage />} />
                                         <Route path='/purchase-cancel' element={<PurchaseCancelPage />} />
+                                        <Route path='/about' element={<AboutPage />} />
+                                        <Route path='/privacy' element={<PrivacyPage />} />
                                 </Routes>
                         </div>
                         <GuestPendingOrdersFab />
