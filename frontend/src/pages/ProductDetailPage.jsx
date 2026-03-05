@@ -82,7 +82,14 @@ const ProductDetailPage = () => {
         }
 
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(selectedProduct);
-        const currentPrice = isDiscounted ? discountedPrice : price;
+        const isPortionProduct = Boolean(selectedProduct.hasPortions);
+        const portionStock = Number(selectedProduct.portionStock || 0);
+        const outOfStock = isPortionProduct ? portionStock <= 0 : available <= 0;
+        const currentPrice = isPortionProduct
+                ? Number(selectedProduct.portionPrice || 0)
+                : isDiscounted
+                        ? discountedPrice
+                        : price;
 
         const handleAddToCart = async () => {
                 await addToCart(
@@ -114,9 +121,15 @@ const ProductDetailPage = () => {
                                         <h1 className='text-2xl font-semibold text-[#111111]'>{selectedProduct.name}</h1>
 
                                         <div className='flex items-baseline gap-2'>
-                                                {isDiscounted && <span className='text-sm text-[#6b7280] line-through'>{formatMRU(price)}</span>}
+                                                {!isPortionProduct && isDiscounted && <span className='text-sm text-[#6b7280] line-through'>{formatMRU(price)}</span>}
                                                 <span className='text-[2rem] font-semibold text-brand-primary'>{formatMRU(currentPrice)}</span>
                                         </div>
+
+                                        {isPortionProduct && (
+                                                <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${outOfStock ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-800"}`}>
+                                                        {outOfStock ? "غير متوفر" : "متوفر بالتقسيمة"}
+                                                </span>
+                                        )}
 
                                         <div className='flex items-center gap-3'>
                                                 <button
@@ -141,7 +154,7 @@ const ProductDetailPage = () => {
                                         </div>
 
                                         <button
-                                                disabled={available <= 0}
+                                                disabled={outOfStock}
                                                 onClick={handleAddToCart}
                                                 className='inline-flex h-11 w-full items-center justify-center rounded-md bg-brand-primary text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50'
                                         >
@@ -169,7 +182,7 @@ const ProductDetailPage = () => {
                                 <div className='mx-auto flex max-w-6xl items-center justify-between gap-3'>
                                         <p className='text-xl font-semibold text-brand-primary'>{formatMRU(currentPrice)}</p>
                                         <button
-                                                disabled={available <= 0}
+                                                disabled={outOfStock}
                                                 onClick={handleAddToCart}
                                                 className='inline-flex h-11 min-w-[9rem] items-center justify-center rounded-md bg-brand-primary px-4 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50'
                                         >
