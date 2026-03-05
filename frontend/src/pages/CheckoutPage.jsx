@@ -79,7 +79,12 @@ const CheckoutPage = () => {
         phone: normalizedPhoneNumber,
         address: address.trim(),
         paymentMethodId,
-        items: cart.map((item) => ({ productId: item._id, quantity: item.quantity })),
+        items: cart.map((item) => ({
+          productId: item._id,
+          quantity: item.quantity,
+          type: String(item.type || item.cartType || "full") === "portion" ? "portion" : "full",
+          portionSizeMl: item.portionSizeMl ?? null,
+        })),
       });
       await clearCart();
       if (!user) {
@@ -145,10 +150,10 @@ const CheckoutPage = () => {
               const { price, discountedPrice, isDiscounted } = getProductPricing(item);
               return (
                 <li key={item._id} className='flex justify-between gap-4'>
-                  <span className='font-medium text-[#111111]'>{item.name}</span>
+                  <span className='font-medium text-[#111111]'>{item.cartLineName || item.name}</span>
                   <span className='flex flex-col items-end'>
-                    {isDiscounted && <span className='text-xs text-[#6b7280] line-through'>{formatNumberEn(item.quantity)} × {formatMRU(price)}</span>}
-                    <span>{formatNumberEn(item.quantity)} × {formatMRU(discountedPrice)}</span>
+                    {String(item.type || item.cartType || "full") !== "portion" && isDiscounted && <span className='text-xs text-[#6b7280] line-through'>{formatNumberEn(item.quantity)} × {formatMRU(price)}</span>}
+                    <span>{formatNumberEn(item.quantity)} × {formatMRU(String(item.type || item.cartType || "full") === "portion" ? Number(item.cartUnitPrice ?? item.price ?? 0) : discountedPrice)}</span>
                   </span>
                 </li>
               );

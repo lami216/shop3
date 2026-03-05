@@ -47,10 +47,12 @@ export const getInventorySummaries = async (productIds = []) => {
 };
 
 export const reserveInventoryForOrder = async (order, minutes = 15, session = null) => {
-  const productIds = order.products.map((i) => i.product);
+  const fullItems = order.products.filter((item) => String(item.type || "full") !== "portion");
+  const productIds = fullItems.map((i) => i.product);
+  if (!productIds.length) return new Date(Date.now() + minutes * 60 * 1000);
   const summaries = await getInventorySummaries(productIds);
 
-  for (const item of order.products) {
+  for (const item of fullItems) {
     const summary = summaries.get(item.product.toString()) || { availableQuantity: 0 };
     if (summary.availableQuantity < item.quantity) {
       throw new Error(`Insufficient stock for product ${item.product.toString()}`);
@@ -60,7 +62,7 @@ export const reserveInventoryForOrder = async (order, minutes = 15, session = nu
   const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
 
   await InventoryReservation.insertMany(
-    order.products.map((item) => ({
+    fullItems.map((item) => ({
       order: order._id,
       product: item.product,
       quantity: item.quantity,
@@ -89,7 +91,7 @@ export const hasActiveReservation = async (orderId) => {
 export const deductInventoryFIFO = async (order) => {
   const deductions = [];
 
-  for (const item of order.products) {
+  for (const item of order.products.filter((x) => String(x.type || "full") !== "portion")) {
     let needed = item.quantity;
     const batches = await InventoryBatch.find({ product: item.product, remainingQuantity: { $gt: 0 } }).sort({ createdAt: 1 });
     let lineCost = 0;

@@ -5,6 +5,7 @@ import apiClient from "../lib/apiClient";
 export const useOrderStore = create((set) => ({
   adminOrders: [],
   myOrders: [],
+  portionSales: [],
   loading: false,
   createOrder: async (payload) => {
     return apiClient.post("/orders", payload);
@@ -60,4 +61,9 @@ export const useOrderStore = create((set) => ({
   },
   trackOrder: async (trackingCode) => apiClient.get(`/orders/tracking/${trackingCode}`),
   getOrderDetailsByTracking: async (trackingCode) => apiClient.get(`/orders/tracking/${trackingCode}/details`),
+  fetchPortionSales: async () => {
+    const data = await apiClient.get("/portion-sales/summary");
+    set({ portionSales: data.sales || [] });
+    return data.sales || [];
+  },
 }));
