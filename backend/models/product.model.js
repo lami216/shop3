@@ -77,6 +77,33 @@ const productSchema = new mongoose.Schema(
                         type: Boolean,
                         default: false,
                 },
+                totalVolumeMl: {
+                        type: Number,
+                        min: 0,
+                        default: 0,
+                },
+                totalStockMl: {
+                        type: Number,
+                        min: 0,
+                        default: 0,
+                },
+                portions: {
+                        type: [
+                                {
+                                        size_ml: {
+                                                type: Number,
+                                                min: 0,
+                                                required: true,
+                                        },
+                                        price: {
+                                                type: Number,
+                                                min: 0,
+                                                required: true,
+                                        },
+                                },
+                        ],
+                        default: [],
+                },
                 portionSizeMl: {
                         type: Number,
                         min: 0,

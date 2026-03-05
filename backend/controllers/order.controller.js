@@ -57,7 +57,13 @@ export const createOrder = async (req, res) => {
       const p = map.get(item.productId);
       if (!p) throw new Error("Product missing");
       const price = p.isDiscounted && p.discountPercentage > 0 ? Number((p.price * (1 - p.discountPercentage / 100)).toFixed(2)) : p.price;
-      return { product: p._id, quantity: item.quantity, price, lineRevenue: price * item.quantity };
+      return {
+        product: p._id,
+        quantity: item.quantity,
+        price,
+        selectedPortionSizeMl: Number(item.selectedPortionSizeMl || item.portionSizeMl || 0),
+        lineRevenue: price * item.quantity,
+      };
     });
 
     const productIds = orderItems.map((item) => item.product);
@@ -349,6 +355,7 @@ export const createPosInvoice = async (req, res) => {
         product: line.productId,
         quantity,
         price,
+        selectedPortionSizeMl: Number(line.selectedPortionSizeMl || line.portionSizeMl || 0),
         lineRevenue: quantity * price,
       };
     });

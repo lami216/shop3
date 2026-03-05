@@ -5,6 +5,7 @@ const orderItemSchema = new mongoose.Schema(
     product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true, min: 0 },
+    selectedPortionSizeMl: { type: Number, min: 0, default: 0 },
     unitCost: { type: Number, default: 0 },
     lineCost: { type: Number, default: 0 },
     lineRevenue: { type: Number, default: 0 },

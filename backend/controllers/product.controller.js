@@ -52,10 +52,8 @@ const normalizeDiscountSettings = ({
 
 const normalizePortionSettings = ({
         rawHasPortions,
-        rawPortionSizeMl,
-        rawPortionPrice,
-        rawPortionStock,
-        rawPortionCost,
+        rawTotalVolumeMl,
+        rawPortions,
         fallback = {},
 }) => {
         const hasPortions =
@@ -66,47 +64,60 @@ const normalizePortionSettings = ({
                 return Number(value);
         };
 
-        const portionSizeMl = normalizeNumber(rawPortionSizeMl, fallback.portionSizeMl);
-        const portionPrice = normalizeNumber(rawPortionPrice, fallback.portionPrice);
-        const portionStock = normalizeNumber(rawPortionStock, fallback.portionStock);
-        const portionCost = normalizeNumber(rawPortionCost, fallback.portionCost);
+        const totalVolumeMl = normalizeNumber(rawTotalVolumeMl, fallback.totalVolumeMl);
 
-        if ([portionSizeMl, portionPrice, portionStock, portionCost].some((value) => Number.isNaN(value))) {
-                return { error: "Portion values must be valid numbers" };
-        }
+        const incomingPortions = Array.isArray(rawPortions)
+                ? rawPortions
+                : Array.isArray(fallback.portions)
+                        ? fallback.portions
+                        : [];
+
+        const normalizedPortions = incomingPortions
+                .map((portion) => ({
+                        size_ml: Number(portion?.size_ml),
+                        price: Number(portion?.price),
+                }))
+                .filter((portion) => !Number.isNaN(portion.size_ml) && !Number.isNaN(portion.price));
 
         if (hasPortions) {
-                if (portionSizeMl <= 0) {
-                        return { error: "portionSizeMl must be greater than 0" };
+                if (Number.isNaN(totalVolumeMl) || totalVolumeMl <= 0) {
+                        return { error: "totalVolumeMl must be greater than 0" };
                 }
 
-                if (portionPrice < 0) {
-                        return { error: "portionPrice must be 0 or greater" };
+                if (!normalizedPortions.length) {
+                        return { error: "At least one portion is required" };
                 }
 
-                if (portionStock < 0) {
-                        return { error: "portionStock must be 0 or greater" };
+                for (const portion of normalizedPortions) {
+                        if (portion.size_ml <= 0) {
+                                return { error: "size_ml must be greater than 0" };
+                        }
+                        if (portion.price < 0) {
+                                return { error: "portion price must be 0 or greater" };
+                        }
                 }
 
-                if (portionCost < 0) {
-                        return { error: "portionCost must be 0 or greater" };
+                const uniqueSizes = new Set(normalizedPortions.map((portion) => portion.size_ml));
+                if (uniqueSizes.size !== normalizedPortions.length) {
+                        return { error: "portion sizes must be unique" };
                 }
+
+                const sortedPortions = [...normalizedPortions].sort((a, b) => a.size_ml - b.size_ml);
 
                 return {
                         hasPortions: true,
-                        portionSizeMl: Number(portionSizeMl.toFixed(2)),
-                        portionPrice: Number(portionPrice.toFixed(2)),
-                        portionStock: Number(portionStock.toFixed(2)),
-                        portionCost: Number(portionCost.toFixed(2)),
+                        totalVolumeMl: Number(totalVolumeMl.toFixed(2)),
+                        portions: sortedPortions.map((portion) => ({
+                                size_ml: Number(portion.size_ml.toFixed(2)),
+                                price: Number(portion.price.toFixed(2)),
+                        })),
                 };
         }
 
         return {
                 hasPortions: false,
-                portionSizeMl: 0,
-                portionPrice: 0,
-                portionStock: 0,
-                portionCost: 0,
+                totalVolumeMl: 0,
+                portions: [],
         };
 };
 
@@ -244,8 +255,26 @@ const finalizeProductPayload = (product) => {
         const categoryIds = categoryDetails.map((category) => category._id);
         const primaryCategorySlug = categoryDetails.find((category) => category.slug)?.slug || null;
 
+        const normalizedPortions = Array.isArray(product.portions)
+                ? [...product.portions]
+                          .map((portion) => ({
+                                  id: portion?._id?.toString?.() || `${portion?.size_ml || ""}`,
+                                  size_ml: Number(portion?.size_ml || 0),
+                                  price: Number(portion?.price || 0),
+                          }))
+                          .filter((portion) => portion.size_ml > 0)
+                          .sort((a, b) => a.size_ml - b.size_ml)
+                : [];
+
         return {
                 ...product,
+                portions: normalizedPortions,
+                totalVolumeMl: Number(product.totalVolumeMl || 0),
+                totalStockMl: Number(product.totalStockMl || 0),
+                portionSizeMl: normalizedPortions[0]?.size_ml || Number(product.portionSizeMl || 0),
+                portionPrice: normalizedPortions[0]?.price || Number(product.portionPrice || 0),
+                portionStock: Number(product.portionStock || 0),
+                portionCost: Number(product.portionCost || 0),
                 isDiscounted,
                 discountPercentage: effectivePercentage,
                 discountedPrice,
@@ -504,10 +533,8 @@ export const createProduct = async (req, res) => {
                         isDiscounted,
                         discountPercentage,
                         hasPortions,
-                        portionSizeMl,
-                        portionPrice,
-                        portionStock,
-                        portionCost,
+                        totalVolumeMl,
+                        portions,
                 } = req.body;
 
                 const trimmedName = typeof name === "string" ? name.trim() : "";
@@ -555,10 +582,8 @@ export const createProduct = async (req, res) => {
 
                 const portionSettings = normalizePortionSettings({
                         rawHasPortions: hasPortions,
-                        rawPortionSizeMl: portionSizeMl,
-                        rawPortionPrice: portionPrice,
-                        rawPortionStock: portionStock,
-                        rawPortionCost: portionCost,
+                        rawTotalVolumeMl: totalVolumeMl,
+                        rawPortions: portions,
                 });
 
                 if (portionSettings.error) {
@@ -618,10 +643,8 @@ export const createProduct = async (req, res) => {
                         isDiscounted: discountSettings.isDiscounted,
                         discountPercentage: discountSettings.discountPercentage,
                         hasPortions: portionSettings.hasPortions,
-                        portionSizeMl: portionSettings.portionSizeMl,
-                        portionPrice: portionSettings.portionPrice,
-                        portionStock: portionSettings.portionStock,
-                        portionCost: portionSettings.portionCost,
+                        totalVolumeMl: portionSettings.totalVolumeMl,
+                        portions: portionSettings.portions,
                 });
 
                 await product.populate({
@@ -651,10 +674,8 @@ export const updateProduct = async (req, res) => {
                         isDiscounted,
                         discountPercentage,
                         hasPortions,
-                        portionSizeMl,
-                        portionPrice,
-                        portionStock,
-                        portionCost,
+                        totalVolumeMl,
+                        portions,
                 } = req.body;
 
                 const product = await Product.findById(id);
@@ -834,16 +855,12 @@ export const updateProduct = async (req, res) => {
 
                 const portionSettings = normalizePortionSettings({
                         rawHasPortions: hasPortions,
-                        rawPortionSizeMl: portionSizeMl,
-                        rawPortionPrice: portionPrice,
-                        rawPortionStock: portionStock,
-                        rawPortionCost: portionCost,
+                        rawTotalVolumeMl: totalVolumeMl,
+                        rawPortions: portions,
                         fallback: {
                                 hasPortions: product.hasPortions,
-                                portionSizeMl: product.portionSizeMl,
-                                portionPrice: product.portionPrice,
-                                portionStock: product.portionStock,
-                                portionCost: product.portionCost,
+                                totalVolumeMl: product.totalVolumeMl,
+                                portions: product.portions,
                         },
                 });
 
@@ -864,10 +881,11 @@ export const updateProduct = async (req, res) => {
                 product.isDiscounted = discountSettings.isDiscounted;
                 product.discountPercentage = discountSettings.discountPercentage;
                 product.hasPortions = portionSettings.hasPortions;
-                product.portionSizeMl = portionSettings.portionSizeMl;
-                product.portionPrice = portionSettings.portionPrice;
-                product.portionStock = portionSettings.portionStock;
-                product.portionCost = portionSettings.portionCost;
+                product.totalVolumeMl = portionSettings.totalVolumeMl;
+                product.portions = portionSettings.portions;
+                if (!portionSettings.hasPortions) {
+                        product.totalStockMl = 0;
+                }
 
                 const updatedProduct = await product.save();
 
