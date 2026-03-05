@@ -113,7 +113,7 @@ const OrderDetailsPage = () => {
                   const lineTotal = Number(item.price || 0) * Number(item.quantity || 0);
                   return (
                     <tr key={`${item.product?._id || item.product || index}`} className='text-[#111111]'>
-                      <td className='border-b border-l border-[#dcdcdc] px-3 py-3.5 font-semibold'>{item.product?.name || "—"}</td>
+                      <td className='border-b border-l border-[#dcdcdc] px-3 py-3.5 font-semibold'>{item.productName || item.product?.name || "—"}{String(item.type || "full") === "portion" ? ` (${item.portionSizeMl}ml)` : ""}</td>
                       <td className='border-b border-l border-[#dcdcdc] px-3 py-3.5 tabular-nums'>{formatMRU(item.price)}</td>
                       <td className='border-b border-l border-[#dcdcdc] px-3 py-3.5 tabular-nums'>{item.quantity || 0}</td>
                       <td className='border-b border-[#dcdcdc] px-3 py-3.5 font-medium tabular-nums'>{formatMRU(lineTotal)}</td>

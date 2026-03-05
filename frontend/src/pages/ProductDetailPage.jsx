@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useProductStore } from "../stores/useProductStore";
@@ -10,16 +10,20 @@ import useTranslation from "../hooks/useTranslation";
 import { getProductPricing } from "../lib/getProductPricing";
 import { useInventoryStore } from "../stores/useInventoryStore";
 
-const resolveCoverImage = (product) => {
-        if (!product) return null;
-        if (product.image) return product.image;
+const getProductImages = (product) => {
+        if (!product) return [];
 
-        if (Array.isArray(product.images) && product.images.length > 0) {
-                const [firstImage] = product.images;
-                return typeof firstImage === "string" ? firstImage : firstImage?.url || null;
+        const normalized = Array.isArray(product.images)
+                ? product.images
+                          .map((image) => (typeof image === "string" ? image : image?.url))
+                          .filter((image) => typeof image === "string" && image.length > 0)
+                : [];
+
+        if (product.image && !normalized.includes(product.image)) {
+                return [product.image, ...normalized];
         }
 
-        return null;
+        return normalized;
 };
 
 const ProductDetailPage = () => {
@@ -36,15 +40,20 @@ const ProductDetailPage = () => {
         const { t } = useTranslation();
         const [activeImage, setActiveImage] = useState(null);
         const [quantity, setQuantity] = useState(1);
+        const [touchStartX, setTouchStartX] = useState(null);
+        const [selectedPurchaseOption, setSelectedPurchaseOption] = useState("full");
         const inventory = useInventoryStore((state) => state.publicMap[id]);
         const available = inventory?.availableQuantity ?? 0;
+
+        const productImages = useMemo(() => getProductImages(selectedProduct), [selectedProduct]);
 
         useEffect(() => {
                 let isMounted = true;
 
                 fetchProductById(id).then((product) => {
                         if (isMounted) {
-                                setActiveImage(resolveCoverImage(product));
+                                const images = getProductImages(product);
+                                setActiveImage(images[0] || null);
                         }
                 });
 
@@ -55,14 +64,20 @@ const ProductDetailPage = () => {
         }, [fetchProductById, id, clearSelectedProduct]);
 
         useEffect(() => {
-                if (selectedProduct && !activeImage) {
-                        setActiveImage(resolveCoverImage(selectedProduct));
+                if (productImages.length === 0) {
+                        setActiveImage(null);
+                        return;
                 }
-        }, [selectedProduct, activeImage]);
+
+                if (!activeImage || !productImages.includes(activeImage)) {
+                        setActiveImage(productImages[0]);
+                }
+        }, [productImages, activeImage]);
 
         useEffect(() => {
                 if (selectedProduct) {
                         setQuantity(1);
+                        setSelectedPurchaseOption("full");
                 }
         }, [selectedProduct]);
 
@@ -82,14 +97,53 @@ const ProductDetailPage = () => {
         }
 
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(selectedProduct);
-        const isPortionProduct = Boolean(selectedProduct.hasPortions);
-        const portionStock = Number(selectedProduct.portionStock || 0);
-        const outOfStock = isPortionProduct ? portionStock <= 0 : available <= 0;
-        const currentPrice = isPortionProduct
-                ? Number(selectedProduct.portionPrice || 0)
+        const portions = Array.isArray(selectedProduct.portions) ? selectedProduct.portions : [];
+        const hasPortions = Boolean(selectedProduct.hasPortions) && portions.length > 0;
+        const selectedPortion =
+                selectedPurchaseOption === "full"
+                        ? null
+                        : portions.find((portion) => Number(portion.size_ml) === Number(selectedPurchaseOption));
+        const isPortionSelection = selectedPortion !== null;
+        const outOfStock = isPortionSelection ? false : available <= 0;
+        const currentPrice = isPortionSelection
+                ? Number(selectedPortion.price || 0)
                 : isDiscounted
                         ? discountedPrice
                         : price;
+
+        const activeImageIndex = productImages.findIndex((image) => image === activeImage);
+
+        const selectImageAt = (index) => {
+                if (!productImages.length) return;
+                const normalizedIndex = (index + productImages.length) % productImages.length;
+                setActiveImage(productImages[normalizedIndex]);
+        };
+
+        const handleTouchStart = (event) => {
+                setTouchStartX(event.touches[0]?.clientX ?? null);
+        };
+
+        const handleTouchEnd = (event) => {
+                if (touchStartX === null) return;
+
+                if (productImages.length < 2) {
+                        setTouchStartX(null);
+                        return;
+                }
+
+                const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
+                const delta = touchStartX - touchEndX;
+
+                if (Math.abs(delta) > 40) {
+                        if (delta > 0) {
+                                selectImageAt(activeImageIndex + 1);
+                        } else {
+                                selectImageAt(activeImageIndex - 1);
+                        }
+                }
+
+                setTouchStartX(null);
+        };
 
         const handleAddToCart = async () => {
                 await addToCart(
@@ -98,6 +152,12 @@ const ProductDetailPage = () => {
                                 discountedPrice,
                                 isDiscounted,
                                 discountPercentage,
+                                cartType: isPortionSelection ? "portion" : "full",
+                                portionSizeMl: isPortionSelection ? Number(selectedPortion.size_ml) : null,
+                                cartUnitPrice: currentPrice,
+                                cartLineName: isPortionSelection
+                                        ? `${selectedProduct.name} (${selectedPortion.size_ml}ml)`
+                                        : selectedProduct.name,
                         },
                         quantity
                 );
@@ -108,7 +168,11 @@ const ProductDetailPage = () => {
                 <div className='min-h-screen bg-[#fafafa] pb-24 text-[#111111]'>
                         <section className='mx-auto max-w-6xl px-4 py-10'>
                                 <div className='mx-auto max-w-xl space-y-5'>
-                                        <div className='overflow-hidden rounded-xl bg-white p-2 shadow-sm'>
+                                        <div
+                                                className='overflow-hidden rounded-xl bg-white p-2 shadow-sm'
+                                                onTouchStart={handleTouchStart}
+                                                onTouchEnd={handleTouchEnd}
+                                        >
                                                 {activeImage ? (
                                                         <img src={activeImage} alt={selectedProduct.name} className='h-[360px] w-full rounded-md object-cover' />
                                                 ) : (
@@ -118,18 +182,54 @@ const ProductDetailPage = () => {
                                                 )}
                                         </div>
 
+                                        {productImages.length > 1 && (
+                                                <div className='flex gap-2 overflow-x-auto pb-1'>
+                                                        {productImages.map((image, index) => (
+                                                                <button
+                                                                        key={`${image}-${index}`}
+                                                                        type='button'
+                                                                        onClick={() => selectImageAt(index)}
+                                                                        className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 ${
+                                                                                image === activeImage ? "border-brand-primary" : "border-transparent"
+                                                                        }`}
+                                                                >
+                                                                        <img src={image} alt={`${selectedProduct.name} ${index + 1}`} className='h-full w-full object-cover' />
+                                                                </button>
+                                                        ))}
+                                                </div>
+                                        )}
+
                                         <h1 className='text-2xl font-semibold text-[#111111]'>{selectedProduct.name}</h1>
 
                                         <div className='flex items-baseline gap-2'>
-                                                {!isPortionProduct && isDiscounted && <span className='text-sm text-[#6b7280] line-through'>{formatMRU(price)}</span>}
+                                                {!isPortionSelection && isDiscounted && <span className='text-sm text-[#6b7280] line-through'>{formatMRU(price)}</span>}
                                                 <span className='text-[2rem] font-semibold text-brand-primary'>{formatMRU(currentPrice)}</span>
                                         </div>
 
-                                        {isPortionProduct && (
-                                                <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${outOfStock ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-800"}`}>
-                                                        {outOfStock ? "غير متوفر" : "متوفر بالتقسيمة"}
+                                        {hasPortions && (
+                                                <span className='inline-flex w-fit rounded-full bg-yellow-100 px-3 py-1 text-sm font-semibold text-yellow-800'>
+                                                        متوفر بخيارات التقسيم
                                                 </span>
                                         )}
+
+                                        {hasPortions && (
+                                                <div className='space-y-2'>
+                                                        <label className='text-sm font-semibold text-[#111111]'>اختر الحجم</label>
+                                                        <select
+                                                                value={selectedPurchaseOption}
+                                                                onChange={(event) => setSelectedPurchaseOption(event.target.value)}
+                                                                className='w-full rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#111111]'
+                                                        >
+                                                                <option value='full'>كامل</option>
+                                                                {portions.map((portion, index) => (
+                                                                        <option key={`${portion.size_ml}-${index}`} value={portion.size_ml}>
+                                                                                {portion.size_ml}ml
+                                                                        </option>
+                                                                ))}
+                                                        </select>
+                                                </div>
+                                        )}
+
 
                                         <div className='flex items-center gap-3'>
                                                 <button
@@ -165,6 +265,21 @@ const ProductDetailPage = () => {
                                                 <p>✔ 100% Original</p>
                                                 <p>✔ Fast shipping</p>
                                                 <p>✔ Secure payment</p>
+                                        </div>
+
+                                        <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+                                                {[
+                                                        { label: "التركيز", value: selectedProduct.concentration },
+                                                        { label: "الجنس", value: selectedProduct.gender },
+                                                        { label: "الحجم", value: selectedProduct.size },
+                                                ].map((attribute) => (
+                                                        <div key={attribute.label} className='space-y-1'>
+                                                                <p className='text-sm font-semibold text-[#111111]'>{attribute.label}</p>
+                                                                <div className='min-h-[46px] rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#374151]'>
+                                                                        {attribute.value || "—"}
+                                                                </div>
+                                                        </div>
+                                                ))}
                                         </div>
 
                                         <div className='space-y-2 pt-1'>

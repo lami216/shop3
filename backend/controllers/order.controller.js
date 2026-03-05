@@ -13,10 +13,26 @@ import {
   releaseOrderReservation,
   reserveInventoryForOrder,
 } from "../services/inventory.service.js";
+import PortionSale from "../models/portionSale.model.js";
 
 const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT"];
 const PENDING_PAYMENT_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
+
+const recordPortionSales = async (order) => {
+  const portionItems = (order.products || []).filter((item) => String(item.type || "full") === "portion");
+  if (!portionItems.length) return;
+
+  await PortionSale.insertMany(
+    portionItems.map((item) => ({
+      product_id: item.product,
+      product_name: item.productName || item.product?.name || "",
+      portion_size_ml: Number(item.portionSizeMl || 0),
+      quantity: Number(item.quantity || 0),
+      order_id: order._id,
+    }))
+  );
+};
 
 const isReservationActive = (reservationExpiresAt) => {
   if (!reservationExpiresAt) return false;
@@ -56,13 +72,39 @@ export const createOrder = async (req, res) => {
     const orderItems = items.map((item) => {
       const p = map.get(item.productId);
       if (!p) throw new Error("Product missing");
+
+      const quantity = Math.max(1, Number(item.quantity) || 1);
+      const type = String(item.type || "full") === "portion" ? "portion" : "full";
+
+      if (type === "portion") {
+        const requestedSize = Number(item.portionSizeMl);
+        const productPortions = Array.isArray(p.portions) ? p.portions : [];
+        const selectedPortion = productPortions.find((portion) => Number(portion.size_ml) === requestedSize);
+
+        if (!p.hasPortions || !selectedPortion) {
+          throw new Error("Invalid portion selection");
+        }
+
+        const portionPrice = Number(selectedPortion.price);
+        return {
+          product: p._id,
+          productName: p.name,
+          type: "portion",
+          portionSizeMl: Number(selectedPortion.size_ml),
+          quantity,
+          price: portionPrice,
+          lineRevenue: portionPrice * quantity,
+        };
+      }
+
       const price = p.isDiscounted && p.discountPercentage > 0 ? Number((p.price * (1 - p.discountPercentage / 100)).toFixed(2)) : p.price;
-      return { product: p._id, quantity: item.quantity, price, lineRevenue: price * item.quantity };
+      return { product: p._id, productName: p.name, type: "full", quantity, price, lineRevenue: price * quantity };
     });
 
-    const productIds = orderItems.map((item) => item.product);
+    const stockItems = orderItems.filter((item) => item.type !== "portion");
+    const productIds = stockItems.map((item) => item.product);
     const summaries = await getInventorySummaries(productIds);
-    for (const item of orderItems) {
+    for (const item of stockItems) {
       const summary = summaries.get(item.product.toString()) || { availableQuantity: 0 };
       if (summary.availableQuantity < item.quantity) {
         const product = map.get(item.product.toString());
@@ -231,7 +273,7 @@ export const approveOrder = async (req, res) => {
       const lineRevenue = item.price * item.quantity;
       const lineProfit = lineRevenue - lineCost;
       totalCost += lineCost;
-      return { ...item.toObject(), lineCost, lineRevenue, lineProfit, unitCost: lineCost / item.quantity };
+      return { ...item.toObject(), lineCost, lineRevenue, lineProfit, unitCost: item.quantity ? lineCost / item.quantity : 0 };
     });
 
     const totalRevenue = Number(order.totalAmount) || 0;
@@ -242,6 +284,9 @@ export const approveOrder = async (req, res) => {
     order.reviewedAt = new Date();
     await order.save();
     await consumeOrderReservation(order._id);
+    if (["APPROVED", "COMPLETED"].includes(order.status)) {
+      await recordPortionSales(order);
+    }
 
     res.json({ success: true, order });
   } catch (error) {
@@ -347,6 +392,8 @@ export const createPosInvoice = async (req, res) => {
       if (Number.isNaN(price) || price < 0) throw new Error("Price is invalid");
       return {
         product: line.productId,
+        productName: product.name,
+        type: "full",
         quantity,
         price,
         lineRevenue: quantity * price,
@@ -390,7 +437,7 @@ export const createPosInvoice = async (req, res) => {
       const lineRevenue = item.price * item.quantity;
       const lineProfit = lineRevenue - lineCost;
       totalCost += lineCost;
-      return { ...item.toObject(), lineCost, lineRevenue, lineProfit, unitCost: lineCost / item.quantity };
+      return { ...item.toObject(), lineCost, lineRevenue, lineProfit, unitCost: item.quantity ? lineCost / item.quantity : 0 };
     });
 
     const totalRevenue = Number(order.totalAmount) || 0;

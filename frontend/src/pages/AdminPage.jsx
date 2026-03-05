@@ -1,4 +1,4 @@
-import { BarChart, PlusCircle, ShoppingBasket, FolderTree, Image, Boxes, CreditCard, PackageSearch, Receipt } from "lucide-react";
+import { BarChart, PlusCircle, ShoppingBasket, FolderTree, Image, Boxes, CreditCard, PackageSearch, Receipt, FlaskConical } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import useTranslation from "../hooks/useTranslation";
@@ -13,6 +13,7 @@ import InventoryTab from "../components/InventoryTab";
 import PaymentMethodsTab from "../components/PaymentMethodsTab";
 import OrdersTab from "../components/OrdersTab";
 import PosInvoiceTab from "../components/PosInvoiceTab";
+import PortionSalesTab from "../components/PortionSalesTab";
 
 const AdminPage = () => {
         const [activeTab, setActiveTab] = useState("create");
@@ -33,6 +34,7 @@ const AdminPage = () => {
                         { id: "payment-methods", label: "Payment Methods", icon: CreditCard },
                         { id: "orders", label: "Orders", icon: PackageSearch },
                         { id: "pos", label: "POS / فاتورة يدوية", icon: Receipt },
+                        { id: "portion-sales", label: "سجل التقسيمات", icon: FlaskConical },
                         { id: "analytics", label: t("admin.tabs.analytics"), icon: BarChart },
                 ],
                 [t]
@@ -74,6 +76,7 @@ const AdminPage = () => {
                                 {activeTab === "payment-methods" && <PaymentMethodsTab />}
                                 {activeTab === "orders" && <OrdersTab />}
                                 {activeTab === "pos" && <PosInvoiceTab />}
+                                {activeTab === "portion-sales" && <PortionSalesTab />}
                                 {activeTab === "analytics" && <AnalyticsTab />}
                         </div>
                 </div>

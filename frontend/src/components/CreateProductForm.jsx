@@ -15,13 +15,13 @@ const createInitialFormState = () => ({
         description: "",
         price: "",
         hasPortions: false,
-        portionSizeMl: "",
-        portionPrice: "",
-        portionStock: "",
-        portionCost: "",
+        portions: [],
         category: "",
         isDiscounted: false,
         discountPercentage: "",
+        concentration: "",
+        gender: "",
+        size: "",
         existingImages: [],
         newImages: [],
         coverSource: "existing",
@@ -65,10 +65,18 @@ const CreateProductForm = () => {
 
                 const existingImages = Array.isArray(selectedProduct.images)
                         ? selectedProduct.images
-                                  .map((image) => ({
-                                          url: typeof image === "object" ? image.url : image,
-                                          public_id: typeof image === "object" ? image.public_id : null,
-                                  }))
+                                  .map((image) => {
+                                          const imageUrl = typeof image === "object" ? image.url : image;
+                                          const publicId = typeof image === "object" ? image.public_id : null;
+                                          const fileId = typeof image === "object" ? image.fileId : null;
+
+                                          return {
+                                                  url: imageUrl,
+                                                  public_id: publicId,
+                                                  fileId,
+                                                  imageId: publicId || fileId || imageUrl || null,
+                                          };
+                                  })
                                   .filter((image) => typeof image.url === "string" && image.url.length > 0)
                         : [];
 
@@ -80,22 +88,12 @@ const CreateProductForm = () => {
                                         ? String(selectedProduct.price)
                                         : "",
                         hasPortions: Boolean(selectedProduct.hasPortions),
-                        portionSizeMl:
-                                selectedProduct.portionSizeMl !== undefined && selectedProduct.portionSizeMl !== null
-                                        ? String(selectedProduct.portionSizeMl)
-                                        : "",
-                        portionPrice:
-                                selectedProduct.portionPrice !== undefined && selectedProduct.portionPrice !== null
-                                        ? String(selectedProduct.portionPrice)
-                                        : "",
-                        portionStock:
-                                selectedProduct.portionStock !== undefined && selectedProduct.portionStock !== null
-                                        ? String(selectedProduct.portionStock)
-                                        : "",
-                        portionCost:
-                                selectedProduct.portionCost !== undefined && selectedProduct.portionCost !== null
-                                        ? String(selectedProduct.portionCost)
-                                        : "",
+                        portions: Array.isArray(selectedProduct.portions)
+                                ? selectedProduct.portions.map((portion) => ({
+                                          size_ml: portion?.size_ml !== undefined && portion?.size_ml !== null ? String(portion.size_ml) : "",
+                                          price: portion?.price !== undefined && portion?.price !== null ? String(portion.price) : "",
+                                  }))
+                                : [],
                         category:
                                 Array.isArray(selectedProduct.categories) && selectedProduct.categories.length
                                         ? (typeof selectedProduct.categories[0] === "object"
@@ -111,6 +109,9 @@ const CreateProductForm = () => {
                                 selectedProduct.discountPercentage !== null
                                         ? String(selectedProduct.discountPercentage)
                                         : "",
+                        concentration: selectedProduct.concentration ?? "",
+                        gender: selectedProduct.gender ?? "",
+                        size: selectedProduct.size ?? "",
                         existingImages,
                         newImages: [],
                         coverSource: existingImages.length ? "existing" : "new",
@@ -327,34 +328,34 @@ const CreateProductForm = () => {
                 }
 
                 const numericPrice = Number(formState.price);
-                const numericPortionSize = Number(formState.portionSizeMl);
-                const numericPortionPrice = Number(formState.portionPrice);
-                const numericPortionStock = Number(formState.portionStock || 0);
-                const numericPortionCost = Number(formState.portionCost || 0);
 
                 if (Number.isNaN(numericPrice)) {
                         toast.error(t("admin.createProduct.messages.invalidPrice"));
                         return;
                 }
 
+                const normalizedPortions = formState.hasPortions
+                        ? formState.portions
+                                  .map((portion) => ({
+                                          size_ml: Number(portion.size_ml),
+                                          price: Number(portion.price),
+                                  }))
+                                  .filter((portion) => !Number.isNaN(portion.size_ml) && !Number.isNaN(portion.price))
+                        : [];
+
                 if (formState.hasPortions) {
-                        if (Number.isNaN(numericPortionSize) || numericPortionSize <= 0) {
+                        if (!normalizedPortions.length) {
+                                toast.error("أضف تقسيمة واحدة على الأقل");
+                                return;
+                        }
+
+                        if (normalizedPortions.some((portion) => portion.size_ml <= 0)) {
                                 toast.error("حجم التقسيمة يجب أن يكون أكبر من 0");
                                 return;
                         }
 
-                        if (Number.isNaN(numericPortionPrice) || numericPortionPrice < 0) {
+                        if (normalizedPortions.some((portion) => portion.price < 0)) {
                                 toast.error("سعر التقسيمة غير صالح");
-                                return;
-                        }
-
-                        if (Number.isNaN(numericPortionStock) || numericPortionStock < 0) {
-                                toast.error("عدد التقسيمات غير صالح");
-                                return;
-                        }
-
-                        if (Number.isNaN(numericPortionCost) || numericPortionCost < 0) {
-                                toast.error("سعر شراء التقسيمة غير صالح");
                                 return;
                         }
                 }
@@ -396,7 +397,7 @@ const CreateProductForm = () => {
                                         description: trimmedDescription,
                                         price: numericPrice,
                                         categories: payloadCategories,
-                                        existingImages: existing.map((image) => image.public_id).filter(Boolean),
+                                        existingImages: existing.map((image) => image.imageId).filter(Boolean),
                                         newImages: fresh,
                                         cover: {
                                                 source: formState.coverSource,
@@ -405,10 +406,10 @@ const CreateProductForm = () => {
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
                                         hasPortions: formState.hasPortions,
-                                        portionSizeMl: formState.hasPortions ? numericPortionSize : 0,
-                                        portionPrice: formState.hasPortions ? numericPortionPrice : 0,
-                                        portionStock: formState.hasPortions ? numericPortionStock : 0,
-                                        portionCost: formState.hasPortions ? numericPortionCost : 0,
+                                        portions: normalizedPortions,
+                                        concentration: formState.concentration.trim(),
+                                        gender: formState.gender.trim(),
+                                        size: formState.size.trim(),
                                 });
                                 resetForm();
                         } else {
@@ -421,10 +422,10 @@ const CreateProductForm = () => {
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
                                         hasPortions: formState.hasPortions,
-                                        portionSizeMl: formState.hasPortions ? numericPortionSize : 0,
-                                        portionPrice: formState.hasPortions ? numericPortionPrice : 0,
-                                        portionStock: formState.hasPortions ? numericPortionStock : 0,
-                                        portionCost: formState.hasPortions ? numericPortionCost : 0,
+                                        portions: normalizedPortions,
+                                        concentration: formState.concentration.trim(),
+                                        gender: formState.gender.trim(),
+                                        size: formState.size.trim(),
                                 });
                                 resetForm();
                         }
@@ -438,7 +439,7 @@ const CreateProductForm = () => {
                         type: "existing",
                         url: image.url,
                         index,
-                        key: image.public_id || `${image.url}-${index}`,
+                        key: image.imageId || `${image.url}-${index}`,
                 })),
                 ...formState.newImages.map((image, index) => ({
                         type: "new",
@@ -526,6 +527,48 @@ const CreateProductForm = () => {
                                         />
                                 </div>
 
+                                <div>
+                                        <label htmlFor='concentration' className='block text-sm font-medium text-white/80'>
+                                                التركيز
+                                        </label>
+                                        <input
+                                                type='text'
+                                                id='concentration'
+                                                name='concentration'
+                                                value={formState.concentration}
+                                                onChange={(event) => setFormState({ ...formState, concentration: event.target.value })}
+                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                        />
+                                </div>
+
+                                <div>
+                                        <label htmlFor='gender' className='block text-sm font-medium text-white/80'>
+                                                الجنس
+                                        </label>
+                                        <input
+                                                type='text'
+                                                id='gender'
+                                                name='gender'
+                                                value={formState.gender}
+                                                onChange={(event) => setFormState({ ...formState, gender: event.target.value })}
+                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                        />
+                                </div>
+
+                                <div>
+                                        <label htmlFor='size' className='block text-sm font-medium text-white/80'>
+                                                الحجم
+                                        </label>
+                                        <input
+                                                type='text'
+                                                id='size'
+                                                name='size'
+                                                value={formState.size}
+                                                onChange={(event) => setFormState({ ...formState, size: event.target.value })}
+                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                        />
+                                </div>
+
                                 <label className='flex items-center justify-between rounded-lg border border-payzone-indigo/30 bg-payzone-navy/50 p-3'>
                                         <span className='text-sm font-medium text-white'>متوفر بالتقسيمة</span>
                                         <input
@@ -535,68 +578,80 @@ const CreateProductForm = () => {
                                                         setFormState((previous) => ({
                                                                 ...previous,
                                                                 hasPortions: event.target.checked,
+                                                                portions:
+                                                                        event.target.checked && previous.portions.length === 0
+                                                                                ? [{ size_ml: "", price: "" }]
+                                                                                : previous.portions,
                                                         }))
                                                 }
                                         />
                                 </label>
 
                                 {formState.hasPortions && (
-                                        <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
-                                                <div>
-                                                        <label className='block text-sm font-medium text-white/80'>حجم التقسيمة (ml)</label>
-                                                        <input
-                                                                type='number'
-                                                                min='0'
-                                                                step='0.01'
-                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
-                                                                value={formState.portionSizeMl}
-                                                                onChange={(event) =>
-                                                                        setFormState((previous) => ({ ...previous, portionSizeMl: event.target.value }))
-                                                                }
-                                                                placeholder='10'
-                                                        />
+                                        <div className='space-y-3 rounded-lg border border-payzone-indigo/30 bg-payzone-navy/40 p-3'>
+                                                <p className='text-sm font-medium text-white'>خيارات التقسيم</p>
+                                                <div className='space-y-2'>
+                                                        {formState.portions.map((portion, index) => (
+                                                                <div key={`portion-${index}`} className='grid grid-cols-12 gap-2'>
+                                                                        <input
+                                                                                type='number'
+                                                                                min='0'
+                                                                                step='0.01'
+                                                                                className='col-span-5 rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                                value={portion.size_ml}
+                                                                                onChange={(event) =>
+                                                                                        setFormState((previous) => ({
+                                                                                                ...previous,
+                                                                                                portions: previous.portions.map((item, itemIndex) =>
+                                                                                                        itemIndex === index ? { ...item, size_ml: event.target.value } : item
+                                                                                                ),
+                                                                                        }))
+                                                                                }
+                                                                                placeholder='5'
+                                                                        />
+                                                                        <input
+                                                                                type='number'
+                                                                                min='0'
+                                                                                step='0.01'
+                                                                                className='col-span-5 rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                                value={portion.price}
+                                                                                onChange={(event) =>
+                                                                                        setFormState((previous) => ({
+                                                                                                ...previous,
+                                                                                                portions: previous.portions.map((item, itemIndex) =>
+                                                                                                        itemIndex === index ? { ...item, price: event.target.value } : item
+                                                                                                ),
+                                                                                        }))
+                                                                                }
+                                                                                placeholder='80'
+                                                                        />
+                                                                        <button
+                                                                                type='button'
+                                                                                className='col-span-2 rounded-md border border-red-400/50 text-red-300 hover:bg-red-500/10'
+                                                                                onClick={() =>
+                                                                                        setFormState((previous) => ({
+                                                                                                ...previous,
+                                                                                                portions: previous.portions.filter((_, itemIndex) => itemIndex !== index),
+                                                                                        }))
+                                                                                }
+                                                                        >
+                                                                                حذف
+                                                                        </button>
+                                                                </div>
+                                                        ))}
                                                 </div>
-                                                <div>
-                                                        <label className='block text-sm font-medium text-white/80'>سعر التقسيمة</label>
-                                                        <input
-                                                                type='number'
-                                                                min='0'
-                                                                step='0.01'
-                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
-                                                                value={formState.portionPrice}
-                                                                onChange={(event) =>
-                                                                        setFormState((previous) => ({ ...previous, portionPrice: event.target.value }))
-                                                                }
-                                                                placeholder='120'
-                                                        />
-                                                </div>
-                                                <div>
-                                                        <label className='block text-sm font-medium text-white/80'>عدد التقسيمات المتوفرة</label>
-                                                        <input
-                                                                type='number'
-                                                                min='0'
-                                                                step='1'
-                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
-                                                                value={formState.portionStock}
-                                                                onChange={(event) =>
-                                                                        setFormState((previous) => ({ ...previous, portionStock: event.target.value }))
-                                                                }
-                                                                placeholder='9'
-                                                        />
-                                                </div>
-                                                <div>
-                                                        <label className='block text-sm font-medium text-white/80'>سعر شراء التقسيمة</label>
-                                                        <input
-                                                                type='number'
-                                                                min='0'
-                                                                step='0.01'
-                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
-                                                                value={formState.portionCost}
-                                                                onChange={(event) =>
-                                                                        setFormState((previous) => ({ ...previous, portionCost: event.target.value }))
-                                                                }
-                                                        />
-                                                </div>
+                                                <button
+                                                        type='button'
+                                                        className='rounded-md border border-payzone-gold px-3 py-1 text-sm text-payzone-gold hover:bg-payzone-gold/10'
+                                                        onClick={() =>
+                                                                setFormState((previous) => ({
+                                                                        ...previous,
+                                                                        portions: [...previous.portions, { size_ml: "", price: "" }],
+                                                                }))
+                                                        }
+                                                >
+                                                        إضافة تقسيمة
+                                                </button>
                                         </div>
                                 )}
 

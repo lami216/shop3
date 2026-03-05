@@ -13,6 +13,7 @@ const enrichCartItem = (item) => {
         const { discountedPrice, isDiscounted, discountPercentage } = getProductPricing(item);
         return {
                 ...item,
+                cartLineId: getCartLineId(item),
                 discountedPrice,
                 isDiscounted,
                 discountPercentage,
@@ -47,6 +48,14 @@ const persistCartToStorage = (cart) => {
 };
 
 const getAuthenticatedUser = () => useUserStore.getState().user;
+
+const getCartLineId = (item = {}) => {
+        const baseId = item._id || item.productId || "";
+        const type = item.cartType || item.type || "full";
+        const portion = item.portionSizeMl ?? "full";
+        return `${baseId}::${type}::${portion}`;
+};
+
 
 export const useCartStore = create((set, get) => ({
         cart: loadCartFromStorage(),
@@ -148,20 +157,27 @@ export const useCartStore = create((set, get) => ({
                 const user = getAuthenticatedUser();
                 const normalizedQuantity = Math.max(1, Number(quantity) || 1);
 
+                const lineType = product.cartType || "full";
+                const lineId = getCartLineId({ ...product, cartType: lineType });
+
                 const updateLocalCart = () => {
                         const enrichedProduct = enrichCartItem({
                                 ...product,
+                                type: lineType,
                                 quantity: normalizedQuantity,
+                                cartLineId: lineId,
                         });
                         set((prevState) => {
-                                const existingItem = prevState.cart.find((item) => item._id === product._id);
+                                const existingItem = prevState.cart.find((item) => (item.cartLineId || getCartLineId(item)) === lineId);
                                 const newCart = existingItem
                                         ? prevState.cart.map((item) =>
-                                                        item._id === product._id
+                                                        (item.cartLineId || getCartLineId(item)) === lineId
                                                                 ? enrichCartItem({
                                                                           ...item,
                                                                           ...product,
+                                                                          type: lineType,
                                                                           quantity: Number(item.quantity || 0) + normalizedQuantity,
+                                                                          cartLineId: lineId,
                                                                   })
                                                                 : item
                                           )
@@ -173,7 +189,7 @@ export const useCartStore = create((set, get) => ({
                         get().calculateTotals();
                 };
 
-                if (!user) {
+                if (!user || lineType === "portion") {
                         updateLocalCart();
                         toast.success(translate("common.messages.productAddedToCart"));
                         return;
@@ -191,45 +207,53 @@ export const useCartStore = create((set, get) => ({
 
                 updateLocalCart();
         },
-        removeFromCart: async (productId) => {
+        removeFromCart: async (lineIdOrProductId) => {
                 const user = getAuthenticatedUser();
+                const targetItem = get().cart.find(
+                        (item) => (item.cartLineId || getCartLineId(item)) === lineIdOrProductId || item._id === lineIdOrProductId
+                );
+                const isPortionLine = String(targetItem?.type || targetItem?.cartType || "full") === "portion";
 
                 set((prevState) => {
-                        const newCart = prevState.cart.filter((item) => item._id !== productId);
+                        const newCart = prevState.cart.filter((item) => (item.cartLineId || getCartLineId(item)) !== lineIdOrProductId && item._id !== lineIdOrProductId);
                         persistCartToStorage(newCart);
                         return { cart: newCart };
                 });
                 get().calculateTotals();
 
-                if (!user) return;
+                if (!user || isPortionLine) return;
 
                 try {
-                        await apiClient.delete(`/cart`, { body: { productId } });
+                        await apiClient.delete(`/cart`, { body: { productId: lineIdOrProductId } });
                 } catch (error) {
                         toast.error(error.response?.data?.message || translate("toast.removeItemError"));
                 }
         },
-        updateQuantity: async (productId, quantity) => {
+        updateQuantity: async (lineIdOrProductId, quantity) => {
                 if (quantity === 0) {
-                        get().removeFromCart(productId);
+                        get().removeFromCart(lineIdOrProductId);
                         return;
                 }
 
                 const user = getAuthenticatedUser();
+                const targetItem = get().cart.find(
+                        (item) => (item.cartLineId || getCartLineId(item)) === lineIdOrProductId || item._id === lineIdOrProductId
+                );
+                const isPortionLine = String(targetItem?.type || targetItem?.cartType || "full") === "portion";
 
                 set((prevState) => {
                         const newCart = prevState.cart.map((item) =>
-                                item._id === productId ? { ...item, quantity } : item
+                                (item.cartLineId || getCartLineId(item)) === lineIdOrProductId || item._id === lineIdOrProductId ? { ...item, quantity } : item
                         );
                         persistCartToStorage(newCart);
                         return { cart: newCart };
                 });
                 get().calculateTotals();
 
-                if (!user) return;
+                if (!user || isPortionLine) return;
 
                 try {
-                        await apiClient.put(`/cart/${productId}`, { quantity });
+                        await apiClient.put(`/cart/${lineIdOrProductId}`, { quantity });
                 } catch (error) {
                         toast.error(error.response?.data?.message || translate("toast.updateQuantityError"));
                 }
@@ -241,8 +265,16 @@ export const useCartStore = create((set, get) => ({
                 let discountedSubtotal = 0;
 
                 cart.forEach((item) => {
-                        const { price, discountedPrice } = getProductPricing(item);
                         const quantity = Number(item.quantity) || 0;
+                        const isPortionLine = String(item.type || item.cartType || "full") === "portion";
+                        if (isPortionLine) {
+                                const unitPrice = Number(item.cartUnitPrice ?? item.price ?? 0);
+                                originalSubtotal += unitPrice * quantity;
+                                discountedSubtotal += unitPrice * quantity;
+                                return;
+                        }
+
+                        const { price, discountedPrice } = getProductPricing(item);
                         originalSubtotal += price * quantity;
                         discountedSubtotal += discountedPrice * quantity;
                 });

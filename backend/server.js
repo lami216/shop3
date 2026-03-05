@@ -15,6 +15,7 @@ import heroSlideRoutes from "./routes/heroSlide.route.js";
 import inventoryRoutes from "./routes/inventory.route.js";
 import paymentMethodRoutes from "./routes/paymentMethod.route.js";
 import orderRoutes from "./routes/order.route.js";
+import portionSaleRoutes from "./routes/portionSale.route.js";
 import { startOrderLifecycleJobs } from "./services/orderLifecycle.service.js";
 
 import { connectDB } from "./lib/db.js";
@@ -42,6 +43,7 @@ app.use("/api/hero-slides", heroSlideRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/portion-sales", portionSaleRoutes);
 
 if (process.env.NODE_ENV === "production") {
 	app.use(express.static(path.join(__dirname, "/frontend/dist")));

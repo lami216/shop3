@@ -6,7 +6,7 @@ import { getInventorySummaries } from "../services/inventory.service.js";
 
 export const getInventoryOverview = async (_req, res) => {
   try {
-    const products = await Product.find({}).select("name image price hasPortions portionSizeMl portionPrice portionStock portionCost").lean();
+    const products = await Product.find({}).select("name image price hasPortions portions").lean();
     const productIds = products.map((p) => p._id);
     const summaries = await getInventorySummaries(productIds);
 
@@ -93,12 +93,10 @@ export const createInventoryIntake = async (req, res) => {
     }
 
     const productIds = [...new Set(parsedItems.map((item) => item.product.toString()))];
-    const products = await Product.find({ _id: { $in: productIds } }).select("_id hasPortions portionStock portionCost");
+    const products = await Product.find({ _id: { $in: productIds } }).select("_id");
     if (products.length !== productIds.length) {
       return res.status(404).json({ message: "One or more products not found" });
     }
-
-    const productMap = new Map(products.map((product) => [product._id.toString(), product]));
 
     await InventoryBatch.insertMany(
       parsedItems.map((item) => ({
@@ -108,15 +106,6 @@ export const createInventoryIntake = async (req, res) => {
         purchasePrice: item.unitCost,
       }))
     );
-
-    for (const item of parsedItems) {
-      const product = productMap.get(item.product.toString());
-      if (!product?.hasPortions) continue;
-
-      product.portionStock = Number(product.portionStock || 0) + Number(item.quantity || 0);
-      product.portionCost = Number(item.unitCost || 0);
-      await product.save();
-    }
 
     const totalQuantity = parsedItems.reduce((sum, item) => sum + item.quantity, 0);
     const totalCost = parsedItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
