@@ -49,6 +49,67 @@ const normalizeDiscountSettings = ({
         return { isDiscounted: false, discountPercentage: 0 };
 };
 
+
+const normalizePortionSettings = ({
+        rawHasPortions,
+        rawPortionSizeMl,
+        rawPortionPrice,
+        rawPortionStock,
+        rawPortionCost,
+        fallback = {},
+}) => {
+        const hasPortions =
+                rawHasPortions === undefined ? Boolean(fallback.hasPortions) : toBoolean(rawHasPortions);
+
+        const normalizeNumber = (value, fallbackValue = 0) => {
+                if (value === undefined || value === null || value === "") return Number(fallbackValue) || 0;
+                return Number(value);
+        };
+
+        const portionSizeMl = normalizeNumber(rawPortionSizeMl, fallback.portionSizeMl);
+        const portionPrice = normalizeNumber(rawPortionPrice, fallback.portionPrice);
+        const portionStock = normalizeNumber(rawPortionStock, fallback.portionStock);
+        const portionCost = normalizeNumber(rawPortionCost, fallback.portionCost);
+
+        if ([portionSizeMl, portionPrice, portionStock, portionCost].some((value) => Number.isNaN(value))) {
+                return { error: "Portion values must be valid numbers" };
+        }
+
+        if (hasPortions) {
+                if (portionSizeMl <= 0) {
+                        return { error: "portionSizeMl must be greater than 0" };
+                }
+
+                if (portionPrice < 0) {
+                        return { error: "portionPrice must be 0 or greater" };
+                }
+
+                if (portionStock < 0) {
+                        return { error: "portionStock must be 0 or greater" };
+                }
+
+                if (portionCost < 0) {
+                        return { error: "portionCost must be 0 or greater" };
+                }
+
+                return {
+                        hasPortions: true,
+                        portionSizeMl: Number(portionSizeMl.toFixed(2)),
+                        portionPrice: Number(portionPrice.toFixed(2)),
+                        portionStock: Number(portionStock.toFixed(2)),
+                        portionCost: Number(portionCost.toFixed(2)),
+                };
+        }
+
+        return {
+                hasPortions: false,
+                portionSizeMl: 0,
+                portionPrice: 0,
+                portionStock: 0,
+                portionCost: 0,
+        };
+};
+
 const escapeRegex = (value) => {
         return value.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 };
@@ -442,6 +503,11 @@ export const createProduct = async (req, res) => {
                         images,
                         isDiscounted,
                         discountPercentage,
+                        hasPortions,
+                        portionSizeMl,
+                        portionPrice,
+                        portionStock,
+                        portionCost,
                 } = req.body;
 
                 const trimmedName = typeof name === "string" ? name.trim() : "";
@@ -485,6 +551,18 @@ export const createProduct = async (req, res) => {
 
                 if (discountSettings.error) {
                         return res.status(400).json({ message: discountSettings.error });
+                }
+
+                const portionSettings = normalizePortionSettings({
+                        rawHasPortions: hasPortions,
+                        rawPortionSizeMl: portionSizeMl,
+                        rawPortionPrice: portionPrice,
+                        rawPortionStock: portionStock,
+                        rawPortionCost: portionCost,
+                });
+
+                if (portionSettings.error) {
+                        return res.status(400).json({ message: portionSettings.error });
                 }
 
                 const resolvedCategories = await resolveCategoryIdentifiers(
@@ -539,6 +617,11 @@ export const createProduct = async (req, res) => {
                         categories: normalizedCategories,
                         isDiscounted: discountSettings.isDiscounted,
                         discountPercentage: discountSettings.discountPercentage,
+                        hasPortions: portionSettings.hasPortions,
+                        portionSizeMl: portionSettings.portionSizeMl,
+                        portionPrice: portionSettings.portionPrice,
+                        portionStock: portionSettings.portionStock,
+                        portionCost: portionSettings.portionCost,
                 });
 
                 await product.populate({
@@ -567,6 +650,11 @@ export const updateProduct = async (req, res) => {
                         cover,
                         isDiscounted,
                         discountPercentage,
+                        hasPortions,
+                        portionSizeMl,
+                        portionPrice,
+                        portionStock,
+                        portionCost,
                 } = req.body;
 
                 const product = await Product.findById(id);
@@ -744,6 +832,25 @@ export const updateProduct = async (req, res) => {
                         return res.status(400).json({ message: discountSettings.error });
                 }
 
+                const portionSettings = normalizePortionSettings({
+                        rawHasPortions: hasPortions,
+                        rawPortionSizeMl: portionSizeMl,
+                        rawPortionPrice: portionPrice,
+                        rawPortionStock: portionStock,
+                        rawPortionCost: portionCost,
+                        fallback: {
+                                hasPortions: product.hasPortions,
+                                portionSizeMl: product.portionSizeMl,
+                                portionPrice: product.portionPrice,
+                                portionStock: product.portionStock,
+                                portionCost: product.portionCost,
+                        },
+                });
+
+                if (portionSettings.error) {
+                        return res.status(400).json({ message: portionSettings.error });
+                }
+
                 product.name = trimmedName;
                 product.description = trimmedDescription;
                 product.price = numericPrice;
@@ -756,6 +863,11 @@ export const updateProduct = async (req, res) => {
                 product.image = storedImages[0]?.url || product.image;
                 product.isDiscounted = discountSettings.isDiscounted;
                 product.discountPercentage = discountSettings.discountPercentage;
+                product.hasPortions = portionSettings.hasPortions;
+                product.portionSizeMl = portionSettings.portionSizeMl;
+                product.portionPrice = portionSettings.portionPrice;
+                product.portionStock = portionSettings.portionStock;
+                product.portionCost = portionSettings.portionCost;
 
                 const updatedProduct = await product.save();
 

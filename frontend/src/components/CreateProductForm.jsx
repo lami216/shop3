@@ -13,6 +13,11 @@ const createInitialFormState = () => ({
         name: "",
         description: "",
         price: "",
+        hasPortions: false,
+        portionSizeMl: "",
+        portionPrice: "",
+        portionStock: "",
+        portionCost: "",
         category: "",
         isDiscounted: false,
         discountPercentage: "",
@@ -72,6 +77,23 @@ const CreateProductForm = () => {
                         price:
                                 selectedProduct.price !== undefined && selectedProduct.price !== null
                                         ? String(selectedProduct.price)
+                                        : "",
+                        hasPortions: Boolean(selectedProduct.hasPortions),
+                        portionSizeMl:
+                                selectedProduct.portionSizeMl !== undefined && selectedProduct.portionSizeMl !== null
+                                        ? String(selectedProduct.portionSizeMl)
+                                        : "",
+                        portionPrice:
+                                selectedProduct.portionPrice !== undefined && selectedProduct.portionPrice !== null
+                                        ? String(selectedProduct.portionPrice)
+                                        : "",
+                        portionStock:
+                                selectedProduct.portionStock !== undefined && selectedProduct.portionStock !== null
+                                        ? String(selectedProduct.portionStock)
+                                        : "",
+                        portionCost:
+                                selectedProduct.portionCost !== undefined && selectedProduct.portionCost !== null
+                                        ? String(selectedProduct.portionCost)
                                         : "",
                         category:
                                 Array.isArray(selectedProduct.categories) && selectedProduct.categories.length
@@ -314,10 +336,36 @@ const CreateProductForm = () => {
                 }
 
                 const numericPrice = Number(formState.price);
+                const numericPortionSize = Number(formState.portionSizeMl);
+                const numericPortionPrice = Number(formState.portionPrice);
+                const numericPortionStock = Number(formState.portionStock || 0);
+                const numericPortionCost = Number(formState.portionCost || 0);
 
                 if (Number.isNaN(numericPrice)) {
                         toast.error(t("admin.createProduct.messages.invalidPrice"));
                         return;
+                }
+
+                if (formState.hasPortions) {
+                        if (Number.isNaN(numericPortionSize) || numericPortionSize <= 0) {
+                                toast.error("حجم التقسيمة يجب أن يكون أكبر من 0");
+                                return;
+                        }
+
+                        if (Number.isNaN(numericPortionPrice) || numericPortionPrice < 0) {
+                                toast.error("سعر التقسيمة غير صالح");
+                                return;
+                        }
+
+                        if (Number.isNaN(numericPortionStock) || numericPortionStock < 0) {
+                                toast.error("عدد التقسيمات غير صالح");
+                                return;
+                        }
+
+                        if (Number.isNaN(numericPortionCost) || numericPortionCost < 0) {
+                                toast.error("سعر شراء التقسيمة غير صالح");
+                                return;
+                        }
                 }
 
                 const hasDiscountToggle = Boolean(formState.isDiscounted);
@@ -365,6 +413,11 @@ const CreateProductForm = () => {
                                         },
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
+                                        hasPortions: formState.hasPortions,
+                                        portionSizeMl: formState.hasPortions ? numericPortionSize : 0,
+                                        portionPrice: formState.hasPortions ? numericPortionPrice : 0,
+                                        portionStock: formState.hasPortions ? numericPortionStock : 0,
+                                        portionCost: formState.hasPortions ? numericPortionCost : 0,
                                 });
                                 resetForm();
                         } else {
@@ -376,6 +429,11 @@ const CreateProductForm = () => {
                                         images: fresh,
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
+                                        hasPortions: formState.hasPortions,
+                                        portionSizeMl: formState.hasPortions ? numericPortionSize : 0,
+                                        portionPrice: formState.hasPortions ? numericPortionPrice : 0,
+                                        portionStock: formState.hasPortions ? numericPortionStock : 0,
+                                        portionCost: formState.hasPortions ? numericPortionCost : 0,
                                 });
                                 resetForm();
                         }
@@ -476,6 +534,80 @@ const CreateProductForm = () => {
                                                 required
                                         />
                                 </div>
+
+                                <label className='flex items-center justify-between rounded-lg border border-payzone-indigo/30 bg-payzone-navy/50 p-3'>
+                                        <span className='text-sm font-medium text-white'>متوفر بالتقسيمة</span>
+                                        <input
+                                                type='checkbox'
+                                                checked={formState.hasPortions}
+                                                onChange={(event) =>
+                                                        setFormState((previous) => ({
+                                                                ...previous,
+                                                                hasPortions: event.target.checked,
+                                                        }))
+                                                }
+                                        />
+                                </label>
+
+                                {formState.hasPortions && (
+                                        <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80'>حجم التقسيمة (ml)</label>
+                                                        <input
+                                                                type='number'
+                                                                min='0'
+                                                                step='0.01'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                value={formState.portionSizeMl}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({ ...previous, portionSizeMl: event.target.value }))
+                                                                }
+                                                                placeholder='10'
+                                                        />
+                                                </div>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80'>سعر التقسيمة</label>
+                                                        <input
+                                                                type='number'
+                                                                min='0'
+                                                                step='0.01'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                value={formState.portionPrice}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({ ...previous, portionPrice: event.target.value }))
+                                                                }
+                                                                placeholder='120'
+                                                        />
+                                                </div>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80'>عدد التقسيمات المتوفرة</label>
+                                                        <input
+                                                                type='number'
+                                                                min='0'
+                                                                step='1'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                value={formState.portionStock}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({ ...previous, portionStock: event.target.value }))
+                                                                }
+                                                                placeholder='9'
+                                                        />
+                                                </div>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80'>سعر شراء التقسيمة</label>
+                                                        <input
+                                                                type='number'
+                                                                min='0'
+                                                                step='0.01'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                value={formState.portionCost}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({ ...previous, portionCost: event.target.value }))
+                                                                }
+                                                        />
+                                                </div>
+                                        </div>
+                                )}
 
                                 <div className='rounded-lg border border-payzone-indigo/40 bg-payzone-navy/50 p-4'>
                                         <div className='flex items-start justify-between gap-4'>

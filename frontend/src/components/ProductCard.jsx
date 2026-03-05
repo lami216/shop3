@@ -10,8 +10,10 @@ const ProductCard = ({ product }) => {
         const { t } = useTranslation();
         const inventory = useInventoryStore((state) => state.publicMap[product._id]);
         const available = inventory?.availableQuantity ?? 0;
-        const outOfStock = available <= 0;
+        const portionStock = Number(product.portionStock || 0);
+        const outOfStock = product.hasPortions ? portionStock <= 0 : available <= 0;
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(product);
+        const displayPrice = product.hasPortions ? Number(product.portionPrice || 0) : isDiscounted ? discountedPrice : price;
 
         const productForCart = {
                 ...product,
@@ -56,11 +58,17 @@ const ProductCard = ({ product }) => {
                                 {volumeText && <p className='text-xs text-[#6b7280]'>{volumeText}</p>}
 
                                 <div className='flex items-baseline gap-2'>
-                                        {isDiscounted && <span className='text-xs text-[#6b7280] line-through'>{formatMRU(price)}</span>}
+                                        {!product.hasPortions && isDiscounted && <span className='text-xs text-[#6b7280] line-through'>{formatMRU(price)}</span>}
                                         <span className='text-lg font-semibold text-brand-primary'>
-                                                {formatMRU(isDiscounted ? discountedPrice : price)}
+                                                {formatMRU(displayPrice)}
                                         </span>
                                 </div>
+
+                                {product.hasPortions && (
+                                        <span className={`w-fit rounded-full px-2 py-1 text-xs font-semibold ${outOfStock ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-800"}`}>
+                                                {outOfStock ? "غير متوفر" : "متوفر بالتقسيمة"}
+                                        </span>
+                                )}
 
                                 <button
                                         disabled={outOfStock}

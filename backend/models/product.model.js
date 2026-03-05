@@ -73,6 +73,30 @@ const productSchema = new mongoose.Schema(
                         max: 100,
                         default: 0,
                 },
+                hasPortions: {
+                        type: Boolean,
+                        default: false,
+                },
+                portionSizeMl: {
+                        type: Number,
+                        min: 0,
+                        default: 0,
+                },
+                portionPrice: {
+                        type: Number,
+                        min: 0,
+                        default: 0,
+                },
+                portionStock: {
+                        type: Number,
+                        min: 0,
+                        default: 0,
+                },
+                portionCost: {
+                        type: Number,
+                        min: 0,
+                        default: 0,
+                },
         },
         {
                 timestamps: true,
