@@ -117,7 +117,12 @@ const ProductDetailPage = () => {
         };
 
         const handleTouchEnd = (event) => {
-                if (touchStartX === null || productImages.length < 2) return;
+                if (touchStartX === null) return;
+
+                if (productImages.length < 2) {
+                        setTouchStartX(null);
+                        return;
+                }
 
                 const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
                 const delta = touchStartX - touchEndX;

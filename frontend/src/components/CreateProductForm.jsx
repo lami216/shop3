@@ -68,10 +68,18 @@ const CreateProductForm = () => {
 
                 const existingImages = Array.isArray(selectedProduct.images)
                         ? selectedProduct.images
-                                  .map((image) => ({
-                                          url: typeof image === "object" ? image.url : image,
-                                          public_id: typeof image === "object" ? image.public_id : null,
-                                  }))
+                                  .map((image) => {
+                                          const imageUrl = typeof image === "object" ? image.url : image;
+                                          const publicId = typeof image === "object" ? image.public_id : null;
+                                          const fileId = typeof image === "object" ? image.fileId : null;
+
+                                          return {
+                                                  url: imageUrl,
+                                                  public_id: publicId,
+                                                  fileId,
+                                                  imageId: publicId || fileId || imageUrl || null,
+                                          };
+                                  })
                                   .filter((image) => typeof image.url === "string" && image.url.length > 0)
                         : [];
 
@@ -402,7 +410,7 @@ const CreateProductForm = () => {
                                         description: trimmedDescription,
                                         price: numericPrice,
                                         categories: payloadCategories,
-                                        existingImages: existing.map((image) => image.public_id).filter(Boolean),
+                                        existingImages: existing.map((image) => image.imageId).filter(Boolean),
                                         newImages: fresh,
                                         cover: {
                                                 source: formState.coverSource,
@@ -450,7 +458,7 @@ const CreateProductForm = () => {
                         type: "existing",
                         url: image.url,
                         index,
-                        key: image.public_id || `${image.url}-${index}`,
+                        key: image.imageId || `${image.url}-${index}`,
                 })),
                 ...formState.newImages.map((image, index) => ({
                         type: "new",
