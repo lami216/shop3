@@ -527,6 +527,9 @@ export const createProduct = async (req, res) => {
                         name,
                         description,
                         price,
+                        concentration,
+                        gender,
+                        size,
                         categories: rawCategories,
                         category: legacyCategory,
                         images,
@@ -637,6 +640,9 @@ export const createProduct = async (req, res) => {
                         name: trimmedName,
                         description: trimmedDescription,
                         price: numericPrice,
+                        concentration: typeof concentration === "string" ? concentration.trim() : "",
+                        gender: typeof gender === "string" ? gender.trim() : "",
+                        size: Number.isNaN(Number(size)) ? 0 : Number(size),
                         image: storedImages[0]?.url || "",
                         images: storedImages,
                         categories: normalizedCategories,
@@ -666,6 +672,9 @@ export const updateProduct = async (req, res) => {
                         name,
                         description,
                         price,
+                        concentration,
+                        gender,
+                        size,
                         categories: rawCategories,
                         category: legacyCategory,
                         existingImages,
@@ -871,6 +880,10 @@ export const updateProduct = async (req, res) => {
                 product.name = trimmedName;
                 product.description = trimmedDescription;
                 product.price = numericPrice;
+                product.concentration = typeof concentration === "string" ? concentration.trim() : (product.concentration || "");
+                product.gender = typeof gender === "string" ? gender.trim() : (product.gender || "");
+                const parsedSize = size === undefined || size === null || size === "" ? Number(product.size || 0) : Number(size);
+                product.size = Number.isNaN(parsedSize) ? Number(product.size || 0) : parsedSize;
                 product.categories = nextCategories;
                 const storedImages = finalImages
                         .map((image) => prepareImageForStorage(image))

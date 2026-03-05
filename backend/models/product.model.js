@@ -77,6 +77,21 @@ const productSchema = new mongoose.Schema(
                         type: Boolean,
                         default: false,
                 },
+                concentration: {
+                        type: String,
+                        default: "",
+                        trim: true,
+                },
+                gender: {
+                        type: String,
+                        default: "",
+                        trim: true,
+                },
+                size: {
+                        type: Number,
+                        min: 0,
+                        default: 0,
+                },
                 totalVolumeMl: {
                         type: Number,
                         min: 0,

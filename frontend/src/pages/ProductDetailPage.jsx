@@ -34,6 +34,7 @@ const ProductDetailPage = () => {
   const [activeImage, setActiveImage] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(0);
+  const [purchaseType, setPurchaseType] = useState("portion");
   const inventory = useInventoryStore((state) => state.publicMap[id]);
   const available = inventory?.availableQuantity ?? 0;
 
@@ -52,8 +53,10 @@ const ProductDetailPage = () => {
     if (!selectedProduct) return;
     if (!selectedProduct.hasPortions) {
       setSelectedSize(0);
+      setPurchaseType("full");
       return;
     }
+    setPurchaseType("portion");
 
     const portions = (Array.isArray(selectedProduct.portions) ? [...selectedProduct.portions] : [])
       .map((portion) => ({ size_ml: Number(portion?.size_ml || 0), price: Number(portion?.price || 0) }))
@@ -76,13 +79,24 @@ const ProductDetailPage = () => {
     .sort((a, b) => a.size_ml - b.size_ml);
   const totalStockMl = Number(selectedProduct.totalStockMl || 0);
   const smallest = portions[0]?.size_ml || 0;
-  const outOfStock = isPortionProduct ? totalStockMl < smallest || smallest <= 0 : available <= 0;
 
   const selectedPortion = portions.find((portion) => portion.size_ml === selectedSize) || portions[0];
-  const currentPrice = isPortionProduct ? Number(selectedPortion?.price || 0) : isDiscounted ? discountedPrice : price;
+  const fullBottlePrice = isDiscounted ? discountedPrice : price;
+  const currentPrice = isPortionProduct
+    ? purchaseType === "full"
+      ? Number(fullBottlePrice || 0)
+      : Number(selectedPortion?.price || 0)
+    : isDiscounted
+      ? discountedPrice
+      : price;
+  const outOfStock = isPortionProduct
+    ? purchaseType === "full"
+      ? totalStockMl < Number(selectedProduct.totalVolumeMl || 0)
+      : totalStockMl < smallest || smallest <= 0
+    : available <= 0;
 
   const handleAddToCart = async () => {
-    await addToCart({ ...selectedProduct, discountedPrice, isDiscounted, discountPercentage, selectedPortionSizeMl: isPortionProduct ? Number(selectedPortion?.size_ml || 0) : 0, price: currentPrice }, quantity);
+    await addToCart({ ...selectedProduct, discountedPrice, isDiscounted, discountPercentage, selectedPortionSizeMl: isPortionProduct && purchaseType === "portion" ? Number(selectedPortion?.size_ml || 0) : 0, type: isPortionProduct ? purchaseType : "full", price: currentPrice }, quantity);
     setQuantity(1);
   };
 
@@ -102,7 +116,24 @@ const ProductDetailPage = () => {
           <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${outOfStock ? "bg-red-100 text-[#dc2626]" : isPortionProduct ? "bg-yellow-100 text-[#f59e0b]" : "bg-green-100 text-[#16a34a]"}`}>
             {outOfStock ? "غير متوفر" : isPortionProduct ? "متوفر بالتقسيمة" : "متوفر"}
           </span>
-          {isPortionProduct && <div><p className='text-sm font-medium'>اختر حجم التقسيمة</p><div className='mt-2 flex flex-wrap gap-2'>{portions.map((portion) => <button key={portion.size_ml} type='button' disabled={totalStockMl < portion.size_ml} onClick={() => setSelectedSize(portion.size_ml)} className={`rounded-full border px-3 py-1 text-sm ${selectedSize === portion.size_ml ? "border-brand-primary text-brand-primary" : "border-gray-300 text-gray-700"} disabled:opacity-40`}>{portion.size_ml}ml</button>)}</div></div>}
+          {isPortionProduct && (
+            <div className='space-y-2'>
+              <div className='flex flex-wrap gap-2'>
+                <button type='button' onClick={() => setPurchaseType("portion")} className={`rounded-full border px-3 py-1 text-sm ${purchaseType === "portion" ? "border-brand-primary text-brand-primary" : "border-gray-300 text-gray-700"}`}>تقسيمة</button>
+                <button type='button' onClick={() => setPurchaseType("full")} disabled={totalStockMl < Number(selectedProduct.totalVolumeMl || 0)} className={`rounded-full border px-3 py-1 text-sm ${purchaseType === "full" ? "border-brand-primary text-brand-primary" : "border-gray-300 text-gray-700"} disabled:opacity-40`}>زجاجة كاملة</button>
+              </div>
+              {purchaseType === "portion" && (
+                <div>
+                  <p className='text-sm font-medium'>اختر حجم التقسيمة</p>
+                  <div className='mt-2 flex flex-wrap gap-2'>
+                    {portions.map((portion) => (
+                      <button key={portion.size_ml} type='button' disabled={totalStockMl < portion.size_ml} onClick={() => setSelectedSize(portion.size_ml)} className={`rounded-full border px-3 py-1 text-sm ${selectedSize === portion.size_ml ? "border-brand-primary text-brand-primary" : "border-gray-300 text-gray-700"} disabled:opacity-40`}>{portion.size_ml}ml</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div className='flex items-center gap-3'>
             <button type='button' onClick={() => setQuantity((prev) => Math.max(1, prev - 1))} className='inline-flex h-10 w-10 items-center justify-center rounded-md bg-white text-[#111111] shadow-sm' aria-label={t("cart.item.decrease")}><Minus className='h-4 w-4' /></button>
             <span className='flex h-10 min-w-[3rem] items-center justify-center rounded-md bg-white px-3 text-base font-semibold shadow-sm'>{quantity}</span>

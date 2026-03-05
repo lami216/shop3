@@ -24,20 +24,33 @@ const ProductCard = ({ product }) => {
         );
         const totalStockMl = Number(product.totalStockMl || 0);
         const smallest = portions[0]?.size_ml || 0;
-        const outOfStock = product.hasPortions ? totalStockMl < smallest || smallest <= 0 : available <= 0;
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(product);
 
         const initialSize = portions.find((portion) => portion.size_ml <= totalStockMl)?.size_ml || portions[0]?.size_ml || 0;
         const [selectedSize, setSelectedSize] = useState(initialSize);
+        const [purchaseType, setPurchaseType] = useState("portion");
         const selectedPortion = portions.find((portion) => portion.size_ml === selectedSize) || portions[0];
-        const displayPrice = product.hasPortions ? Number(selectedPortion?.price || 0) : isDiscounted ? discountedPrice : price;
+        const fullBottlePrice = isDiscounted ? discountedPrice : price;
+        const displayPrice = product.hasPortions
+                ? purchaseType === "full"
+                        ? Number(fullBottlePrice || 0)
+                        : Number(selectedPortion?.price || 0)
+                : isDiscounted
+                        ? discountedPrice
+                        : price;
+        const outOfStock = product.hasPortions
+                ? purchaseType === "full"
+                        ? totalStockMl < Number(product.totalVolumeMl || 0)
+                        : totalStockMl < smallest || smallest <= 0
+                : available <= 0;
 
         const productForCart = {
                 ...product,
                 discountedPrice,
                 isDiscounted,
                 discountPercentage,
-                selectedPortionSizeMl: product.hasPortions ? Number(selectedPortion?.size_ml || 0) : 0,
+                selectedPortionSizeMl: product.hasPortions && purchaseType === "portion" ? Number(selectedPortion?.size_ml || 0) : 0,
+                type: product.hasPortions ? purchaseType : "full",
                 price: displayPrice,
         };
 
@@ -79,6 +92,13 @@ const ProductCard = ({ product }) => {
                                 )}
 
                                 {product.hasPortions && (
+                                        <div className='flex flex-wrap gap-2'>
+                                                <button type='button' onClick={() => setPurchaseType("portion")} className={`rounded-full border px-2 py-1 text-xs ${purchaseType === "portion" ? "border-brand-primary text-brand-primary" : "border-gray-300 text-gray-700"}`}>تقسيمة</button>
+                                                <button type='button' onClick={() => setPurchaseType("full")} disabled={totalStockMl < Number(product.totalVolumeMl || 0)} className={`rounded-full border px-2 py-1 text-xs ${purchaseType === "full" ? "border-brand-primary text-brand-primary" : "border-gray-300 text-gray-700"} disabled:opacity-40`}>زجاجة كاملة</button>
+                                        </div>
+                                )}
+
+                                {product.hasPortions && purchaseType === "portion" && (
                                         <div className='flex flex-wrap gap-2'>
                                                 {portions.map((portion) => {
                                                         const disabled = totalStockMl < portion.size_ml;

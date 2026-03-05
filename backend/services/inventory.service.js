@@ -91,17 +91,22 @@ export const deductInventoryFIFO = async (order) => {
   const deductions = [];
 
   for (const item of order.products) {
-    const product = await Product.findById(item.product).select("hasPortions totalStockMl portionCost");
+    const product = await Product.findById(item.product).select("hasPortions totalVolumeMl totalStockMl portionCost");
     if (!product) {
       throw new Error(`Product missing ${item.product.toString()}`);
     }
 
     if (product.hasPortions) {
+      const lineType = item.type === "portion" ? "portion" : "full";
       const portionSize = Number(item.selectedPortionSizeMl || 0);
-      if (portionSize <= 0) {
-        throw new Error(`Portion size is required for portion product ${item.product.toString()}`);
+      const fullBottleSize = Number(product.totalVolumeMl || 0);
+      const mlPerUnit = lineType === "portion" ? portionSize : fullBottleSize;
+
+      if (mlPerUnit <= 0) {
+        throw new Error(`ML size is required for portion product ${item.product.toString()}`);
       }
-      const requiredMl = portionSize * Number(item.quantity || 0);
+
+      const requiredMl = mlPerUnit * Number(item.quantity || 0);
       const currentStockMl = Number(product.totalStockMl || 0);
       if (currentStockMl < requiredMl) {
         throw new Error(`Insufficient portion stock for product ${item.product.toString()}`);

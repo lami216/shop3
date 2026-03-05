@@ -23,6 +23,62 @@ const isReservationActive = (reservationExpiresAt) => {
   return new Date(reservationExpiresAt).getTime() > Date.now();
 };
 
+
+const normalizeOrderLineType = (value) => {
+  if (typeof value !== "string") return "full";
+  const normalized = value.trim().toLowerCase();
+  return normalized === "portion" ? "portion" : "full";
+};
+
+const resolveOrderItemForProduct = (product, line) => {
+  const quantity = Number(line.quantity ?? line.qty);
+  if (!quantity || quantity <= 0) {
+    throw new Error("Quantity must be greater than zero");
+  }
+
+  const lineType = product.hasPortions ? normalizeOrderLineType(line.type || (line.selectedPortionSizeMl ? "portion" : "full")) : "full";
+
+  if (lineType === "portion") {
+    const portions = (Array.isArray(product.portions) ? product.portions : [])
+      .map((portion) => ({ size_ml: Number(portion?.size_ml || 0), price: Number(portion?.price || 0) }))
+      .filter((portion) => portion.size_ml > 0)
+      .sort((a, b) => a.size_ml - b.size_ml);
+
+    if (!portions.length) {
+      throw new Error("Portion options missing");
+    }
+
+    const selectedSize = Number(line.selectedPortionSizeMl || line.portionSizeMl || portions[0].size_ml);
+    const selectedPortion = portions.find((portion) => Number(portion.size_ml) === selectedSize);
+
+    if (!selectedPortion) {
+      throw new Error("Selected portion is invalid");
+    }
+
+    const price = Number(selectedPortion.price || 0);
+    return {
+      product: product._id,
+      quantity,
+      type: "portion",
+      selectedPortionSizeMl: Number(selectedPortion.size_ml),
+      price,
+      lineRevenue: price * quantity,
+    };
+  }
+
+  const basePrice = product.isDiscounted && product.discountPercentage > 0
+    ? Number((product.price * (1 - product.discountPercentage / 100)).toFixed(2))
+    : Number(product.price || 0);
+
+  return {
+    product: product._id,
+    quantity,
+    type: "full",
+    selectedPortionSizeMl: 0,
+    price: basePrice,
+    lineRevenue: basePrice * quantity,
+  };
+};
 const getNextOrderNumber = async (session) => {
   await Counter.updateOne(
     { _id: "orderNumber" },
@@ -56,22 +112,23 @@ export const createOrder = async (req, res) => {
     const orderItems = items.map((item) => {
       const p = map.get(item.productId);
       if (!p) throw new Error("Product missing");
-      const price = p.isDiscounted && p.discountPercentage > 0 ? Number((p.price * (1 - p.discountPercentage / 100)).toFixed(2)) : p.price;
-      return {
-        product: p._id,
-        quantity: item.quantity,
-        price,
-        selectedPortionSizeMl: Number(item.selectedPortionSizeMl || item.portionSizeMl || 0),
-        lineRevenue: price * item.quantity,
-      };
+      return resolveOrderItemForProduct(p, item);
     });
 
     const productIds = orderItems.map((item) => item.product);
     const summaries = await getInventorySummaries(productIds);
     for (const item of orderItems) {
+      const product = map.get(item.product.toString());
+      if (item.type === "portion") {
+        const requiredMl = Number(item.selectedPortionSizeMl || 0) * Number(item.quantity || 0);
+        if (Number(product?.totalStockMl || 0) < requiredMl) {
+          return res.status(400).json({ message: `Insufficient stock for ${product?.name || "selected product"}` });
+        }
+        continue;
+      }
+
       const summary = summaries.get(item.product.toString()) || { availableQuantity: 0 };
       if (summary.availableQuantity < item.quantity) {
-        const product = map.get(item.product.toString());
         return res.status(400).json({ message: `Insufficient stock for ${product?.name || "selected product"}` });
       }
     }
@@ -338,7 +395,7 @@ export const createPosInvoice = async (req, res) => {
     if (!paymentMethodId) return res.status(400).json({ message: "Payment method is required" });
 
     const ids = invoiceItems.map((line) => line.productId);
-    const products = await Product.find({ _id: { $in: ids } }).select("name").lean();
+    const products = await Product.find({ _id: { $in: ids } }).select("name price isDiscounted discountPercentage hasPortions portions totalStockMl").lean();
     const productMap = new Map(products.map((x) => [x._id.toString(), x]));
 
     const method = await PaymentMethod.findById(paymentMethodId).lean();
@@ -347,17 +404,13 @@ export const createPosInvoice = async (req, res) => {
     const orderItems = invoiceItems.map((line) => {
       const product = productMap.get(line.productId);
       if (!product) throw new Error("Product missing");
-      const quantity = Number(line.qty ?? line.quantity);
-      const price = Number(line.unitPrice ?? line.price);
-      if (!quantity || quantity <= 0) throw new Error("Quantity must be greater than zero");
-      if (Number.isNaN(price) || price < 0) throw new Error("Price is invalid");
-      return {
-        product: line.productId,
-        quantity,
-        price,
-        selectedPortionSizeMl: Number(line.selectedPortionSizeMl || line.portionSizeMl || 0),
-        lineRevenue: quantity * price,
-      };
+      const resolved = resolveOrderItemForProduct(product, line);
+      const overridePrice = line.type === "full" ? Number(line.unitPrice ?? line.price) : Number.NaN;
+      if (!Number.isNaN(overridePrice) && overridePrice >= 0 && resolved.type === "full") {
+        resolved.price = overridePrice;
+        resolved.lineRevenue = overridePrice * resolved.quantity;
+      }
+      return resolved;
     });
 
     const totalAmount = orderItems.reduce((sum, item) => sum + item.lineRevenue, 0);

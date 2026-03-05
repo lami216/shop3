@@ -79,7 +79,7 @@ const CheckoutPage = () => {
         phone: normalizedPhoneNumber,
         address: address.trim(),
         paymentMethodId,
-        items: cart.map((item) => ({ productId: item._id, quantity: item.quantity })),
+        items: cart.map((item) => ({ productId: item._id, quantity: item.quantity, type: item.type, selectedPortionSizeMl: item.selectedPortionSizeMl })),
       });
       await clearCart();
       if (!user) {

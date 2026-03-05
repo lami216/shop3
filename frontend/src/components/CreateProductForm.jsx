@@ -16,7 +16,10 @@ const createInitialFormState = () => ({
         price: "",
         hasPortions: false,
         totalVolumeMl: "",
-        portions: [{ id: crypto.randomUUID(), size_ml: "", price: "" }],
+        portions: [],
+        concentration: "",
+        gender: "",
+        size: "",
         category: "",
         isDiscounted: false,
         discountPercentage: "",
@@ -91,7 +94,10 @@ const CreateProductForm = () => {
                                                               price: portion.price !== undefined && portion.price !== null ? String(portion.price) : "",
                                                       }))
                                                       .sort((a, b) => Number(a.size_ml || 0) - Number(b.size_ml || 0))
-                                        : [{ id: crypto.randomUUID(), size_ml: "", price: "" }],
+                                        : [],
+                        concentration: selectedProduct.concentration ?? "",
+                        gender: selectedProduct.gender ?? "",
+                        size: selectedProduct.size !== undefined && selectedProduct.size !== null ? String(selectedProduct.size) : "",
                         category:
                                 Array.isArray(selectedProduct.categories) && selectedProduct.categories.length
                                         ? (typeof selectedProduct.categories[0] === "object"
@@ -401,6 +407,9 @@ const CreateProductForm = () => {
                                         description: trimmedDescription,
                                         price: Number.isNaN(numericPrice) ? 0 : numericPrice,
                                         categories: payloadCategories,
+                                        concentration: formState.concentration,
+                                        gender: formState.gender,
+                                        size: formState.size,
                                         existingImages: existing.map((image) => image.public_id).filter(Boolean),
                                         newImages: fresh,
                                         cover: {
@@ -420,6 +429,9 @@ const CreateProductForm = () => {
                                         description: trimmedDescription,
                                         price: Number.isNaN(numericPrice) ? 0 : numericPrice,
                                         categories: payloadCategories,
+                                        concentration: formState.concentration,
+                                        gender: formState.gender,
+                                        size: formState.size,
                                         images: fresh,
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
@@ -511,6 +523,37 @@ const CreateProductForm = () => {
                                         />
                                 </div>
 
+
+                                <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
+                                        <div>
+                                                <label className='block text-sm font-medium text-white/80'>التركيز</label>
+                                                <input
+                                                        type='text'
+                                                        value={formState.concentration}
+                                                        onChange={(event) => setFormState((prev) => ({ ...prev, concentration: event.target.value }))}
+                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white'
+                                                />
+                                        </div>
+                                        <div>
+                                                <label className='block text-sm font-medium text-white/80'>الجنس</label>
+                                                <input
+                                                        type='text'
+                                                        value={formState.gender}
+                                                        onChange={(event) => setFormState((prev) => ({ ...prev, gender: event.target.value }))}
+                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white'
+                                                />
+                                        </div>
+                                        <div>
+                                                <label className='block text-sm font-medium text-white/80'>الحجم (ml)</label>
+                                                <input
+                                                        type='number'
+                                                        min='0'
+                                                        value={formState.size}
+                                                        onChange={(event) => setFormState((prev) => ({ ...prev, size: event.target.value }))}
+                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white'
+                                                />
+                                        </div>
+                                </div>
                                 {!formState.hasPortions && (
                                         <div>
                                                 <label htmlFor='price' className='block text-sm font-medium text-white/80'>
@@ -622,7 +665,7 @@ const CreateProductForm = () => {
                                                                                 <button
                                                                                         type='button'
                                                                                         className='w-full rounded border border-red-300 px-2 py-2 text-xs text-red-200 disabled:opacity-40'
-                                                                                        disabled={(formState.portions || []).length <= 1}
+                                                                                        disabled={(formState.portions || []).length === 0}
                                                                                         onClick={() =>
                                                                                                 setFormState((previous) => ({
                                                                                                         ...previous,
