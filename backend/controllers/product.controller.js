@@ -508,6 +508,9 @@ export const createProduct = async (req, res) => {
                         portionPrice,
                         portionStock,
                         portionCost,
+                        concentration,
+                        gender,
+                        size,
                 } = req.body;
 
                 const trimmedName = typeof name === "string" ? name.trim() : "";
@@ -622,6 +625,9 @@ export const createProduct = async (req, res) => {
                         portionPrice: portionSettings.portionPrice,
                         portionStock: portionSettings.portionStock,
                         portionCost: portionSettings.portionCost,
+                        concentration: typeof concentration === "string" ? concentration.trim() : "",
+                        gender: typeof gender === "string" ? gender.trim() : "",
+                        size: typeof size === "string" ? size.trim() : "",
                 });
 
                 await product.populate({
@@ -655,6 +661,9 @@ export const updateProduct = async (req, res) => {
                         portionPrice,
                         portionStock,
                         portionCost,
+                        concentration,
+                        gender,
+                        size,
                 } = req.body;
 
                 const product = await Product.findById(id);
@@ -868,6 +877,24 @@ export const updateProduct = async (req, res) => {
                 product.portionPrice = portionSettings.portionPrice;
                 product.portionStock = portionSettings.portionStock;
                 product.portionCost = portionSettings.portionCost;
+                product.concentration =
+                        concentration === undefined || concentration === null
+                                ? product.concentration
+                                : typeof concentration === "string"
+                                        ? concentration.trim()
+                                        : "";
+                product.gender =
+                        gender === undefined || gender === null
+                                ? product.gender
+                                : typeof gender === "string"
+                                        ? gender.trim()
+                                        : "";
+                product.size =
+                        size === undefined || size === null
+                                ? product.size
+                                : typeof size === "string"
+                                        ? size.trim()
+                                        : "";
 
                 const updatedProduct = await product.save();
 

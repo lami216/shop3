@@ -22,6 +22,9 @@ const createInitialFormState = () => ({
         category: "",
         isDiscounted: false,
         discountPercentage: "",
+        concentration: "",
+        gender: "",
+        size: "",
         existingImages: [],
         newImages: [],
         coverSource: "existing",
@@ -111,6 +114,9 @@ const CreateProductForm = () => {
                                 selectedProduct.discountPercentage !== null
                                         ? String(selectedProduct.discountPercentage)
                                         : "",
+                        concentration: selectedProduct.concentration ?? "",
+                        gender: selectedProduct.gender ?? "",
+                        size: selectedProduct.size ?? "",
                         existingImages,
                         newImages: [],
                         coverSource: existingImages.length ? "existing" : "new",
@@ -409,6 +415,9 @@ const CreateProductForm = () => {
                                         portionPrice: formState.hasPortions ? numericPortionPrice : 0,
                                         portionStock: formState.hasPortions ? numericPortionStock : 0,
                                         portionCost: formState.hasPortions ? numericPortionCost : 0,
+                                        concentration: formState.concentration.trim(),
+                                        gender: formState.gender.trim(),
+                                        size: formState.size.trim(),
                                 });
                                 resetForm();
                         } else {
@@ -425,6 +434,9 @@ const CreateProductForm = () => {
                                         portionPrice: formState.hasPortions ? numericPortionPrice : 0,
                                         portionStock: formState.hasPortions ? numericPortionStock : 0,
                                         portionCost: formState.hasPortions ? numericPortionCost : 0,
+                                        concentration: formState.concentration.trim(),
+                                        gender: formState.gender.trim(),
+                                        size: formState.size.trim(),
                                 });
                                 resetForm();
                         }
@@ -523,6 +535,48 @@ const CreateProductForm = () => {
                                                 step='0.01'
                                                 className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
                                                 required
+                                        />
+                                </div>
+
+                                <div>
+                                        <label htmlFor='concentration' className='block text-sm font-medium text-white/80'>
+                                                التركيز
+                                        </label>
+                                        <input
+                                                type='text'
+                                                id='concentration'
+                                                name='concentration'
+                                                value={formState.concentration}
+                                                onChange={(event) => setFormState({ ...formState, concentration: event.target.value })}
+                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                        />
+                                </div>
+
+                                <div>
+                                        <label htmlFor='gender' className='block text-sm font-medium text-white/80'>
+                                                الجنس
+                                        </label>
+                                        <input
+                                                type='text'
+                                                id='gender'
+                                                name='gender'
+                                                value={formState.gender}
+                                                onChange={(event) => setFormState({ ...formState, gender: event.target.value })}
+                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                        />
+                                </div>
+
+                                <div>
+                                        <label htmlFor='size' className='block text-sm font-medium text-white/80'>
+                                                الحجم
+                                        </label>
+                                        <input
+                                                type='text'
+                                                id='size'
+                                                name='size'
+                                                value={formState.size}
+                                                onChange={(event) => setFormState({ ...formState, size: event.target.value })}
+                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
                                         />
                                 </div>
 
