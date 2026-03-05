@@ -15,8 +15,10 @@ const createInitialFormState = () => ({
         description: "",
         price: "",
         hasPortions: false,
-        totalVolumeMl: "",
-        portions: [{ id: crypto.randomUUID(), size_ml: "", price: "" }],
+        portionSizeMl: "",
+        portionPrice: "",
+        portionStock: "",
+        portionCost: "",
         category: "",
         isDiscounted: false,
         discountPercentage: "",
@@ -78,20 +80,22 @@ const CreateProductForm = () => {
                                         ? String(selectedProduct.price)
                                         : "",
                         hasPortions: Boolean(selectedProduct.hasPortions),
-                        totalVolumeMl:
-                                selectedProduct.totalVolumeMl !== undefined && selectedProduct.totalVolumeMl !== null
-                                        ? String(selectedProduct.totalVolumeMl)
+                        portionSizeMl:
+                                selectedProduct.portionSizeMl !== undefined && selectedProduct.portionSizeMl !== null
+                                        ? String(selectedProduct.portionSizeMl)
                                         : "",
-                        portions:
-                                Array.isArray(selectedProduct.portions) && selectedProduct.portions.length
-                                        ? [...selectedProduct.portions]
-                                                      .map((portion) => ({
-                                                              id: portion.id || crypto.randomUUID(),
-                                                              size_ml: portion.size_ml !== undefined && portion.size_ml !== null ? String(portion.size_ml) : "",
-                                                              price: portion.price !== undefined && portion.price !== null ? String(portion.price) : "",
-                                                      }))
-                                                      .sort((a, b) => Number(a.size_ml || 0) - Number(b.size_ml || 0))
-                                        : [{ id: crypto.randomUUID(), size_ml: "", price: "" }],
+                        portionPrice:
+                                selectedProduct.portionPrice !== undefined && selectedProduct.portionPrice !== null
+                                        ? String(selectedProduct.portionPrice)
+                                        : "",
+                        portionStock:
+                                selectedProduct.portionStock !== undefined && selectedProduct.portionStock !== null
+                                        ? String(selectedProduct.portionStock)
+                                        : "",
+                        portionCost:
+                                selectedProduct.portionCost !== undefined && selectedProduct.portionCost !== null
+                                        ? String(selectedProduct.portionCost)
+                                        : "",
                         category:
                                 Array.isArray(selectedProduct.categories) && selectedProduct.categories.length
                                         ? (typeof selectedProduct.categories[0] === "object"
@@ -323,43 +327,34 @@ const CreateProductForm = () => {
                 }
 
                 const numericPrice = Number(formState.price);
-                const numericTotalVolumeMl = Number(formState.totalVolumeMl);
-                const normalizedPortions = [...(formState.portions || [])]
-                        .map((portion) => ({
-                                size_ml: Number(portion.size_ml),
-                                price: Number(portion.price),
-                        }))
-                        .sort((a, b) => a.size_ml - b.size_ml);
+                const numericPortionSize = Number(formState.portionSizeMl);
+                const numericPortionPrice = Number(formState.portionPrice);
+                const numericPortionStock = Number(formState.portionStock || 0);
+                const numericPortionCost = Number(formState.portionCost || 0);
 
-                if (!formState.hasPortions && Number.isNaN(numericPrice)) {
+                if (Number.isNaN(numericPrice)) {
                         toast.error(t("admin.createProduct.messages.invalidPrice"));
                         return;
                 }
 
                 if (formState.hasPortions) {
-                        if (Number.isNaN(numericTotalVolumeMl) || numericTotalVolumeMl <= 0) {
-                                toast.error("إجمالي الحجم بالملي يجب أن يكون أكبر من 0");
-                                return;
-                        }
-
-                        if (!normalizedPortions.length) {
-                                toast.error("أضف تقسيمة واحدة على الأقل");
-                                return;
-                        }
-
-                        if (normalizedPortions.some((portion) => Number.isNaN(portion.size_ml) || portion.size_ml <= 0)) {
+                        if (Number.isNaN(numericPortionSize) || numericPortionSize <= 0) {
                                 toast.error("حجم التقسيمة يجب أن يكون أكبر من 0");
                                 return;
                         }
 
-                        if (normalizedPortions.some((portion) => Number.isNaN(portion.price) || portion.price < 0)) {
-                                toast.error("سعر بيع التقسيمة غير صالح");
+                        if (Number.isNaN(numericPortionPrice) || numericPortionPrice < 0) {
+                                toast.error("سعر التقسيمة غير صالح");
                                 return;
                         }
 
-                        const uniqueSizes = new Set(normalizedPortions.map((portion) => portion.size_ml));
-                        if (uniqueSizes.size !== normalizedPortions.length) {
-                                toast.error("لا يمكن تكرار نفس حجم التقسيمة");
+                        if (Number.isNaN(numericPortionStock) || numericPortionStock < 0) {
+                                toast.error("عدد التقسيمات غير صالح");
+                                return;
+                        }
+
+                        if (Number.isNaN(numericPortionCost) || numericPortionCost < 0) {
+                                toast.error("سعر شراء التقسيمة غير صالح");
                                 return;
                         }
                 }
@@ -399,7 +394,7 @@ const CreateProductForm = () => {
                                 await updateProduct(selectedProduct._id, {
                                         name: trimmedName,
                                         description: trimmedDescription,
-                                        price: Number.isNaN(numericPrice) ? 0 : numericPrice,
+                                        price: numericPrice,
                                         categories: payloadCategories,
                                         existingImages: existing.map((image) => image.public_id).filter(Boolean),
                                         newImages: fresh,
@@ -410,22 +405,26 @@ const CreateProductForm = () => {
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
                                         hasPortions: formState.hasPortions,
-                                        totalVolumeMl: formState.hasPortions ? numericTotalVolumeMl : 0,
-                                        portions: formState.hasPortions ? normalizedPortions : [],
+                                        portionSizeMl: formState.hasPortions ? numericPortionSize : 0,
+                                        portionPrice: formState.hasPortions ? numericPortionPrice : 0,
+                                        portionStock: formState.hasPortions ? numericPortionStock : 0,
+                                        portionCost: formState.hasPortions ? numericPortionCost : 0,
                                 });
                                 resetForm();
                         } else {
                                 await createProduct({
                                         name: trimmedName,
                                         description: trimmedDescription,
-                                        price: Number.isNaN(numericPrice) ? 0 : numericPrice,
+                                        price: numericPrice,
                                         categories: payloadCategories,
                                         images: fresh,
                                         isDiscounted: hasDiscountToggle,
                                         discountPercentage: normalizedDiscount,
                                         hasPortions: formState.hasPortions,
-                                        totalVolumeMl: formState.hasPortions ? numericTotalVolumeMl : 0,
-                                        portions: formState.hasPortions ? normalizedPortions : [],
+                                        portionSizeMl: formState.hasPortions ? numericPortionSize : 0,
+                                        portionPrice: formState.hasPortions ? numericPortionPrice : 0,
+                                        portionStock: formState.hasPortions ? numericPortionStock : 0,
+                                        portionCost: formState.hasPortions ? numericPortionCost : 0,
                                 });
                                 resetForm();
                         }
@@ -511,23 +510,21 @@ const CreateProductForm = () => {
                                         />
                                 </div>
 
-                                {!formState.hasPortions && (
-                                        <div>
-                                                <label htmlFor='price' className='block text-sm font-medium text-white/80'>
-                                                        {t("admin.createProduct.fields.price")}
-                                                </label>
-                                                <input
-                                                        type='number'
-                                                        id='price'
-                                                        name='price'
-                                                        value={formState.price}
-                                                        onChange={(event) => setFormState({ ...formState, price: event.target.value })}
-                                                        step='0.01'
-                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
-                                                        required
-                                                />
-                                        </div>
-                                )}
+                                <div>
+                                        <label htmlFor='price' className='block text-sm font-medium text-white/80'>
+                                                {t("admin.createProduct.fields.price")}
+                                        </label>
+                                        <input
+                                                type='number'
+                                                id='price'
+                                                name='price'
+                                                value={formState.price}
+                                                onChange={(event) => setFormState({ ...formState, price: event.target.value })}
+                                                step='0.01'
+                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white placeholder-white/40 focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                                required
+                                        />
+                                </div>
 
                                 <label className='flex items-center justify-between rounded-lg border border-payzone-indigo/30 bg-payzone-navy/50 p-3'>
                                         <span className='text-sm font-medium text-white'>متوفر بالتقسيمة</span>
@@ -544,97 +541,61 @@ const CreateProductForm = () => {
                                 </label>
 
                                 {formState.hasPortions && (
-                                        <div className='space-y-4 rounded-lg border border-payzone-indigo/30 bg-payzone-navy/40 p-3'>
+                                        <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
                                                 <div>
-                                                        <label className='block text-sm font-medium text-white/80'>إجمالي حجم الزجاجة بالملي (ml)</label>
+                                                        <label className='block text-sm font-medium text-white/80'>حجم التقسيمة (ml)</label>
                                                         <input
                                                                 type='number'
                                                                 min='0'
                                                                 step='0.01'
                                                                 className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
-                                                                value={formState.totalVolumeMl}
+                                                                value={formState.portionSizeMl}
                                                                 onChange={(event) =>
-                                                                        setFormState((previous) => ({ ...previous, totalVolumeMl: event.target.value }))
+                                                                        setFormState((previous) => ({ ...previous, portionSizeMl: event.target.value }))
                                                                 }
-                                                                placeholder='100'
+                                                                placeholder='10'
                                                         />
                                                 </div>
-
-                                                <div className='space-y-2'>
-                                                        <div className='flex items-center justify-between'>
-                                                                <h4 className='text-sm font-semibold text-white'>التقسيمات</h4>
-                                                                <button
-                                                                        type='button'
-                                                                        className='rounded bg-payzone-gold px-3 py-1 text-xs font-semibold text-black'
-                                                                        onClick={() =>
-                                                                                setFormState((previous) => ({
-                                                                                        ...previous,
-                                                                                        portions: [
-                                                                                                ...(previous.portions || []),
-                                                                                                { id: crypto.randomUUID(), size_ml: "", price: "" },
-                                                                                        ],
-                                                                                }))
-                                                                        }
-                                                                >
-                                                                        + إضافة تقسيمة
-                                                                </button>
-                                                        </div>
-
-                                                        {(formState.portions || []).map((portion, index) => (
-                                                                <div key={portion.id} className='grid grid-cols-12 gap-2 items-end'>
-                                                                        <div className='col-span-5'>
-                                                                                <label className='block text-xs text-white/70'>حجم التقسيمة (ml)</label>
-                                                                                <input
-                                                                                        type='number'
-                                                                                        min='0'
-                                                                                        step='0.01'
-                                                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white'
-                                                                                        value={portion.size_ml}
-                                                                                        onChange={(event) =>
-                                                                                                setFormState((previous) => ({
-                                                                                                        ...previous,
-                                                                                                        portions: (previous.portions || []).map((item, i) =>
-                                                                                                                i === index ? { ...item, size_ml: event.target.value } : item
-                                                                                                        ),
-                                                                                                }))
-                                                                                        }
-                                                                                />
-                                                                        </div>
-                                                                        <div className='col-span-5'>
-                                                                                <label className='block text-xs text-white/70'>سعر بيع التقسيمة</label>
-                                                                                <input
-                                                                                        type='number'
-                                                                                        min='0'
-                                                                                        step='0.01'
-                                                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white'
-                                                                                        value={portion.price}
-                                                                                        onChange={(event) =>
-                                                                                                setFormState((previous) => ({
-                                                                                                        ...previous,
-                                                                                                        portions: (previous.portions || []).map((item, i) =>
-                                                                                                                i === index ? { ...item, price: event.target.value } : item
-                                                                                                        ),
-                                                                                                }))
-                                                                                        }
-                                                                                />
-                                                                        </div>
-                                                                        <div className='col-span-2'>
-                                                                                <button
-                                                                                        type='button'
-                                                                                        className='w-full rounded border border-red-300 px-2 py-2 text-xs text-red-200 disabled:opacity-40'
-                                                                                        disabled={(formState.portions || []).length <= 1}
-                                                                                        onClick={() =>
-                                                                                                setFormState((previous) => ({
-                                                                                                        ...previous,
-                                                                                                        portions: (previous.portions || []).filter((_, i) => i !== index),
-                                                                                                }))
-                                                                                        }
-                                                                                >
-                                                                                        حذف
-                                                                                </button>
-                                                                        </div>
-                                                                </div>
-                                                        ))}
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80'>سعر التقسيمة</label>
+                                                        <input
+                                                                type='number'
+                                                                min='0'
+                                                                step='0.01'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                value={formState.portionPrice}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({ ...previous, portionPrice: event.target.value }))
+                                                                }
+                                                                placeholder='120'
+                                                        />
+                                                </div>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80'>عدد التقسيمات المتوفرة</label>
+                                                        <input
+                                                                type='number'
+                                                                min='0'
+                                                                step='1'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                value={formState.portionStock}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({ ...previous, portionStock: event.target.value }))
+                                                                }
+                                                                placeholder='9'
+                                                        />
+                                                </div>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80'>سعر شراء التقسيمة</label>
+                                                        <input
+                                                                type='number'
+                                                                min='0'
+                                                                step='0.01'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/50 p-2 text-white placeholder:text-white/40 focus:border-payzone-gold focus:outline-none'
+                                                                value={formState.portionCost}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({ ...previous, portionCost: event.target.value }))
+                                                                }
+                                                        />
                                                 </div>
                                         </div>
                                 )}

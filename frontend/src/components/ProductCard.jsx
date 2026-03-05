@@ -1,4 +1,3 @@
-import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import useTranslation from "../hooks/useTranslation";
 import { useCartStore } from "../stores/useCartStore";
@@ -11,34 +10,16 @@ const ProductCard = ({ product }) => {
         const { t } = useTranslation();
         const inventory = useInventoryStore((state) => state.publicMap[product._id]);
         const available = inventory?.availableQuantity ?? 0;
-        const portions = useMemo(
-                () =>
-                        (Array.isArray(product.portions) ? [...product.portions] : [])
-                                .map((portion) => ({
-                                        size_ml: Number(portion?.size_ml || 0),
-                                        price: Number(portion?.price || 0),
-                                }))
-                                .filter((portion) => portion.size_ml > 0)
-                                .sort((a, b) => a.size_ml - b.size_ml),
-                [product.portions]
-        );
-        const totalStockMl = Number(product.totalStockMl || 0);
-        const smallest = portions[0]?.size_ml || 0;
-        const outOfStock = product.hasPortions ? totalStockMl < smallest || smallest <= 0 : available <= 0;
+        const portionStock = Number(product.portionStock || 0);
+        const outOfStock = product.hasPortions ? portionStock <= 0 : available <= 0;
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(product);
-
-        const initialSize = portions.find((portion) => portion.size_ml <= totalStockMl)?.size_ml || portions[0]?.size_ml || 0;
-        const [selectedSize, setSelectedSize] = useState(initialSize);
-        const selectedPortion = portions.find((portion) => portion.size_ml === selectedSize) || portions[0];
-        const displayPrice = product.hasPortions ? Number(selectedPortion?.price || 0) : isDiscounted ? discountedPrice : price;
+        const displayPrice = product.hasPortions ? Number(product.portionPrice || 0) : isDiscounted ? discountedPrice : price;
 
         const productForCart = {
                 ...product,
                 discountedPrice,
                 isDiscounted,
                 discountPercentage,
-                selectedPortionSizeMl: product.hasPortions ? Number(selectedPortion?.size_ml || 0) : 0,
-                price: displayPrice,
         };
 
         const coverImage =
@@ -49,11 +30,24 @@ const ProductCard = ({ product }) => {
                                 : product.images[0]?.url
                         : "");
 
+        const volumeValue = product.size ?? product.volume ?? product.capacity ?? "";
+        const volumeText = volumeValue ? `${volumeValue} مل` : "";
+
         return (
                 <article className='flex h-full min-h-[21rem] w-full flex-col justify-between overflow-hidden rounded-xl bg-white p-0 shadow-sm'>
-                        <Link to={`/products/${product._id}`} className='w-full' aria-label={t("product.viewDetails", { name: product.name })}>
+                        <Link
+                                to={`/products/${product._id}`}
+                                className='w-full'
+                                aria-label={t("product.viewDetails", { name: product.name })}
+                        >
                                 <div className='aspect-square w-full overflow-hidden bg-[#fafafa]'>
-                                        {coverImage ? <img className='block h-full w-full object-cover object-center' src={coverImage} alt={product.name} /> : <div className='flex h-full w-full items-center justify-center text-sm text-[#6b7280]'>{t("common.status.noImage")}</div>}
+                                        {coverImage ? (
+                                                <img className='block h-full w-full object-cover object-center' src={coverImage} alt={product.name} />
+                                        ) : (
+                                                <div className='flex h-full w-full items-center justify-center text-sm text-[#6b7280]'>
+                                                        {t("common.status.noImage")}
+                                                </div>
+                                        )}
                                 </div>
                         </Link>
 
@@ -61,43 +55,26 @@ const ProductCard = ({ product }) => {
                                 <Link to={`/products/${product._id}`}>
                                         <h5 className='text-sm font-semibold text-[#111111]'>{product.name}</h5>
                                 </Link>
+                                {volumeText && <p className='text-xs text-[#6b7280]'>{volumeText}</p>}
 
                                 <div className='flex items-baseline gap-2'>
                                         {!product.hasPortions && isDiscounted && <span className='text-xs text-[#6b7280] line-through'>{formatMRU(price)}</span>}
-                                        <span className='text-lg font-semibold text-brand-primary'>{formatMRU(displayPrice)}</span>
+                                        <span className='text-lg font-semibold text-brand-primary'>
+                                                {formatMRU(displayPrice)}
+                                        </span>
                                 </div>
-                                {displayPrice >= 1000 && <p className='text-xs text-[#16a34a]'>السعر شامل التوصيل</p>}
-
-                                {product.hasPortions ? (
-                                        <span className={`w-fit rounded-full px-2 py-1 text-xs font-semibold ${outOfStock ? "bg-red-100 text-[#dc2626]" : "bg-yellow-100 text-[#f59e0b]"}`}>
-                                                {outOfStock ? "غير متوفر" : "متوفر بالتقسيمة"}
-                                        </span>
-                                ) : (
-                                        <span className={`w-fit rounded-full px-2 py-1 text-xs font-semibold ${outOfStock ? "bg-red-100 text-[#dc2626]" : "bg-green-100 text-[#16a34a]"}`}>
-                                                {outOfStock ? "غير متوفر" : "متوفر"}
-                                        </span>
-                                )}
 
                                 {product.hasPortions && (
-                                        <div className='flex flex-wrap gap-2'>
-                                                {portions.map((portion) => {
-                                                        const disabled = totalStockMl < portion.size_ml;
-                                                        return (
-                                                                <button
-                                                                        key={portion.size_ml}
-                                                                        type='button'
-                                                                        disabled={disabled}
-                                                                        onClick={() => setSelectedSize(portion.size_ml)}
-                                                                        className={`rounded-full border px-2 py-1 text-xs ${selectedSize === portion.size_ml ? "border-brand-primary text-brand-primary" : "border-gray-300 text-gray-700"} disabled:opacity-40`}
-                                                                >
-                                                                        {portion.size_ml}ml
-                                                                </button>
-                                                        );
-                                                })}
-                                        </div>
+                                        <span className={`w-fit rounded-full px-2 py-1 text-xs font-semibold ${outOfStock ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-800"}`}>
+                                                {outOfStock ? "غير متوفر" : "متوفر بالتقسيمة"}
+                                        </span>
                                 )}
 
-                                <button disabled={outOfStock} className='mt-auto inline-flex w-full items-center justify-center rounded-md bg-brand-primary py-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50' onClick={() => addToCart(productForCart)}>
+                                <button
+                                        disabled={outOfStock}
+                                        className='mt-auto inline-flex w-full items-center justify-center rounded-md bg-brand-primary py-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50'
+                                        onClick={() => addToCart(productForCart)}
+                                >
                                         إضافة للسلة
                                 </button>
                         </div>
