@@ -1,5 +1,6 @@
 import InventoryBatch from "../models/inventoryBatch.model.js";
 import InventoryReservation from "../models/inventoryReservation.model.js";
+import Product from "../models/product.model.js";
 
 export const getInventorySummaries = async (productIds = []) => {
   if (!productIds.length) return new Map();
@@ -90,6 +91,29 @@ export const deductInventoryFIFO = async (order) => {
   const deductions = [];
 
   for (const item of order.products) {
+    const product = await Product.findById(item.product).select("hasPortions totalStockMl portionCost");
+    if (!product) {
+      throw new Error(`Product missing ${item.product.toString()}`);
+    }
+
+    if (product.hasPortions) {
+      const portionSize = Number(item.selectedPortionSizeMl || 0);
+      if (portionSize <= 0) {
+        throw new Error(`Portion size is required for portion product ${item.product.toString()}`);
+      }
+      const requiredMl = portionSize * Number(item.quantity || 0);
+      const currentStockMl = Number(product.totalStockMl || 0);
+      if (currentStockMl < requiredMl) {
+        throw new Error(`Insufficient portion stock for product ${item.product.toString()}`);
+      }
+      product.totalStockMl = Math.max(currentStockMl - requiredMl, 0);
+      await product.save();
+
+      const unitCost = Math.abs(Number(product.portionCost) || 0);
+      deductions.push({ productId: item.product.toString(), lineCost: Math.max(unitCost * item.quantity, 0) });
+      continue;
+    }
+
     let needed = item.quantity;
     const batches = await InventoryBatch.find({ product: item.product, remainingQuantity: { $gt: 0 } }).sort({ createdAt: 1 });
     let lineCost = 0;
