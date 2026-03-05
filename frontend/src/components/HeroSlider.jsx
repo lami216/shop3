@@ -171,7 +171,7 @@ const HeroSlider = ({ slides = [] }) => {
                                                                 <img
                                                                         src={item.image}
                                                                         alt={item.title || item.name || "عرض العطور"}
-                                                                        className='h-full w-full object-cover'
+                                                                        className='block h-full w-full object-cover object-center'
                                                                 />
                                                         </a>
                                                 ) : (

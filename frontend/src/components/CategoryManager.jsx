@@ -3,6 +3,7 @@ import { ImagePlus, Trash2, Edit3, X, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import useTranslation from "../hooks/useTranslation";
 import { useCategoryStore } from "../stores/useCategoryStore";
+import { optimizeImageToDataUrl } from "../lib/imageUploadOptimizer";
 
 const createEmptyForm = () => ({
         name: "",
@@ -57,20 +58,23 @@ const CategoryManager = () => {
                 });
         }, [selectedCategory]);
 
-        const handleImageChange = (event) => {
+        const handleImageChange = async (event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
 
-                const reader = new FileReader();
-                reader.onloadend = () => {
+                try {
+                        const optimizedImage = await optimizeImageToDataUrl(file);
                         setFormState((previous) => ({
                                 ...previous,
-                                image: reader.result,
-                                imagePreview: reader.result,
+                                image: optimizedImage,
+                                imagePreview: optimizedImage,
                                 imageChanged: true,
                         }));
-                };
-                reader.readAsDataURL(file);
+                } catch {
+                        toast.error(t("admin.heroSlider.messages.imageReadError"));
+                } finally {
+                        event.target.value = "";
+                }
         };
 
         const handleSubmit = async (event) => {
@@ -194,6 +198,7 @@ const CategoryManager = () => {
                                                                 )}
                                                         </div>
                                                         <p className='mt-2 text-xs text-white/60'>{t("categories.manager.form.imageHint")}</p>
+                                                        <p className='mt-2 text-xs text-emerald-300'>تم تحسين الصورة تلقائياً لتسريع الموقع ✅</p>
                                                 </div>
                                         </div>
 
@@ -237,11 +242,13 @@ const CategoryManager = () => {
                                                 {sortedCategories.map((category) => (
                                                         <li key={category._id} className='flex flex-col gap-3 rounded-lg border border-white/10 bg-payzone-navy/40 p-4 sm:flex-row sm:items-center sm:justify-between'>
                                                                 <div className='flex items-center gap-4'>
+                                                                        <div className='h-14 w-14 overflow-hidden rounded-lg p-0'>
                                                                         <img
                                                                                 src={category.imageUrl}
                                                                                 alt={category.name}
-                                                                                className='h-14 w-14 rounded-lg object-cover'
+                                                                                className='block h-full w-full object-cover object-center'
                                                                         />
+                                                                        </div>
                                                                         <div>
                                                                                 <p className='text-lg font-semibold text-white'>{category.name}</p>
                                                                                 {category.description && (

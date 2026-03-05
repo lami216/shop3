@@ -67,7 +67,7 @@ const ProductsList = ({ onEdit }) => {
                                                         <td className='whitespace-nowrap px-6 py-4'>
                                                                 <div className='flex items-center gap-3'>
                                                                         <div className='h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-1 ring-payzone-indigo/40'>
-                                                                                <img className='h-full w-full object-cover' src={product.image} alt={product.name} />
+                                                                                <img className='block h-full w-full object-cover object-center' src={product.image} alt={product.name} />
                                                                         </div>
                                                                         <div>
                                                                                 <div className='text-sm font-medium text-white'>{product.name}</div>

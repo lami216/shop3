@@ -6,6 +6,7 @@ import useTranslation from "../hooks/useTranslation";
 import { useProductStore } from "../stores/useProductStore";
 import { useCategoryStore } from "../stores/useCategoryStore";
 import { formatMRU } from "../lib/formatMRU";
+import { optimizeImageToDataUrl } from "../lib/imageUploadOptimizer";
 
 const MAX_IMAGES = 3;
 
@@ -117,17 +118,7 @@ const CreateProductForm = () => {
                 const files = Array.from(input.files || []);
                 if (!files.length) return;
 
-                Promise.all(
-                        files.map(
-                                (file) =>
-                                        new Promise((resolve, reject) => {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => resolve(reader.result);
-                                                reader.onerror = reject;
-                                                reader.readAsDataURL(file);
-                                        })
-                        )
-                )
+                Promise.all(files.map((file) => optimizeImageToDataUrl(file)))
                         .then((base64Images) => {
                                 setFormState((previous) => {
                                         const remainingSlots = MAX_IMAGES - (previous.existingImages.length + previous.newImages.length);
@@ -585,6 +576,7 @@ const CreateProductForm = () => {
                                                 {totalImages} / {MAX_IMAGES} {t("admin.createProduct.fields.images")}
                                         </span>
                                 </div>
+                                <p className='text-xs text-emerald-300'>تم تحسين الصورة تلقائياً لتسريع الموقع ✅</p>
 
                                 {galleryItems.length > 0 && (
                                         <div className='grid grid-cols-2 gap-4 sm:grid-cols-3'>

@@ -4,8 +4,9 @@ import toast from "react-hot-toast";
 import useTranslation from "../hooks/useTranslation";
 import { useHeroSliderStore } from "../stores/useHeroSliderStore";
 import { formatMRU } from "../lib/formatMRU";
+import { optimizeImageToDataUrl } from "../lib/imageUploadOptimizer";
 
-const MAX_IMAGE_SIZE_MB = 10;
+const MAX_IMAGE_SIZE_MB = 5;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 const createInitialFormState = () => ({
@@ -38,7 +39,7 @@ const HeroSliderManager = () => {
                 });
         }, [slides]);
 
-        const handleFileChange = (event) => {
+        const handleFileChange = async (event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
 
@@ -52,19 +53,16 @@ const HeroSliderManager = () => {
                         return;
                 }
 
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                        const result = typeof reader.result === "string" ? reader.result : "";
+                try {
+                        const result = await optimizeImageToDataUrl(file);
                         setFormState((previous) => ({
                                 ...previous,
                                 imageData: result,
                                 previewUrl: result,
                         }));
-                };
-                reader.onerror = () => {
+                } catch {
                         toast.error(t("admin.heroSlider.messages.imageReadError"));
-                };
-                reader.readAsDataURL(file);
+                }
                 event.target.value = "";
         };
 
@@ -168,7 +166,7 @@ const HeroSliderManager = () => {
                                                                 <img
                                                                         src={formState.previewUrl}
                                                                         alt='preview'
-                                                                        className='h-48 w-full rounded-xl object-cover shadow-lg'
+                                                                        className='block h-48 w-full rounded-xl object-cover object-center shadow-lg'
                                                                 />
                                                         ) : (
                                                                 <>
@@ -180,6 +178,7 @@ const HeroSliderManager = () => {
                                                                 <input type='file' accept='image/*' onChange={handleFileChange} className='hidden' />
                                                                 {t("admin.heroSlider.actions.upload")}
                                                         </label>
+                                                        <p className='mt-3 text-xs text-emerald-300'>تم تحسين الصورة تلقائياً لتسريع الموقع ✅</p>
                                                 </div>
                                                 <div className='flex gap-3'>
                                                         <button

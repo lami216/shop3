@@ -40,7 +40,7 @@ const ProductCard = ({ product }) => {
                         >
                                 <div className='aspect-square w-full overflow-hidden bg-[#fafafa]'>
                                         {coverImage ? (
-                                                <img className='h-full w-full object-cover' src={coverImage} alt={product.name} />
+                                                <img className='block h-full w-full object-cover object-center' src={coverImage} alt={product.name} />
                                         ) : (
                                                 <div className='flex h-full w-full items-center justify-center text-sm text-[#6b7280]'>
                                                         {t("common.status.noImage")}

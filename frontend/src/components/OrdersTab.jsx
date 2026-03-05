@@ -41,9 +41,9 @@ const OrdersTab = () => {
               </div>
             </div>
             {order.paymentMethod ? (
-              <div className='mt-3 flex items-center gap-3 rounded border border-white/10 bg-black/20 p-3 text-sm'>
+              <div className='mt-3 flex items-center gap-3 rounded border border-white/10 bg-black/20 p-2 text-sm'>
                 {order.paymentMethod.imageUrl ? (
-                  <img src={order.paymentMethod.imageUrl} alt={order.paymentMethod.name} className='h-10 w-10 rounded object-cover' />
+                  <div className='h-12 w-12 overflow-hidden rounded-md bg-white p-0'><img src={order.paymentMethod.imageUrl} alt={order.paymentMethod.name} className='block h-full w-full object-contain object-center' /></div>
                 ) : null}
                 <div>
                   <p className='font-semibold'>{order.paymentMethod.name}</p>
@@ -51,7 +51,7 @@ const OrdersTab = () => {
                 </div>
               </div>
             ) : null}
-            {hasProof ? <img src={order.receiptImageUrl} alt='proof' className='mt-3 h-32 rounded' /> : null}
+            {hasProof ? <div className='mt-3 h-32 overflow-hidden rounded-md'><img src={order.receiptImageUrl} alt='proof' className='block h-full w-full object-cover object-center' /></div> : null}
             <div className='mt-3 flex gap-2'>
               <button
                 className='rounded bg-green-600 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50'
