@@ -4,13 +4,15 @@ import { useCartStore } from "../stores/useCartStore";
 import { formatMRU } from "../lib/formatMRU";
 import { getProductPricing } from "../lib/getProductPricing";
 import { useInventoryStore } from "../stores/useInventoryStore";
+import AvailabilityBadge from "./AvailabilityBadge";
 
 const ProductCard = ({ product }) => {
         const { addToCart } = useCartStore();
         const { t } = useTranslation();
         const inventory = useInventoryStore((state) => state.publicMap[product._id]);
         const available = inventory?.availableQuantity ?? 0;
-        const outOfStock = available <= 0;
+        const stockValue = Number(product.stock ?? available ?? 0);
+        const outOfStock = stockValue <= 0;
         const { price, discountedPrice, isDiscounted, discountPercentage } = getProductPricing(product);
         const displayPrice = isDiscounted ? discountedPrice : price;
 
@@ -63,11 +65,7 @@ const ProductCard = ({ product }) => {
                                         </span>
                                 </div>
 
-                                {product.hasPortions && (
-                                        <span className="w-fit rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
-                                                متوفر بخيارات التقسيم
-                                        </span>
-                                )}
+                                <AvailabilityBadge hasPortions={Boolean(product.hasPortions)} stock={stockValue} />
 
                                 <button
                                         disabled={outOfStock}

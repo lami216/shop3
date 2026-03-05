@@ -9,6 +9,7 @@ import PeopleAlsoBought from "../components/PeopleAlsoBought";
 import useTranslation from "../hooks/useTranslation";
 import { getProductPricing } from "../lib/getProductPricing";
 import { useInventoryStore } from "../stores/useInventoryStore";
+import AvailabilityBadge from "../components/AvailabilityBadge";
 
 const getProductImages = (product) => {
         if (!product) return [];
@@ -104,7 +105,8 @@ const ProductDetailPage = () => {
                         ? null
                         : portions.find((portion) => Number(portion.size_ml) === Number(selectedPurchaseOption));
         const isPortionSelection = selectedPortion !== null;
-        const outOfStock = isPortionSelection ? false : available <= 0;
+        const stockValue = Number(selectedProduct.stock ?? available ?? 0);
+        const outOfStock = isPortionSelection ? false : stockValue <= 0;
         const currentPrice = isPortionSelection
                 ? Number(selectedPortion.price || 0)
                 : isDiscounted
@@ -206,11 +208,7 @@ const ProductDetailPage = () => {
                                                 <span className='text-[2rem] font-semibold text-brand-primary'>{formatMRU(currentPrice)}</span>
                                         </div>
 
-                                        {hasPortions && (
-                                                <span className='inline-flex w-fit rounded-full bg-yellow-100 px-3 py-1 text-sm font-semibold text-yellow-800'>
-                                                        متوفر بخيارات التقسيم
-                                                </span>
-                                        )}
+                                        <AvailabilityBadge hasPortions={hasPortions} stock={stockValue} />
 
                                         {hasPortions && (
                                                 <div className='space-y-2'>
