@@ -112,7 +112,7 @@ const HomePage = () => {
 
                                 {offersSectionData.length > 0 && <HeroSlider slides={offersSectionData} />}
 
-                                <div className='space-y-10'>
+                                <div className='main-content space-y-10'>
                                         {showOnlySearchResults ? (
                                                 <section className='space-y-6 py-10'>
                                                         <header className='text-right'>

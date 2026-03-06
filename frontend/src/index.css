@@ -132,15 +132,20 @@
                 flex: 0 0 auto;
         }
 
-        .payment-card img {
-                width: 100% !important;
-                height: 100% !important;
-                max-width: none !important;
-                max-height: none !important;
-                object-fit: cover !important;
-                object-position: center !important;
-                display: block;
-        }
+	.payment-card img {
+		width: 100% !important;
+		height: 100% !important;
+		max-width: none !important;
+		max-height: none !important;
+		object-fit: cover !important;
+		object-position: center !important;
+		display: block;
+	}
+
+	.main-content {
+		display: block;
+		width: 100%;
+	}
 }
 
 @layer utilities {
