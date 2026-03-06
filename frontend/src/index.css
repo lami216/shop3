@@ -111,6 +111,22 @@
         }
 
 
+
+
+        .admin-top-menu {
+                display: flex;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                gap: 12px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+        }
+
+        .admin-top-menu button {
+                white-space: nowrap;
+                flex-shrink: 0;
+        }
+
         .payment-methods {
                 display: flex;
                 justify-content: center;
