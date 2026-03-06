@@ -67,6 +67,16 @@ const HomePage = () => {
                 return products.slice(4, 10);
         }, [products]);
 
+        const firstRowCategories = useMemo(
+                () => categories.filter((category) => (category.displayRow === 2 ? false : true)),
+                [categories]
+        );
+
+        const secondRowCategories = useMemo(
+                () => categories.filter((category) => category.displayRow === 2),
+                [categories]
+        );
+
         const handleQueryChange = (value) => {
                 setSearchQuery(value);
         };
@@ -143,18 +153,31 @@ const HomePage = () => {
                                                                         <h2 className='text-2xl font-semibold text-[#111111]'>فئاتنا</h2>
                                                                 </header>
 
-                                                                <div className='-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0'>
-                                                                        <div className='flex min-w-max gap-4 pb-2'>
-                                                                                {categories.length === 0 && !categoriesLoading && (
-                                                                                        <div className='rounded-2xl bg-white px-6 py-10 text-center text-brand-muted shadow-sm'>
-                                                                                                {t("categories.manager.list.empty")}
-                                                                                        </div>
-                                                                                )}
-                                                                                {categories.map((category) => (
-                                                                                        <div className='w-40 flex-shrink-0 sm:w-48' key={category._id}>
-                                                                                                <CategoryItem category={category} />
-                                                                                        </div>
-                                                                                ))}
+                                                                <div className='space-y-4'>
+                                                                        {categories.length === 0 && !categoriesLoading && (
+                                                                                <div className='rounded-2xl bg-white px-6 py-10 text-center text-brand-muted shadow-sm'>
+                                                                                        {t("categories.manager.list.empty")}
+                                                                                </div>
+                                                                        )}
+
+                                                                        <div className='-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0'>
+                                                                                <div className='flex min-w-max gap-4 pb-2'>
+                                                                                        {firstRowCategories.map((category) => (
+                                                                                                <div className='w-40 flex-shrink-0 sm:w-48' key={category._id}>
+                                                                                                        <CategoryItem category={category} />
+                                                                                                </div>
+                                                                                        ))}
+                                                                                </div>
+                                                                        </div>
+
+                                                                        <div className='-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0'>
+                                                                                <div className='flex min-w-max gap-4 pb-2'>
+                                                                                        {secondRowCategories.map((category) => (
+                                                                                                <div className='w-40 flex-shrink-0 sm:w-48' key={category._id}>
+                                                                                                        <CategoryItem category={category} />
+                                                                                                </div>
+                                                                                        ))}
+                                                                                </div>
                                                                         </div>
                                                                 </div>
                                                         </section>

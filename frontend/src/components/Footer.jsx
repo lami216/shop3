@@ -1,11 +1,18 @@
-import { Facebook, MessageCircle, Music, PhoneCall } from "lucide-react";
+import { Facebook, Ghost, MessageCircle, PhoneCall } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const TikTokIcon = ({ size = 18 }) => (
+  <svg viewBox='0 0 24 24' width={size} height={size} fill='currentColor' aria-hidden='true'>
+    <path d='M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25h-3.4v13.39a2.9 2.9 0 1 1-2-2.77V9.62a6.3 6.3 0 1 0 5.39 6.21V9.03a8.2 8.2 0 0 0 4.79 1.53V6.69Z' />
+  </svg>
+);
+
 const socialItems = [
-  { label: "TikTok", href: "https://www.tiktok.com/", icon: Music },
-  { label: "Facebook", href: "https://www.facebook.com/", icon: Facebook },
-  { label: "WhatsApp", href: "https://wa.me/", icon: MessageCircle },
-  { label: "Phone Call", href: "tel:+0000000000", icon: PhoneCall },
+  { label: "TikTok", href: "https://www.tiktok.com/@al_sahib_dd?_r=1&_t=ZS-94T5ZgItWbp", icon: TikTokIcon },
+  { label: "Snapchat", href: "https://snapchat.com/t/y9IRV5pR", icon: Ghost },
+  { label: "Facebook", href: "https://www.facebook.com/profile.php?id=100092359748442", icon: Facebook },
+  { label: "WhatsApp", href: "https://wa.me/22242723477", icon: MessageCircle },
+  { label: "Phone Call", href: "tel:+22242723477", icon: PhoneCall },
 ];
 
 const paymentMethods = ["pay1", "pay2", "pay3", "pay4"];
@@ -35,7 +42,7 @@ const Footer = () => {
           <section className='space-y-3'>
             <h4 className='text-lg font-semibold'>تواصل معنا</h4>
             <a
-              href='https://wa.me/'
+              href='https://wa.me/22242723477'
               target='_blank'
               rel='noopener noreferrer'
               className='inline-flex w-fit items-center gap-2 rounded-full border border-[#d4af37] bg-transparent px-4 py-2 text-sm font-medium text-[#d4af37] transition'
@@ -51,18 +58,21 @@ const Footer = () => {
         <section className='space-y-3'>
           <h4 className='text-lg font-semibold'>تابعنا</h4>
           <div className='flex items-center gap-4'>
-            {socialItems.map(({ label, href, icon: Icon }) => (
-              <a
-                key={label}
-                href={href}
-                className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-brand-muted transition hover:border-brand-primary hover:text-brand-primary'
-                aria-label={label}
-                target={href.startsWith("http") ? "_blank" : undefined}
-                rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-              >
-                <Icon size={18} />
-              </a>
-            ))}
+            {socialItems.map(({ label, href, icon: Icon }) => {
+              const isPhone = href.startsWith("tel:");
+              return (
+                <a
+                  key={label}
+                  href={href}
+                  className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-brand-muted transition hover:border-brand-primary hover:text-brand-primary'
+                  aria-label={label}
+                  target={isPhone ? undefined : "_blank"}
+                  rel={isPhone ? undefined : "noopener noreferrer"}
+                >
+                  <Icon size={18} strokeWidth={2.1} />
+                </a>
+              );
+            })}
           </div>
         </section>
 

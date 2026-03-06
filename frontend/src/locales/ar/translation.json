@@ -135,7 +135,8 @@
                                 "submitCreate": "إنشاء الفئة",
                                 "submitUpdate": "حفظ التعديلات",
                                 "cancelEdit": "إلغاء التعديل",
-                                "delete": "حذف الفئة"
+                                "delete": "حذف الفئة",
+                                "displayRow": "مكان ظهور الفئة"
                         },
                         "list": {
                                 "title": "الفئات الحالية",

@@ -11,6 +11,7 @@ const createEmptyForm = () => ({
         image: "",
         imagePreview: "",
         imageChanged: false,
+        displayRow: 1,
 });
 
 const CategoryManager = () => {
@@ -55,6 +56,7 @@ const CategoryManager = () => {
                         image: "",
                         imagePreview: selectedCategory.imageUrl ?? "",
                         imageChanged: false,
+                        displayRow: selectedCategory.displayRow === 2 ? 2 : 1,
                 });
         }, [selectedCategory]);
 
@@ -91,6 +93,7 @@ const CategoryManager = () => {
                 const payload = {
                         name: trimmedName,
                         description: trimmedDescription,
+                        displayRow: formState.displayRow,
                 };
 
                 if (formState.image && (formState.imageChanged || !selectedCategory)) {
@@ -202,22 +205,43 @@ const CategoryManager = () => {
                                                 </div>
                                         </div>
 
-                                        <div>
-                                                <label className='block text-sm font-medium text-white/80' htmlFor='category-description'>
-                                                        {t("categories.manager.form.description")}
-                                                </label>
-                                                <textarea
-                                                        id='category-description'
-                                                        rows={3}
-                                                        className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
-                                                        value={formState.description}
-                                                        onChange={(event) =>
-                                                                setFormState((previous) => ({
-                                                                        ...previous,
-                                                                        description: event.target.value,
-                                                                }))
-                                                        }
-                                                />
+                                        <div className='grid gap-4 sm:grid-cols-2'>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80' htmlFor='category-description'>
+                                                                {t("categories.manager.form.description")}
+                                                        </label>
+                                                        <textarea
+                                                                id='category-description'
+                                                                rows={3}
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                                                value={formState.description}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({
+                                                                                ...previous,
+                                                                                description: event.target.value,
+                                                                        }))
+                                                                }
+                                                        />
+                                                </div>
+                                                <div>
+                                                        <label className='block text-sm font-medium text-white/80' htmlFor='category-display-row'>
+                                                                {t("categories.manager.form.displayRow")}
+                                                        </label>
+                                                        <select
+                                                                id='category-display-row'
+                                                                className='mt-1 block w-full rounded-md border border-payzone-indigo/40 bg-payzone-navy/60 px-3 py-2 text-white focus:border-payzone-gold focus:outline-none focus:ring-2 focus:ring-payzone-indigo'
+                                                                value={formState.displayRow}
+                                                                onChange={(event) =>
+                                                                        setFormState((previous) => ({
+                                                                                ...previous,
+                                                                                displayRow: Number(event.target.value) === 2 ? 2 : 1,
+                                                                        }))
+                                                                }
+                                                        >
+                                                                <option value={1}>1</option>
+                                                                <option value={2}>2</option>
+                                                        </select>
+                                                </div>
                                         </div>
 
                                         <button
@@ -254,6 +278,7 @@ const CategoryManager = () => {
                                                                                 {category.description && (
                                                                                         <p className='text-sm text-white/60'>{category.description}</p>
                                                                                 )}
+                                                                                <p className='text-xs text-white/50'>{t("categories.manager.form.displayRow")}: {category.displayRow === 2 ? 2 : 1}</p>
                                                                         </div>
                                                                 </div>
                                                                 <div className='flex items-center gap-2'>
