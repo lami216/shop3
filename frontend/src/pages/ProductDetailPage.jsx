@@ -27,6 +27,97 @@ const getProductImages = (product) => {
         return normalized;
 };
 
+const PERFUME_SECTION_KEYWORDS = [
+        "ملاحظات العطر",
+        "المكونات العليا",
+        "المكونات الوسطى",
+        "قاعدة العطر",
+        "مكونات العطر",
+        "النوتات العليا",
+        "النوتات الوسطى",
+        "النوتات القاعدية",
+        "Top notes",
+        "Heart notes",
+        "Middle notes",
+        "Base notes",
+        "Fragrance notes",
+];
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const keywordPattern = PERFUME_SECTION_KEYWORDS.map((keyword) => escapeRegExp(keyword)).join("|");
+const perfumeKeywordRegex = new RegExp(keywordPattern, "i");
+const sectionOnlyLineRegex = new RegExp(`^(${keywordPattern})\\s*[:\-–—]?$`, "i");
+const titleWithContentRegex = new RegExp(`^(${keywordPattern})\\s*[:\-–—]\\s*(.+)$`, "i");
+
+const parsePerfumeDescription = (description) => {
+        if (typeof description !== "string" || !perfumeKeywordRegex.test(description)) {
+                return null;
+        }
+
+        const lines = description
+                .replace(/\r/g, "")
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean);
+
+        const sections = [];
+        const introLines = [];
+        let currentSection = null;
+
+        for (const line of lines) {
+                const titleAndContentMatch = line.match(titleWithContentRegex);
+
+                if (titleAndContentMatch) {
+                        if (currentSection) {
+                                sections.push(currentSection);
+                        }
+
+                        currentSection = {
+                                title: titleAndContentMatch[1],
+                                content: [titleAndContentMatch[2]],
+                        };
+                        continue;
+                }
+
+                const titleOnlyMatch = line.match(sectionOnlyLineRegex);
+
+                if (titleOnlyMatch) {
+                        if (currentSection) {
+                                sections.push(currentSection);
+                        }
+
+                        currentSection = {
+                                title: titleOnlyMatch[1],
+                                content: [],
+                        };
+                        continue;
+                }
+
+                if (currentSection) {
+                        currentSection.content.push(line);
+                } else {
+                        introLines.push(line);
+                }
+        }
+
+        if (currentSection) {
+                sections.push(currentSection);
+        }
+
+        if (sections.length === 0) {
+                return null;
+        }
+
+        return {
+                intro: introLines.join("\n"),
+                sections: sections.map((section) => ({
+                        ...section,
+                        content: section.content.join("\n"),
+                })),
+        };
+};
+
 const ProductDetailPage = () => {
         const { id } = useParams();
 
@@ -47,6 +138,10 @@ const ProductDetailPage = () => {
         const available = inventory?.availableQuantity ?? 0;
 
         const productImages = useMemo(() => getProductImages(selectedProduct), [selectedProduct]);
+        const parsedPerfumeDescription = useMemo(
+                () => parsePerfumeDescription(selectedProduct?.description || ""),
+                [selectedProduct?.description],
+        );
 
         useEffect(() => {
                 let isMounted = true;
@@ -282,9 +377,24 @@ const ProductDetailPage = () => {
 
                                         <div className='space-y-2 pt-1'>
                                                 <h2 className='text-base font-medium text-[#111111]'>عن المنتج</h2>
-                                                <p className='text-sm leading-relaxed text-[#6b7280]'>
-                                                        {selectedProduct.description || t("products.detail.descriptionFallback")}
-                                                </p>
+                                                {parsedPerfumeDescription ? (
+                                                        <div className='text-sm leading-relaxed text-[#6b7280]' style={{ direction: "rtl", textAlign: "right" }}>
+                                                                {parsedPerfumeDescription.intro && (
+                                                                        <p className='whitespace-pre-line'>{parsedPerfumeDescription.intro}</p>
+                                                                )}
+
+                                                                {parsedPerfumeDescription.sections.map((section, index) => (
+                                                                        <div key={`${section.title}-${index}`}>
+                                                                                <p className='mb-[6px] mt-4 text-[15px] font-bold text-[#111111]'>{section.title}</p>
+                                                                                <p className='whitespace-pre-line leading-7'>{section.content}</p>
+                                                                        </div>
+                                                                ))}
+                                                        </div>
+                                                ) : (
+                                                        <p className='text-sm leading-relaxed text-[#6b7280]'>
+                                                                {selectedProduct.description || t("products.detail.descriptionFallback")}
+                                                        </p>
+                                                )}
                                         </div>
                                 </div>
 
