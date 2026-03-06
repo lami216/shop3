@@ -91,8 +91,8 @@ const Navbar = () => {
           </button>
 
           <Link to='/' className='flex flex-col items-center gap-1 text-center' onClick={closeMenu}>
-            <span className='text-sm font-semibold text-[#111111]'>Amber OUD</span>
-            <span className='text-xs text-[#6b7280]'>Perfumes & Incense</span>
+            <span className='text-sm font-semibold tracking-[0.18em] text-[#111111]'>الصاحب</span>
+            <span className='text-xs font-medium tracking-[0.4em] text-[#111111]'>MAISON DE PARFUM</span>
           </Link>
 
           <Link
