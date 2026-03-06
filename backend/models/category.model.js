@@ -27,6 +27,11 @@ const categorySchema = new mongoose.Schema(
                         type: String,
                         default: null,
                 },
+                displayRow: {
+                        type: Number,
+                        enum: [1, 2],
+                        default: 1,
+                },
         },
         { timestamps: true }
 );

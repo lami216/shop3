@@ -68,7 +68,7 @@ export const getCategories = async (_req, res) => {
 
 export const createCategory = async (req, res) => {
         try {
-                const { name, description = "", image } = req.body;
+                const { name, description = "", image, displayRow } = req.body;
 
                 const trimmedName = typeof name === "string" ? name.trim() : "";
                 const trimmedDescription =
@@ -98,6 +98,8 @@ export const createCategory = async (req, res) => {
 
                 const slug = await generateUniqueSlug(trimmedName);
 
+                const normalizedDisplayRow = Number(displayRow) === 2 ? 2 : 1;
+
                 const category = await Category.create({
                         name: trimmedName,
                         description: trimmedDescription,
@@ -105,6 +107,7 @@ export const createCategory = async (req, res) => {
                         imageUrl: uploadResult.url,
                         imageFileId: uploadResult.fileId ?? null,
                         imagePublicId: uploadResult.fileId ?? null,
+                        displayRow: normalizedDisplayRow,
                 });
 
                 res.status(201).json(serializeCategory(category));
@@ -117,7 +120,7 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
         try {
                 const { id } = req.params;
-                const { name, description, image } = req.body;
+                const { name, description, image, displayRow } = req.body;
 
                 const category = await Category.findById(id);
 
@@ -135,6 +138,11 @@ export const updateCategory = async (req, res) => {
 
                 if (typeof description === "string") {
                         category.description = description.trim();
+                }
+
+
+                if (displayRow !== undefined) {
+                        category.displayRow = Number(displayRow) === 2 ? 2 : 1;
                 }
 
                 if (image && typeof image === "string") {
