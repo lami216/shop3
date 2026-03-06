@@ -41,7 +41,7 @@ const AdminPage = () => {
         );
 
         return (
-                <div className='relative min-h-screen overflow-hidden'>
+                <div className='relative min-h-screen'>
                         <div className='container relative z-10 mx-auto px-4 py-16'>
                                 <motion.h1
                                         className='mb-8 text-center text-4xl font-bold text-payzone-gold'
@@ -52,12 +52,12 @@ const AdminPage = () => {
                                         {t("admin.dashboardTitle")}
                                 </motion.h1>
 
-                                <div className='mb-8 flex justify-start gap-2 overflow-x-auto whitespace-nowrap [-webkit-overflow-scrolling:touch] sm:justify-center'>
+                                <div className='admin-top-menu mb-8 sm:justify-center'>
                                         {tabs.map((tab) => (
                                                 <button
                                                         key={tab.id}
                                                         onClick={() => setActiveTab(tab.id)}
-                                                        className={`flex flex-none items-center rounded-md px-4 py-2 transition-colors duration-200 ${
+                                                        className={`flex items-center rounded-md px-4 py-2 transition-colors duration-200 ${
                                                                 activeTab === tab.id
                                                                         ? "bg-payzone-gold text-payzone-navy"
                                                                         : "bg-white/10 text-white/80 hover:bg-white/20"
