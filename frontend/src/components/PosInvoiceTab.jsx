@@ -8,7 +8,7 @@ import { useInventoryStore } from "../stores/useInventoryStore";
 const PosInvoiceTab = () => {
   const { products, fetchAllProducts } = useProductStore();
   const { methods, fetchMethods } = usePaymentMethodStore();
-  const { publicMap } = useInventoryStore();
+  const { publicMap, fetchPublicSummary } = useInventoryStore();
   const { createPosInvoice } = useOrderStore();
   const [query, setQuery] = useState("");
   const [lines, setLines] = useState([]);
@@ -20,6 +20,12 @@ const PosInvoiceTab = () => {
     fetchMethods();
   }, [fetchAllProducts, fetchMethods]);
 
+  useEffect(() => {
+    const ids = (products || []).map((product) => product?._id).filter(Boolean);
+    if (!ids.length) return;
+    fetchPublicSummary(ids);
+  }, [products, fetchPublicSummary]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (products || [])
@@ -28,19 +34,28 @@ const PosInvoiceTab = () => {
       .slice(0, 20);
   }, [products, query]);
 
-  const addProduct = (product) => {
-    const defaultPrice = Number(product.discountedPrice || product.price || 0);
+  const addProduct = (product, type = "full", selectedPortion = null) => {
+    const isPortion = type === "portion";
+    const portionSizeMl = isPortion ? Number(selectedPortion?.size_ml || 0) : null;
+    const defaultPrice = isPortion
+      ? Number(selectedPortion?.price || 0)
+      : Number(product.discountedPrice || product.price || 0);
+    const lineKey = isPortion ? `${product._id}-portion-${portionSizeMl}` : `${product._id}-full`;
+
     setLines((prev) => {
-      const existing = prev.find((x) => x.productId === product._id);
+      const existing = prev.find((x) => x.lineKey === lineKey);
       if (existing) {
-        return prev.map((x) => (x.productId === product._id ? { ...x, qty: x.qty + 1 } : x));
+        return prev.map((x) => (x.lineKey === lineKey ? { ...x, qty: x.qty + 1 } : x));
       }
       return [
         ...prev,
         {
+          lineKey,
           productId: product._id,
           name: product.name,
           image: product.image,
+          type,
+          portionSizeMl,
           qty: 1,
           unitPrice: defaultPrice,
         },
@@ -48,9 +63,9 @@ const PosInvoiceTab = () => {
     });
   };
 
-  const updateLine = (productId, patch) =>
-    setLines((prev) => prev.map((line) => (line.productId === productId ? { ...line, ...patch } : line)));
-  const removeLine = (productId) => setLines((prev) => prev.filter((line) => line.productId !== productId));
+  const updateLine = (lineKey, patch) =>
+    setLines((prev) => prev.map((line) => (line.lineKey === lineKey ? { ...line, ...patch } : line)));
+  const removeLine = (lineKey) => setLines((prev) => prev.filter((line) => line.lineKey !== lineKey));
 
   const total = lines.reduce((sum, line) => sum + (Number(line.qty) || 0) * (Number(line.unitPrice) || 0), 0);
 
@@ -66,6 +81,8 @@ const PosInvoiceTab = () => {
         paymentMethodId,
         items: lines.map((line) => ({
           productId: line.productId,
+          type: line.type || "full",
+          portionSizeMl: line.type === "portion" ? Number(line.portionSizeMl) : null,
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
         })),
@@ -96,15 +113,9 @@ const PosInvoiceTab = () => {
       <div className='max-h-64 space-y-2 overflow-auto rounded border border-white/10 bg-black/20 p-2'>
         {filtered.map((p) => {
           const availableQty = publicMap?.[p._id]?.availableQuantity ?? 0;
-          const disabled = availableQty <= 0;
+          const hasPortions = Boolean(p.hasPortions) && Array.isArray(p.portions) && p.portions.length > 0;
           return (
-            <button
-              key={p._id}
-              type='button'
-              disabled={disabled}
-              className='flex w-full items-center justify-between rounded border border-white/20 p-2 text-left transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50'
-              onClick={() => addProduct(p)}
-            >
+            <div key={p._id} className='rounded border border-white/20 p-2'>
               <div className='flex items-center gap-2'>
                 <img src={p.image} alt={p.name} className='h-10 w-10 rounded object-cover' />
                 <div>
@@ -112,25 +123,49 @@ const PosInvoiceTab = () => {
                   <p className='text-xs text-white/70'>Available: {availableQty}</p>
                 </div>
               </div>
-              <span className='text-sm text-white/70'>{Number(p.discountedPrice || p.price || 0).toFixed(2)}</span>
-            </button>
+              <div className='mt-2 flex flex-wrap items-center gap-2'>
+                <button
+                  type='button'
+                  disabled={availableQty <= 0}
+                  className='rounded bg-white/10 px-2 py-1 text-xs transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50'
+                  onClick={() => addProduct(p, "full")}
+                >
+                  Full bottle • {Number(p.discountedPrice || p.price || 0).toFixed(2)}
+                </button>
+
+                {hasPortions &&
+                  p.portions.map((portion) => (
+                    <button
+                      key={`${p._id}-${portion.size_ml}`}
+                      type='button'
+                      className='rounded bg-payzone-gold/20 px-2 py-1 text-xs text-payzone-gold transition hover:bg-payzone-gold/30'
+                      onClick={() => addProduct(p, "portion", portion)}
+                    >
+                      {Number(portion.size_ml)}ml • {Number(portion.price || 0).toFixed(2)}
+                    </button>
+                  ))}
+              </div>
+            </div>
           );
         })}
       </div>
 
       <div className='space-y-2'>
         {lines.map((line) => (
-          <div key={line.productId} className='grid grid-cols-12 items-center gap-2 rounded border border-white/10 p-2'>
+          <div key={line.lineKey} className='grid grid-cols-12 items-center gap-2 rounded border border-white/10 p-2'>
             <div className='col-span-4 flex items-center gap-2'>
               {line.image ? <img src={line.image} alt={line.name} className='h-8 w-8 rounded object-cover' /> : null}
-              <span>{line.name}</span>
+              <div>
+                <span>{line.name}</span>
+                {line.type === "portion" ? <p className='text-xs text-payzone-gold'>{line.portionSizeMl}ml portion</p> : null}
+              </div>
             </div>
             <input
               className='col-span-2 rounded bg-payzone-navy/60 p-2'
               type='number'
               min='1'
               value={line.qty}
-              onChange={(e) => updateLine(line.productId, { qty: Number(e.target.value) })}
+              onChange={(e) => updateLine(line.lineKey, { qty: Number(e.target.value) })}
             />
             <input
               className='col-span-3 rounded bg-payzone-navy/60 p-2'
@@ -138,10 +173,10 @@ const PosInvoiceTab = () => {
               min='0'
               step='0.01'
               value={line.unitPrice}
-              onChange={(e) => updateLine(line.productId, { unitPrice: Number(e.target.value) })}
+              onChange={(e) => updateLine(line.lineKey, { unitPrice: Number(e.target.value) })}
             />
             <div className='col-span-2 text-right'>{(line.qty * line.unitPrice).toFixed(2)}</div>
-            <button className='col-span-1 text-red-300' onClick={() => removeLine(line.productId)} type='button'>
+            <button className='col-span-1 text-red-300' onClick={() => removeLine(line.lineKey)} type='button'>
               ✕
             </button>
           </div>

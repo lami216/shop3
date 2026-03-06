@@ -30,13 +30,6 @@ const InventoryTab = () => {
     return adminItems.filter((item) => item.product?.name?.toLowerCase().includes(query));
   }, [adminItems, searchTerm]);
 
-  const selectedProductMeta = useMemo(() => {
-    if (!entry.productId) return null;
-    return adminItems.find((item) => item.product?._id === entry.productId)?.product || null;
-  }, [adminItems, entry.productId]);
-
-  const isPortionProduct = Boolean(selectedProductMeta?.hasPortions);
-
   const totals = useMemo(() => {
     const itemCount = rows.length;
     const totalQuantity = rows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
@@ -172,7 +165,7 @@ const InventoryTab = () => {
           </div>
           <input
             className='rounded bg-payzone-navy/60 p-2 text-white md:col-span-2'
-            placeholder={isPortionProduct ? 'عدد التقسيمات المتوفرة' : 'الكمية'}
+            placeholder='الكمية'
             type='number'
             min='1'
             value={entry.quantity}
@@ -180,7 +173,7 @@ const InventoryTab = () => {
           />
           <input
             className='rounded bg-payzone-navy/60 p-2 text-white md:col-span-2'
-            placeholder={isPortionProduct ? 'سعر شراء التقسيمة' : 'تكلفة الوحدة'}
+            placeholder='تكلفة الوحدة'
             type='number'
             min='0'
             step='0.01'
@@ -212,8 +205,8 @@ const InventoryTab = () => {
             <thead className='bg-white/10 border-b-2 border-[#d6d6d6]'>
               <tr>
                 <th className='p-2 text-left border-r border-[#e5e5e5]'>المنتج</th>
-                <th className='p-2 text-center border-r border-[#e5e5e5]'>الكمية / التقسيمات</th>
-                <th className='p-2 text-center border-r border-[#e5e5e5]'>تكلفة الوحدة / التقسيمة</th>
+                <th className='p-2 text-center border-r border-[#e5e5e5]'>الكمية</th>
+                <th className='p-2 text-center border-r border-[#e5e5e5]'>تكلفة الوحدة</th>
                 <th className='p-2 text-center border-r border-[#e5e5e5]'>الإجمالي</th>
                 <th className='p-2 text-center'>إجراءات</th>
               </tr>

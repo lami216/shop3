@@ -39,6 +39,9 @@ const isReservationActive = (reservationExpiresAt) => {
   return new Date(reservationExpiresAt).getTime() > Date.now();
 };
 
+const orderRequiresReservation = (order) =>
+  (order?.products || []).some((item) => String(item.type || "full") !== "portion");
+
 const getNextOrderNumber = async (session) => {
   await Counter.updateOne(
     { _id: "orderNumber" },
@@ -170,12 +173,14 @@ export const getOrderPaymentSession = async (req, res) => {
     if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
-    if (!isReservationActive(order.reservationExpiresAt)) {
-      return res.status(400).json({ message: "Order is not payable" });
-    }
-    const hasReservation = await hasActiveReservation(order._id);
-    if (!hasReservation) {
-      return res.status(400).json({ message: "Order reservation missing" });
+    if (orderRequiresReservation(order)) {
+      if (!isReservationActive(order.reservationExpiresAt)) {
+        return res.status(400).json({ message: "Order is not payable" });
+      }
+      const hasReservation = await hasActiveReservation(order._id);
+      if (!hasReservation) {
+        return res.status(400).json({ message: "Order reservation missing" });
+      }
     }
 
     res.json({ order });
@@ -197,12 +202,14 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
     if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
-    if (!isReservationActive(order.reservationExpiresAt)) {
-      return res.status(400).json({ message: "Order is not payable" });
-    }
-    const hasReservation = await hasActiveReservation(order._id);
-    if (!hasReservation) {
-      return res.status(400).json({ message: "Order reservation missing" });
+    if (orderRequiresReservation(order)) {
+      if (!isReservationActive(order.reservationExpiresAt)) {
+        return res.status(400).json({ message: "Order is not payable" });
+      }
+      const hasReservation = await hasActiveReservation(order._id);
+      if (!hasReservation) {
+        return res.status(400).json({ message: "Order reservation missing" });
+      }
     }
 
     res.json({ order });
@@ -264,7 +271,7 @@ export const approveOrder = async (req, res) => {
       return res.status(400).json({ message: "Payment proof is required before approval" });
     }
 
-    const deductions = await deductInventoryFIFO(order);
+    const deductions = await deductInventoryFIFO({ ...order.toObject(), products: order.products.filter((item) => String(item.type || "full") !== "portion") });
     const costMap = new Map(deductions.map((d) => [d.productId, d.lineCost]));
 
     let totalCost = 0;
@@ -377,7 +384,7 @@ export const createPosInvoice = async (req, res) => {
     if (!paymentMethodId) return res.status(400).json({ message: "Payment method is required" });
 
     const ids = invoiceItems.map((line) => line.productId);
-    const products = await Product.find({ _id: { $in: ids } }).select("name").lean();
+    const products = await Product.find({ _id: { $in: ids } }).select("name hasPortions portions").lean();
     const productMap = new Map(products.map((x) => [x._id.toString(), x]));
 
     const method = await PaymentMethod.findById(paymentMethodId).lean();
@@ -386,10 +393,34 @@ export const createPosInvoice = async (req, res) => {
     const orderItems = invoiceItems.map((line) => {
       const product = productMap.get(line.productId);
       if (!product) throw new Error("Product missing");
+
       const quantity = Number(line.qty ?? line.quantity);
+      const requestedType = String(line.type || "full") === "portion" ? "portion" : "full";
       const price = Number(line.unitPrice ?? line.price);
+
       if (!quantity || quantity <= 0) throw new Error("Quantity must be greater than zero");
       if (Number.isNaN(price) || price < 0) throw new Error("Price is invalid");
+
+      if (requestedType === "portion") {
+        const requestedSize = Number(line.portionSizeMl);
+        const productPortions = Array.isArray(product.portions) ? product.portions : [];
+        const selectedPortion = productPortions.find((portion) => Number(portion.size_ml) === requestedSize);
+
+        if (!product.hasPortions || !selectedPortion) {
+          throw new Error("Invalid portion selection");
+        }
+
+        return {
+          product: line.productId,
+          productName: product.name,
+          type: "portion",
+          portionSizeMl: Number(selectedPortion.size_ml),
+          quantity,
+          price,
+          lineRevenue: quantity * price,
+        };
+      }
+
       return {
         product: line.productId,
         productName: product.name,
@@ -428,7 +459,7 @@ export const createPosInvoice = async (req, res) => {
       );
     });
 
-    const deductions = await deductInventoryFIFO(order);
+    const deductions = await deductInventoryFIFO({ ...order.toObject(), products: order.products.filter((item) => String(item.type || "full") !== "portion") });
     const costMap = new Map(deductions.map((d) => [d.productId, d.lineCost]));
 
     let totalCost = 0;
