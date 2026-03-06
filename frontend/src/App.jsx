@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import HomePage from "./pages/HomePage";
 import SignUpPage from "./pages/SignUpPage";
@@ -27,6 +27,19 @@ import GuestPendingOrdersFab from "./components/GuestPendingOrdersFab";
 import AboutPage from "./pages/AboutPage";
 import PrivacyPage from "./pages/PrivacyPage";
 
+const ScrollToTop = () => {
+	const { pathname } = useLocation();
+
+	useEffect(() => {
+		window.scrollTo({
+			top: 0,
+			behavior: "instant",
+		});
+	}, [pathname]);
+
+	return null;
+};
+
 function App() {
         const user = useUserStore((state) => state.user);
         const checkAuth = useUserStore((state) => state.checkAuth);
@@ -53,6 +66,7 @@ function App() {
         return (
                 <div className='relative min-h-screen bg-brand-bg font-sans text-brand-text'>
                         <div className='relative z-40 pt-24 sm:pt-28'>
+                                <ScrollToTop />
                                 <Navbar />
                                 <Routes>
                                         <Route path='/' element={<HomePage />} />

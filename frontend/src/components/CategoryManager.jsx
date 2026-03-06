@@ -119,6 +119,10 @@ const CategoryManager = () => {
 
         const handleEdit = (category) => {
                 setSelectedCategory(category);
+                window.scrollTo({
+                        top: 0,
+                        behavior: "smooth",
+                });
         };
 
         const handleCancelEdit = () => {
