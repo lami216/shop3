@@ -265,15 +265,15 @@ const ProductDetailPage = () => {
                                                 <p>✔ Secure payment</p>
                                         </div>
 
-                                        <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+                                        <div className='grid grid-cols-3 gap-3 max-[360px]:grid-cols-2'>
                                                 {[
                                                         { label: "التركيز", value: selectedProduct.concentration },
                                                         { label: "الجنس", value: selectedProduct.gender },
                                                         { label: "الحجم", value: selectedProduct.size },
                                                 ].map((attribute) => (
                                                         <div key={attribute.label} className='space-y-1'>
-                                                                <p className='text-sm font-semibold text-[#111111]'>{attribute.label}</p>
-                                                                <div className='min-h-[46px] rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#374151]'>
+                                                                <p className='mb-1 text-center text-[13px] text-[#555555]'>{attribute.label}</p>
+                                                                <div className='min-h-[46px] rounded-[8px] border border-[#dddddd] bg-white p-[10px] text-center text-sm text-[#374151]'>
                                                                         {attribute.value || "—"}
                                                                 </div>
                                                         </div>
