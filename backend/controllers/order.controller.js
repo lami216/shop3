@@ -11,13 +11,12 @@ import {
   getInventorySummaries,
   hasActiveReservation,
   releaseOrderReservation,
-  reserveInventoryForOrder,
 } from "../services/inventory.service.js";
 import PortionSale from "../models/portionSale.model.js";
 
 const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT"];
-const PENDING_PAYMENT_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
+const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT", "pending_approval", "PENDING_APPROVAL"];
+const PENDING_PAYMENT_STATUSES = ["PENDING_PAYMENT", "pending_payment", "pending_approval", "PENDING_APPROVAL"];
 
 const recordPortionSales = async (order) => {
   const portionItems = (order.products || []).filter((item) => String(item.type || "full") === "portion");
@@ -104,17 +103,6 @@ export const createOrder = async (req, res) => {
       return { product: p._id, productName: p.name, type: "full", quantity, price, lineRevenue: price * quantity };
     });
 
-    const stockItems = orderItems.filter((item) => item.type !== "portion");
-    const productIds = stockItems.map((item) => item.product);
-    const summaries = await getInventorySummaries(productIds);
-    for (const item of stockItems) {
-      const summary = summaries.get(item.product.toString()) || { availableQuantity: 0 };
-      if (summary.availableQuantity < item.quantity) {
-        const product = map.get(item.product.toString());
-        return res.status(400).json({ message: `Insufficient stock for ${product?.name || "selected product"}` });
-      }
-    }
-
     const totalAmount = orderItems.reduce((sum, x) => sum + x.price * x.quantity, 0);
 
     const activeMethods = await PaymentMethod.find({ isActive: true }).sort({ createdAt: 1 }).lean();
@@ -142,7 +130,7 @@ export const createOrder = async (req, res) => {
             orderNumberSeq: orderNumber.orderNumberSeq,
             orderNumberDisplay: orderNumber.orderNumberDisplay,
             trackingCode: randomCode("TRK-"),
-            status: "PENDING_PAYMENT",
+            status: "pending_approval",
             source: "ONLINE",
             paymentMethod: selectedMethod._id,
           },
@@ -150,10 +138,6 @@ export const createOrder = async (req, res) => {
         { session }
       );
 
-      const expiresAt = await reserveInventoryForOrder(order, 15, session);
-      order.reservationStartedAt = new Date();
-      order.reservationExpiresAt = expiresAt;
-      await order.save({ session });
     });
 
     res.status(201).json({ orderId: order._id, orderNumber: order.orderNumber, trackingCode: order.trackingCode, status: order.status });
@@ -173,7 +157,7 @@ export const getOrderPaymentSession = async (req, res) => {
     if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
-    if (orderRequiresReservation(order)) {
+    if (["PENDING_PAYMENT", "pending_payment"].includes(order.status) && orderRequiresReservation(order)) {
       if (!isReservationActive(order.reservationExpiresAt)) {
         return res.status(400).json({ message: "Order is not payable" });
       }
@@ -202,7 +186,7 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
     if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
-    if (orderRequiresReservation(order)) {
+    if (["PENDING_PAYMENT", "pending_payment"].includes(order.status) && orderRequiresReservation(order)) {
       if (!isReservationActive(order.reservationExpiresAt)) {
         return res.status(400).json({ message: "Order is not payable" });
       }
@@ -271,7 +255,34 @@ export const approveOrder = async (req, res) => {
       return res.status(400).json({ message: "Payment proof is required before approval" });
     }
 
-    const deductions = await deductInventoryFIFO({ ...order.toObject(), products: order.products.filter((item) => String(item.type || "full") !== "portion") });
+    const fullItems = order.products.filter((item) => String(item.type || "full") !== "portion");
+    const productIds = fullItems.map((item) => item.product);
+    const summaries = await getInventorySummaries(productIds);
+
+    const insufficientItems = [];
+    for (const item of fullItems) {
+      const summary = summaries.get(item.product.toString()) || { availableQuantity: 0 };
+      const available = Number(summary.availableQuantity) || 0;
+      const requested = Number(item.quantity) || 0;
+
+      if (requested > available) {
+        insufficientItems.push({
+          productName: item.productName || "",
+          available,
+          requested,
+          shortage: requested - available,
+        });
+      }
+    }
+
+    if (insufficientItems.length) {
+      return res.status(400).json({
+        message: "لا يمكن الموافقة على الطلب بسبب نقص المخزون",
+        insufficientItems,
+      });
+    }
+
+    const deductions = await deductInventoryFIFO({ ...order.toObject(), products: fullItems });
     const costMap = new Map(deductions.map((d) => [d.productId, d.lineCost]));
 
     let totalCost = 0;

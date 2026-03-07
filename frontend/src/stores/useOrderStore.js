@@ -35,7 +35,16 @@ export const useOrderStore = create((set) => ({
       toast.success("Order approved");
       return data;
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to approve order");
+      const responseData = error.response?.data || {};
+      const insufficientItems = Array.isArray(responseData.insufficientItems) ? responseData.insufficientItems : [];
+      if (insufficientItems.length) {
+        const details = insufficientItems
+          .map((item) => `${item.productName || "منتج"}\nالمتوفر: ${item.available}\nالمطلوب: ${item.requested}\nالناقص: ${item.shortage}`)
+          .join("\n\n");
+        toast.error(`${responseData.message || "لا يمكن الموافقة على الطلب بسبب نقص المخزون"}\n\n${details}`);
+      } else {
+        toast.error(responseData.message || "Failed to approve order");
+      }
       throw error;
     }
   },

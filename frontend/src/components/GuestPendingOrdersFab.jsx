@@ -5,7 +5,7 @@ import apiClient from "../lib/apiClient";
 import { getGuestPendingOrders, setGuestPendingOrders } from "../lib/guestPendingOrders";
 import { useUserStore } from "../stores/useUserStore";
 
-const ACTIVE_PENDING_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
+const ACTIVE_PENDING_STATUSES = ["PENDING_PAYMENT", "pending_payment", "PENDING_APPROVAL", "pending_approval"];
 const REFRESH_EVENT = "pending-orders:refresh";
 
 const isActivePendingOrder = (order) => {

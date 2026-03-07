@@ -33,6 +33,8 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
+        "PENDING_APPROVAL",
+        "pending_approval",
         "PENDING_PAYMENT",
         "pending_payment",
         "UNDER_REVIEW",
@@ -40,7 +42,7 @@ const orderSchema = new mongoose.Schema(
         "REJECTED",
         "EXPIRED",
       ],
-      default: "PENDING_PAYMENT",
+      default: "pending_approval",
       index: true,
     },
     paymentMethod: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentMethod", required: false },
