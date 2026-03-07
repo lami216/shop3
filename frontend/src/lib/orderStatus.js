@@ -1,4 +1,4 @@
-const PAYABLE_STATUSES = ["PENDING_PAYMENT", "pending_payment"];
+const PAYABLE_STATUSES = ["PENDING_PAYMENT", "pending_payment", "PENDING_APPROVAL", "pending_approval"];
 
 export const isPayableOrderStatus = (status) => PAYABLE_STATUSES.includes(status);
 
@@ -32,6 +32,8 @@ export const getOrderStatusLabelAr = (status) => {
   switch (key) {
     case "PENDING_PAYMENT":
       return "بانتظار الدفع";
+    case "PENDING_APPROVAL":
+      return "بانتظار الموافقة";
     case "UNDER_REVIEW":
       return "تحت المراجعة";
     case "APPROVED":
