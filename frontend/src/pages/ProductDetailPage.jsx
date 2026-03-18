@@ -349,7 +349,7 @@ const ProductDetailPage = () => {
                                         <button
                                                 disabled={outOfStock}
                                                 onClick={handleAddToCart}
-                                                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-brand-primary text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50'
+                                                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-brand-primary text-sm font-semibold text-white transition-colors duration-150 hover:opacity-90 disabled:opacity-50'
                                         >
                                                 {t("common.actions.addToCart")}
                                         </button>
@@ -407,7 +407,7 @@ const ProductDetailPage = () => {
                                         <button
                                                 disabled={outOfStock}
                                                 onClick={handleAddToCart}
-                                                className='inline-flex h-11 min-w-[9rem] items-center justify-center rounded-md bg-brand-primary px-4 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50'
+                                                className='inline-flex h-11 min-w-[9rem] items-center justify-center rounded-md bg-brand-primary px-4 text-sm font-semibold text-white transition-colors duration-150 hover:opacity-90 disabled:opacity-50'
                                         >
                                                 إضافة للسلة
                                         </button>
