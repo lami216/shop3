@@ -250,7 +250,7 @@ const CategoryManager = () => {
 
                                         <button
                                                 type='submit'
-                                                className='inline-flex items-center justify-center gap-2 rounded-md bg-payzone-gold px-4 py-2 font-semibold text-payzone-navy transition hover:bg-[#b8873d] focus:outline-none focus:ring-2 focus:ring-payzone-indigo disabled:opacity-50'
+                                                className='inline-flex items-center justify-center gap-2 rounded-md bg-payzone-gold px-4 py-2 font-semibold text-payzone-navy transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-payzone-indigo disabled:opacity-50'
                                                 disabled={loading}
                                         >
                                                 <Save className='h-4 w-4' />

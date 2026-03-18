@@ -21,12 +21,12 @@ export default {
                                 },
                         },
                         boxShadow: {
-                                "golden-glow": "0 0 25px rgba(201, 169, 110, 0.2)",
-                                "golden-glow-strong": "0 0 45px rgba(201, 169, 110, 0.35)",
+                                "golden-glow": "0 0 25px color-mix(in srgb, var(--primary) 20%, transparent)",
+                                "golden-glow-strong": "0 0 45px color-mix(in srgb, var(--primary) 35%, transparent)",
                         },
                         backgroundImage: {
                                 "golden-gradient":
-                                        "linear-gradient(135deg, rgba(201,169,110,0.95) 0%, rgba(246,224,173,0.75) 50%, rgba(201,169,110,0.95) 100%)",
+                                        "linear-gradient(135deg, var(--primary) 0%, var(--primary) 50%, var(--primary) 100%)",
                         },
                         fontFamily: {
                                 sans: ["'Cairo'", "'IBM Plex Arabic'", "system-ui", "sans-serif"],

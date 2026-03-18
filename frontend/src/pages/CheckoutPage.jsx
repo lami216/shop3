@@ -137,7 +137,7 @@ const CheckoutPage = () => {
               )}
             </div>
 
-            <button type='submit' disabled={!isFormValid} className='mt-2 w-full rounded-xl bg-payzone-gold px-5 py-3 text-base font-semibold text-white transition-colors duration-200 hover:bg-[#b8873d] focus:outline-none focus:ring-2 focus:ring-payzone-gold/40 disabled:opacity-50'>
+            <button type='submit' disabled={!isFormValid} className='mt-2 w-full rounded-xl bg-payzone-gold px-5 py-3 text-base font-semibold text-white transition-colors duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-payzone-gold/40 disabled:opacity-50'>
               متابعة الدفع
             </button>
           </form>

@@ -69,10 +69,10 @@ const ProductCard = ({ product }) => {
 
                                 <button
                                         disabled={outOfStock}
-                                        className='mt-auto inline-flex w-full items-center justify-center rounded-md bg-brand-primary py-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#bf9951] disabled:opacity-50'
+                                        className='mt-auto inline-flex w-full items-center justify-center rounded-[10px] border-2 border-brand-primary bg-white py-3 text-sm font-semibold text-brand-primary transition-colors duration-150 hover:bg-brand-primary hover:text-white disabled:opacity-50'
                                         onClick={() => addToCart(productForCart)}
                                 >
-                                        إضافة للسلة
+                                        أضف للسلة
                                 </button>
                         </div>
                 </article>

@@ -45,7 +45,7 @@ const OrderSummary = () => {
 
       <button
         type='button'
-        className='w-full rounded-xl bg-payzone-gold px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#b8873d] focus:outline-none focus-visible:ring-2 focus-visible:ring-payzone-gold/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60'
+        className='w-full rounded-xl bg-payzone-gold px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-payzone-gold/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60'
         onClick={handleCheckout}
         disabled={isDisabled}
       >

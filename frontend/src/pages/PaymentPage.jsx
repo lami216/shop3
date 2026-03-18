@@ -164,7 +164,7 @@ const PaymentPage = () => {
             </Link>
             <Link
               to={`/track?code=${encodeURIComponent(displayOrder.trackingCode)}`}
-              className='inline-flex items-center justify-center rounded-xl bg-payzone-gold px-4 py-2.5 font-semibold text-white transition-colors duration-200 hover:bg-[#b8873d]'
+              className='inline-flex items-center justify-center rounded-xl bg-payzone-gold px-4 py-2.5 font-semibold text-white transition-colors duration-200 hover:opacity-90'
             >
               متابعة حالة الطلب
             </Link>
@@ -269,7 +269,7 @@ const PaymentPage = () => {
             <input id='receiptImage' type='file' accept='image/*' className='hidden' onChange={onProofChange} required />
             {proofFile ? <p className='mt-2 text-xs text-[#6b7280]'>{proofFile.name}</p> : <p className='mt-2 text-xs text-[#6b7280]'>PNG / JPG حتى 5MB</p>}
 
-            <button disabled={submitting} className='mt-6 w-full rounded-xl bg-payzone-gold px-4 py-3 font-semibold text-white transition-colors duration-200 hover:bg-[#b8873d] disabled:opacity-60'>
+            <button disabled={submitting} className='mt-6 w-full rounded-xl bg-payzone-gold px-4 py-3 font-semibold text-white transition-colors duration-200 hover:opacity-90 disabled:opacity-60'>
               {submitting ? "جاري الإرسال..." : "إرسال إثبات الدفع"}
             </button>
           </div>
