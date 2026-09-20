@@ -7,6 +7,7 @@ import { useUserStore } from "../stores/useUserStore";
 import { formatMRU } from "../lib/formatMRU";
 import { canOpenPaymentPage, formatMmSs, getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
 import { formatDateTimeFr } from "../lib/localeFormat";
+import { getGuestOrderAccessToken } from "../lib/guestPendingOrders";
 
 const statusBadgeClasses = {
   UNDER_REVIEW: "bg-[#f7ecd8] text-[#9a6a22]",
@@ -42,7 +43,11 @@ const TrackingPage = () => {
   const search = async (event) => {
     event.preventDefault();
     try {
-      const data = await trackOrder(trackingCode.trim());
+      const normalizedTrackingCode = trackingCode.trim();
+      const data = await trackOrder(
+        normalizedTrackingCode,
+        getGuestOrderAccessToken(normalizedTrackingCode)
+      );
       setOrder(data.order);
     } catch (error) {
       toast.error(error.response?.data?.message || "Order not found");

@@ -1,29 +1,40 @@
 {
-        "name": "e-commerce-store",
-        "version": "1.0.0",
-        "description": "",
-        "main": "backend/server.js",
-        "scripts": {
-                "dev": "nodemon backend/server.js",
-                "start": "node backend/server.js",
-                "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend"
-        },
-        "keywords": [],
-        "author": "",
-        "type": "module",
-        "license": "ISC",
-        "dependencies": {
-        "bcryptjs": "^2.4.3",
-                "cookie-parser": "^1.4.6",
-                "dotenv": "^16.4.5",
-                "express": "^4.19.2",
-                "imagekit": "^5.2.0",
-                "ioredis": "^5.4.1",
-		"jsonwebtoken": "^9.0.2",
-		"multer": "^1.4.5-lts.1",
-		"mongoose": "^8.5.3"
-        },
-        "devDependencies": {
-                "nodemon": "^3.1.4"
-        }
+  "name": "e-commerce-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Alsahib storefront and API",
+  "main": "backend/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon backend/server.js",
+    "start": "node backend/server.js",
+    "test": "node --test",
+    "build": "npm run build --prefix frontend",
+    "ci:install": "npm ci --ignore-scripts && npm ci --prefix frontend --ignore-scripts"
+  },
+  "engines": {
+    "node": "24.21.0",
+    "npm": "11.19.0"
+  },
+  "packageManager": "npm@11.19.0",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@imagekit/nodejs": "7.12.1",
+    "bcryptjs": "2.4.3",
+    "cookie-parser": "1.4.7",
+    "dotenv": "16.6.1",
+    "express": "4.22.3",
+    "express-rate-limit": "8.7.0",
+    "helmet": "8.3.0",
+    "ioredis": "5.11.1",
+    "jsonwebtoken": "9.0.3",
+    "mongoose": "8.24.4",
+    "multer": "2.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "3.1.14",
+    "supertest": "7.2.2"
+  }
 }

@@ -1,10 +1,7 @@
 import HeroSlide from "../models/heroSlide.model.js";
 import { deleteImage, uploadImage } from "../lib/imagekit.js";
 
-const hasImageKitConfig =
-        Boolean(process.env.IMAGEKIT_PUBLIC_KEY) &&
-        Boolean(process.env.IMAGEKIT_PRIVATE_KEY) &&
-        Boolean(process.env.IMAGEKIT_URL_ENDPOINT);
+const hasImageKitConfig = Boolean(process.env.IMAGEKIT_PRIVATE_KEY);
 
 const sanitizeString = (value) => {
         if (typeof value !== "string") return "";
@@ -59,7 +56,7 @@ export const listHeroSlides = async (req, res) => {
                 res.json({ slides: slides.map(normalizeSlide) });
         } catch (error) {
                 console.log("Error in listHeroSlides controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -135,7 +132,7 @@ export const createHeroSlide = async (req, res) => {
                 res.status(201).json(normalizeSlide(slide));
         } catch (error) {
                 console.log("Error in createHeroSlide controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -213,7 +210,7 @@ export const updateHeroSlide = async (req, res) => {
                 res.json(normalizeSlide(slide));
         } catch (error) {
                 console.log("Error in updateHeroSlide controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -234,6 +231,6 @@ export const deleteHeroSlide = async (req, res) => {
                 res.json({ success: true });
         } catch (error) {
                 console.log("Error in deleteHeroSlide controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };

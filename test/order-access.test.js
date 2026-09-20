@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   createOrderAccessCredential,
+  createOrderAccessForUser,
   isOrderAccessAllowed,
 } from "../backend/security/orderAccess.js";
 
@@ -30,6 +31,22 @@ test("guest capability grants access without storing the raw token", () => {
   assert.equal(credential.token.length >= 43, true);
   assert.notEqual(credential.tokenHash, credential.token);
   assert.equal(isOrderAccessAllowed(req, order), true);
+});
+
+test("guest order creation stores only a hash and returns the raw capability once", () => {
+  const access = createOrderAccessForUser(null);
+
+  assert.equal(typeof access.responseToken, "string");
+  assert.equal(access.responseToken.length >= 43, true);
+  assert.equal(typeof access.orderFields.guestAccessTokenHash, "string");
+  assert.notEqual(access.orderFields.guestAccessTokenHash, access.responseToken);
+});
+
+test("authenticated order creation does not issue a guest capability", () => {
+  assert.deepEqual(createOrderAccessForUser({ _id: "user-1" }), {
+    responseToken: undefined,
+    orderFields: {},
+  });
 });
 
 test("wrong guest capability is rejected", () => {

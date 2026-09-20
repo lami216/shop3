@@ -47,8 +47,8 @@ const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const keywordPattern = PERFUME_SECTION_KEYWORDS.map((keyword) => escapeRegExp(keyword)).join("|");
 const perfumeKeywordRegex = new RegExp(keywordPattern, "i");
-const sectionOnlyLineRegex = new RegExp(`^(${keywordPattern})\\s*[:\-–—]?$`, "i");
-const titleWithContentRegex = new RegExp(`^(${keywordPattern})\\s*[:\-–—]\\s*(.+)$`, "i");
+const sectionOnlyLineRegex = new RegExp(`^(${keywordPattern})\\s*(?:-|:|–|—)?$`, "i");
+const titleWithContentRegex = new RegExp(`^(${keywordPattern})\\s*(?:-|:|–|—)\\s*(.+)$`, "i");
 
 const parsePerfumeDescription = (description) => {
         if (typeof description !== "string" || !perfumeKeywordRegex.test(description)) {

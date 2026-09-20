@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock3 } from "lucide-react";
 import apiClient from "../lib/apiClient";
-import { getGuestPendingOrders, setGuestPendingOrders } from "../lib/guestPendingOrders";
+import { getGuestPendingOrders } from "../lib/guestPendingOrders";
+import { createOrderAccessConfig } from "../lib/orderAccess";
 import { useUserStore } from "../stores/useUserStore";
 
 const ACTIVE_PENDING_STATUSES = ["PENDING_PAYMENT", "pending_payment", "PENDING_APPROVAL", "pending_approval"];
@@ -92,7 +93,10 @@ const GuestPendingOrdersFab = () => {
       const checks = await Promise.all(
         currentOrders.map(async (entry) => {
           try {
-            const data = await apiClient.get(`/orders/tracking/${entry.trackingCode}`);
+            const data = await apiClient.get(
+              `/orders/tracking/${entry.trackingCode}`,
+              createOrderAccessConfig(entry.accessToken)
+            );
             return isActivePendingOrder(data.order) ? data.order : null;
           } catch {
             return null;
@@ -103,9 +107,6 @@ const GuestPendingOrdersFab = () => {
       if (cancelled) return;
       const nextOrders = checks.filter(Boolean);
       setOrders(nextOrders);
-      if (nextOrders.length !== currentOrders.length) {
-        setGuestPendingOrders(nextOrders.map((order) => ({ trackingCode: order.trackingCode, createdAt: order.createdAt })));
-      }
     };
 
     refreshPendingOrders();

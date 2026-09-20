@@ -17,7 +17,7 @@ export const getInventoryOverview = async (_req, res) => {
 
     res.json({ items: rows });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -49,7 +49,7 @@ export const addInventoryBatch = async (req, res) => {
 
     res.status(201).json(batch);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -59,7 +59,7 @@ export const getProductBatches = async (req, res) => {
     const batches = await InventoryBatch.find({ product: productId }).sort({ createdAt: -1 });
     res.json({ batches });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -121,7 +121,7 @@ export const createInventoryIntake = async (req, res) => {
 
     return res.status(201).json({ intake });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -134,7 +134,7 @@ export const getInventoryIntakes = async (_req, res) => {
       .lean();
     return res.json({ intakes });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -149,6 +149,6 @@ export const getPublicInventorySummary = async (req, res) => {
     const items = productIds.map((id) => ({ productId: id.toString(), lowStockThreshold, ...(summaries.get(id.toString()) || { totalQuantity: 0, reservedQuantity: 0, availableQuantity: 0 }) }));
     res.json({ items, lowStockThreshold });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   }
 };

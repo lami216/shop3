@@ -1,18 +1,19 @@
-import mongoose from "mongoose";
-import dotenv from "dotenv";
+import { loadEnvironment, validateEnvironment } from "../config/environment.js";
 
-dotenv.config({ path: "/etc/shop3/.env" });
+loadEnvironment();
+validateEnvironment();
+const mongoose = (await import("mongoose")).default;
 
 const run = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, { dbName: "test3" });
     const result = await mongoose.connection.db.collection("orders").dropIndex("stripeSessionId_1");
-    console.log("Dropped index:", result);
+    console.info("Dropped index:", result);
   } catch (error) {
     if (error?.codeName === "IndexNotFound") {
-      console.log("stripeSessionId_1 index does not exist, nothing to drop.");
+      console.info("stripeSessionId_1 index does not exist, nothing to drop");
     } else {
-      console.error("Failed to drop index", error.message);
+      console.error("Failed to drop legacy index");
       process.exitCode = 1;
     }
   } finally {
@@ -20,4 +21,4 @@ const run = async () => {
   }
 };
 
-run();
+await run();

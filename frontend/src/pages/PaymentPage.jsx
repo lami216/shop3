@@ -3,10 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Camera, Copy } from "lucide-react";
 import { useOrderStore } from "../stores/useOrderStore";
-import { removeGuestPendingOrder } from "../lib/guestPendingOrders";
+import { getGuestOrderAccessToken } from "../lib/guestPendingOrders";
 import { canOpenPaymentPage, formatMmSs, getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
-
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+import { RECEIPT_ACCEPT_ATTRIBUTE, isSupportedReceiptFile } from "../lib/receiptUpload";
 
 const PaymentPage = () => {
   const { trackingCode } = useParams();
@@ -28,15 +27,18 @@ const PaymentPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getPaymentSessionByTracking(trackingCode);
+        const accessToken = getGuestOrderAccessToken(trackingCode);
+        const data = await getPaymentSessionByTracking(trackingCode, accessToken);
         setSession(data);
       } catch (error) {
         const message = error.response?.data?.message || "Failed to load payment session";
         if (message === "Order is under review" || message === "Order is not payable") {
           try {
-            const detailsData = await getOrderDetailsByTracking(trackingCode);
+            const detailsData = await getOrderDetailsByTracking(
+              trackingCode,
+              getGuestOrderAccessToken(trackingCode)
+            );
             setOrderDetails(detailsData.order);
-            removeGuestPendingOrder(trackingCode);
             window.dispatchEvent(new CustomEvent("pending-orders:refresh"));
           } catch {
             setLoadError(message);
@@ -85,15 +87,8 @@ const PaymentPage = () => {
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("الملف يجب أن يكون صورة فقط");
-      event.target.value = "";
-      setProofFile(null);
-      return;
-    }
-
-    if (file.size > MAX_FILE_BYTES) {
-      toast.error("حجم الصورة يجب ألا يتجاوز 5MB");
+    if (!isSupportedReceiptFile(file)) {
+      toast.error("الصورة يجب أن تكون JPEG أو PNG أو WebP وألا تتجاوز 5MB");
       event.target.value = "";
       setProofFile(null);
       return;
@@ -118,8 +113,11 @@ const PaymentPage = () => {
         payload.append("paymentMethodId", selectedMethodId);
       }
       payload.append("receiptImage", proofFile);
-      const data = await submitPaymentProof(session.order._id, payload);
-      removeGuestPendingOrder(session.order.trackingCode);
+      const data = await submitPaymentProof(
+        session.order._id,
+        payload,
+        getGuestOrderAccessToken(session.order.trackingCode)
+      );
       window.dispatchEvent(new CustomEvent("guest-pending-orders:changed"));
       window.dispatchEvent(new CustomEvent("pending-orders:refresh"));
       setSubmittedOrder({
@@ -266,8 +264,8 @@ const PaymentPage = () => {
             <label htmlFor='receiptImage' className='mt-5 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-brand-primary/20 bg-white px-4 py-2.5 text-sm font-semibold text-[#111111] transition-colors duration-200 hover:bg-[#faf7f1]'>
               <Camera size={16} /> رفع لقطة شاشة الدفع
             </label>
-            <input id='receiptImage' type='file' accept='image/*' className='hidden' onChange={onProofChange} required />
-            {proofFile ? <p className='mt-2 text-xs text-[#6b7280]'>{proofFile.name}</p> : <p className='mt-2 text-xs text-[#6b7280]'>PNG / JPG حتى 5MB</p>}
+            <input id='receiptImage' type='file' accept={RECEIPT_ACCEPT_ATTRIBUTE} className='hidden' onChange={onProofChange} required />
+            {proofFile ? <p className='mt-2 text-xs text-[#6b7280]'>{proofFile.name}</p> : <p className='mt-2 text-xs text-[#6b7280]'>PNG / JPG / WebP حتى 5MB</p>}
 
             <button disabled={submitting} className='mt-6 w-full rounded-xl bg-payzone-gold px-4 py-3 font-semibold text-white transition-colors duration-200 hover:opacity-90 disabled:opacity-60'>
               {submitting ? "جاري الإرسال..." : "إرسال إثبات الدفع"}

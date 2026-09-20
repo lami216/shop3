@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 import apiClient from "../lib/apiClient";
+import { createOrderAccessConfig } from "../lib/orderAccess";
 
 export const useOrderStore = create((set) => ({
   adminOrders: [],
@@ -10,11 +11,18 @@ export const useOrderStore = create((set) => ({
   createOrder: async (payload) => {
     return apiClient.post("/orders", payload);
   },
-  getPaymentSessionByTracking: async (trackingCode) => {
-    return apiClient.get(`/orders/tracking/${trackingCode}/payment-session`);
+  getPaymentSessionByTracking: async (trackingCode, accessToken) => {
+    return apiClient.get(
+      `/orders/tracking/${trackingCode}/payment-session`,
+      createOrderAccessConfig(accessToken)
+    );
   },
-  submitPaymentProof: async (orderId, payload) => {
-    return apiClient.post(`/orders/${orderId}/payment-proof`, payload);
+  submitPaymentProof: async (orderId, payload, accessToken) => {
+    return apiClient.post(
+      `/orders/${orderId}/payment-proof`,
+      payload,
+      createOrderAccessConfig(accessToken)
+    );
   },
   fetchAdminOrders: async () => {
     set({ loading: true });
@@ -68,8 +76,10 @@ export const useOrderStore = create((set) => ({
     const data = await apiClient.get("/orders/my");
     set({ myOrders: data.orders || [] });
   },
-  trackOrder: async (trackingCode) => apiClient.get(`/orders/tracking/${trackingCode}`),
-  getOrderDetailsByTracking: async (trackingCode) => apiClient.get(`/orders/tracking/${trackingCode}/details`),
+  trackOrder: async (trackingCode, accessToken) =>
+    apiClient.get(`/orders/tracking/${trackingCode}`, createOrderAccessConfig(accessToken)),
+  getOrderDetailsByTracking: async (trackingCode, accessToken) =>
+    apiClient.get(`/orders/tracking/${trackingCode}/details`, createOrderAccessConfig(accessToken)),
   fetchPortionSales: async () => {
     const data = await apiClient.get("/portion-sales/summary");
     set({ portionSales: data.sales || [] });

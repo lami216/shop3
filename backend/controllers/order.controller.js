@@ -13,8 +13,10 @@ import {
   releaseOrderReservation,
 } from "../services/inventory.service.js";
 import PortionSale from "../models/portionSale.model.js";
+import { createOrderAccessForUser } from "../security/orderAccess.js";
+import { createPublicOrderCode } from "../security/orderCodes.js";
+import { validateReceiptImage } from "../security/receiptUpload.js";
 
-const randomCode = (prefix = "") => `${prefix}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT", "pending_approval", "PENDING_APPROVAL"];
 const PENDING_PAYMENT_STATUSES = ["PENDING_PAYMENT", "pending_payment", "pending_approval", "PENDING_APPROVAL"];
 
@@ -116,6 +118,7 @@ export const createOrder = async (req, res) => {
       selectedMethod = activeMethods[0];
     }
 
+    const access = createOrderAccessForUser(req.user);
     let order;
     await session.withTransaction(async () => {
       const orderNumber = await getNextOrderNumber(session);
@@ -123,13 +126,14 @@ export const createOrder = async (req, res) => {
         [
           {
             user: req.user?._id,
+            ...access.orderFields,
             customer: { name: customerName, phone, address },
             products: orderItems,
             totalAmount,
-            orderNumber: randomCode("ORD-"),
+            orderNumber: createPublicOrderCode("ORD-"),
             orderNumberSeq: orderNumber.orderNumberSeq,
             orderNumberDisplay: orderNumber.orderNumberDisplay,
-            trackingCode: randomCode("TRK-"),
+            trackingCode: createPublicOrderCode("TRK-"),
             status: "pending_approval",
             source: "ONLINE",
             paymentMethod: selectedMethod._id,
@@ -140,9 +144,15 @@ export const createOrder = async (req, res) => {
 
     });
 
-    res.status(201).json({ orderId: order._id, orderNumber: order.orderNumber, trackingCode: order.trackingCode, status: order.status });
+    res.status(201).json({
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      trackingCode: order.trackingCode,
+      status: order.status,
+      guestAccessToken: access.responseToken,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   } finally {
     await session.endSession();
   }
@@ -150,10 +160,10 @@ export const createOrder = async (req, res) => {
 
 export const getOrderPaymentSession = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate("products.product", "name image")
-      .populate("paymentMethod", "name accountNumber");
-    if (!order) return res.status(404).json({ message: "Order not found" });
+    const order = await req.order.populate([
+      { path: "products.product", select: "name image" },
+      { path: "paymentMethod", select: "name accountNumber" },
+    ]);
     if (!PENDING_PAYMENT_STATUSES.includes(order.status)) {
       return res.status(400).json({ message: "Order is not payable" });
     }
@@ -169,17 +179,17 @@ export const getOrderPaymentSession = async (req, res) => {
 
     res.json({ order });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: "Invalid request" });
   }
 };
 
 
 export const getOrderPaymentSessionByTracking = async (req, res) => {
   try {
-    const order = await Order.findOne({ trackingCode: req.params.trackingCode })
-      .populate("products.product", "name image")
-      .populate("paymentMethod", "name accountNumber");
-    if (!order) return res.status(404).json({ message: "Order not found" });
+    const order = await req.order.populate([
+      { path: "products.product", select: "name image" },
+      { path: "paymentMethod", select: "name accountNumber" },
+    ]);
     if (order.status === "UNDER_REVIEW") {
       return res.status(400).json({ message: "Order is under review" });
     }
@@ -198,16 +208,16 @@ export const getOrderPaymentSessionByTracking = async (req, res) => {
 
     res.json({ order });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: "Invalid request" });
   }
 };
 
 export const submitPaymentProof = async (req, res) => {
   try {
     const { paymentMethodId } = req.body;
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Order not found" });
+    const order = req.order;
     if (!req.file) return res.status(400).json({ message: "Receipt image is required" });
+    const receiptExtension = validateReceiptImage(req.file);
     if (!order.paymentMethod && !paymentMethodId) {
       return res.status(400).json({ message: "Payment method is required" });
     }
@@ -223,7 +233,9 @@ export const submitPaymentProof = async (req, res) => {
       order.paymentMethod = method._id;
     }
 
-    const receiptUpload = await uploadImage(req.file.buffer, "order-receipts");
+    const receiptUpload = await uploadImage(req.file.buffer, "order-receipts", {
+      extension: receiptExtension,
+    });
     order.receiptImageUrl = receiptUpload.url;
     order.receiptSubmittedAt = new Date();
     order.status = "UNDER_REVIEW";
@@ -232,7 +244,11 @@ export const submitPaymentProof = async (req, res) => {
     await sendTelegramMessage(`under_review ${order.orderNumber} amount ${order.totalAmount}`);
     res.json({ success: true, status: order.status, orderNumber: order.orderNumber, trackingCode: order.trackingCode });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error?.code === "INVALID_RECEIPT_CONTENT") {
+      return res.status(400).json({ message: "Invalid receipt image" });
+    }
+    console.error("Failed to submit payment proof", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -308,7 +324,7 @@ export const approveOrder = async (req, res) => {
 
     res.json({ success: true, order });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -333,28 +349,19 @@ export const getMyOrders = async (req, res) => {
 };
 
 export const getOrderByTracking = async (req, res) => {
-  const order = await Order.findOne({ trackingCode: req.params.trackingCode })
-    .populate("paymentMethod", "name accountNumber")
-    .populate("products.product", "name price image");
-  if (!order) return res.status(404).json({ message: "Order not found" });
-
-  if (req.user && String(order.user || "") !== String(req.user._id)) {
-    return res.status(403).json({ message: "Not allowed to view this order" });
-  }
+  const order = await req.order.populate([
+    { path: "paymentMethod", select: "name accountNumber" },
+    { path: "products.product", select: "name price image" },
+  ]);
 
   res.json({ order });
 };
 
 export const getOrderDetailsByTracking = async (req, res) => {
-  const order = await Order.findOne({ trackingCode: req.params.trackingCode })
-    .populate("paymentMethod", "name accountNumber")
-    .populate("products.product", "name price");
-
-  if (!order) return res.status(404).json({ message: "Order not found" });
-
-  if (req.user && String(order.user || "") !== String(req.user._id)) {
-    return res.status(403).json({ message: "Not allowed to view this order" });
-  }
+  const order = await req.order.populate([
+    { path: "paymentMethod", select: "name accountNumber" },
+    { path: "products.product", select: "name price" },
+  ]);
 
   res.json({ order });
 };
@@ -367,8 +374,7 @@ export const claimGuestOrder = async (req, res) => {
       return res.status(400).json({ message: "trackingCode and phone are required" });
     }
 
-    const order = await Order.findOne({ trackingCode: trackingCode.trim() });
-    if (!order) return res.status(404).json({ message: "Order not found" });
+    const order = req.order;
     if (order.user) return res.status(400).json({ message: "Order already linked to a user" });
 
     const normalizedInputPhone = String(phone).replace(/\D/g, "");
@@ -378,11 +384,12 @@ export const claimGuestOrder = async (req, res) => {
     }
 
     order.user = req.user._id;
+    order.guestAccessTokenHash = undefined;
     await order.save();
 
     res.json({ success: true, orderId: order._id, trackingCode: order.trackingCode, user: order.user });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -457,8 +464,8 @@ export const createPosInvoice = async (req, res) => {
             },
             products: orderItems,
             totalAmount,
-            orderNumber: randomCode("POS-"),
-            trackingCode: randomCode("TRK-"),
+            orderNumber: createPublicOrderCode("POS-"),
+            trackingCode: createPublicOrderCode("TRK-"),
             paymentMethod: method?._id,
             receiptImageUrl: "POS_MANUAL",
             status: "UNDER_REVIEW",
@@ -498,7 +505,7 @@ export const createPosInvoice = async (req, res) => {
       totalAmount: order.totalAmount,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   } finally {
     await session.endSession();
   }

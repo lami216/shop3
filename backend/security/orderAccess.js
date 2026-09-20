@@ -9,6 +9,18 @@ export const createOrderAccessCredential = () => {
   return { token, tokenHash: hashToken(token) };
 };
 
+export const createOrderAccessForUser = (user) => {
+  if (user?._id) {
+    return { responseToken: undefined, orderFields: {} };
+  }
+
+  const credential = createOrderAccessCredential();
+  return {
+    responseToken: credential.token,
+    orderFields: { guestAccessTokenHash: credential.tokenHash },
+  };
+};
+
 const getPresentedToken = (req) => {
   const value = req?.headers?.[ACCESS_TOKEN_HEADER];
   return Array.isArray(value) ? value[0] : value;

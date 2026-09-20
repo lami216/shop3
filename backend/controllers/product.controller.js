@@ -362,7 +362,7 @@ export const getAllProducts = async (req, res) => {
                 res.json({ products: products.map(finalizeProductPayload) });
         } catch (error) {
                 console.log("Error in getAllProducts controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -440,7 +440,7 @@ export const searchProducts = async (req, res) => {
                 res.json({ products: products.map(finalizeProductPayload) });
         } catch (error) {
                 console.log("Error in searchProducts controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -467,7 +467,7 @@ export const getFeaturedProducts = async (req, res) => {
                 res.json(finalized);
         } catch (error) {
                 console.log("Error in getFeaturedProducts controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -608,7 +608,7 @@ export const createProduct = async (req, res) => {
                 res.status(201).json(serializeProduct(product));
         } catch (error) {
                 console.log("Error in createProduct controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -868,7 +868,7 @@ export const updateProduct = async (req, res) => {
                 res.json(serializeProduct(updatedProduct));
         } catch (error) {
                 console.log("Error in updateProduct controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -904,7 +904,7 @@ export const deleteProduct = async (req, res) => {
                 res.json({ message: "Product and images deleted successfully" });
         } catch (error) {
                 console.log("Error in deleteProduct controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -922,7 +922,7 @@ export const getProductById = async (req, res) => {
                 res.json(serializeProduct(product));
         } catch (error) {
                 console.log("Error in getProductById controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -1004,7 +1004,7 @@ export const getRecommendedProducts = async (req, res) => {
                 res.json(populatedRecommendations.map(finalizeProductPayload));
         } catch (error) {
                 console.log("Error in getRecommendedProducts controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -1043,7 +1043,7 @@ export const getProductsByCategory = async (req, res) => {
                 res.json({ products: products.map(finalizeProductPayload) });
         } catch (error) {
                 console.log("Error in getProductsByCategory controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -1064,7 +1064,7 @@ export const toggleFeaturedProduct = async (req, res) => {
                 }
         } catch (error) {
                 console.log("Error in toggleFeaturedProduct controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 

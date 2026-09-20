@@ -62,7 +62,7 @@ export const getCategories = async (_req, res) => {
                 res.json({ categories });
         } catch (error) {
                 console.log("Error in getCategories controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -113,7 +113,7 @@ export const createCategory = async (req, res) => {
                 res.status(201).json(serializeCategory(category));
         } catch (error) {
                 console.log("Error in createCategory controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -182,7 +182,7 @@ export const updateCategory = async (req, res) => {
                 res.json(serializeCategory(category));
         } catch (error) {
                 console.log("Error in updateCategory controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
 
@@ -215,6 +215,6 @@ export const deleteCategory = async (req, res) => {
                 res.json({ message: "Category deleted successfully" });
         } catch (error) {
                 console.log("Error in deleteCategory controller", error.message);
-                res.status(500).json({ message: "Server error", error: error.message });
+                res.status(500).json({ message: "Internal server error" });
         }
 };
