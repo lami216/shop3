@@ -57,7 +57,7 @@ export const signup = async (req, res) => {
 		});
 	} catch (error) {
 		console.log("Error in signup controller", error.message);
-		res.status(500).json({ message: error.message });
+		res.status(500).json({ message: "Internal server error" });
 	}
 };
 
@@ -82,26 +82,28 @@ export const login = async (req, res) => {
 		}
 	} catch (error) {
 		console.log("Error in login controller", error.message);
-		res.status(500).json({ message: error.message });
+		res.status(500).json({ message: "Internal server error" });
 	}
 };
 
-export const logout = async (req, res) => {
+export const createLogout = ({ redisClient = redis, jwtLibrary = jwt, logger = console } = {}) => async (req, res) => {
 	try {
-		const refreshToken = req.cookies.refreshToken;
+		const refreshToken = req.cookies?.refreshToken;
 		if (refreshToken) {
-			const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-			await redis.del(`refresh_token:${decoded.userId}`);
+			const decoded = jwtLibrary.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+			await redisClient.del(`refresh_token:${decoded.userId}`);
 		}
-
+	} catch (error) {
+		logger.error("Failed to revoke refresh token during logout", error);
+	} finally {
 		res.clearCookie("accessToken");
 		res.clearCookie("refreshToken");
-		res.json({ message: "Logged out successfully" });
-	} catch (error) {
-		console.log("Error in logout controller", error.message);
-		res.status(500).json({ message: "Server error", error: error.message });
 	}
+
+	return res.json({ message: "Logged out successfully" });
 };
+
+export const logout = createLogout();
 
 // this will refresh the access token
 export const refreshToken = async (req, res) => {
@@ -131,7 +133,7 @@ export const refreshToken = async (req, res) => {
 		res.json({ message: "Token refreshed successfully" });
 	} catch (error) {
 		console.log("Error in refreshToken controller", error.message);
-		res.status(500).json({ message: "Server error", error: error.message });
+		res.status(500).json({ message: "Internal server error" });
 	}
 };
 
@@ -139,6 +141,6 @@ export const getProfile = async (req, res) => {
 	try {
 		res.json(req.user);
 	} catch (error) {
-		res.status(500).json({ message: "Server error", error: error.message });
+		res.status(500).json({ message: "Internal server error" });
 	}
 };

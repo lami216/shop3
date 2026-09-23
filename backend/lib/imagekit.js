@@ -1,35 +1,49 @@
-// backend/lib/imagekit.js
-import ImageKit from "imagekit";
+import ImageKit, { toFile as imageKitToFile } from "@imagekit/nodejs";
 
-const { IMAGEKIT_PUBLIC_KEY, IMAGEKIT_PRIVATE_KEY, IMAGEKIT_URL_ENDPOINT } = process.env;
+let defaultClient;
 
-if (!IMAGEKIT_PUBLIC_KEY || !IMAGEKIT_PRIVATE_KEY || !IMAGEKIT_URL_ENDPOINT) {
-  console.warn("[ImageKit] Missing env (IMAGEKIT_PUBLIC_KEY/PRIVATE_KEY/URL_ENDPOINT). Uploads will fail.");
-}
-
-export const imagekitClient = new ImageKit({
-  publicKey: IMAGEKIT_PUBLIC_KEY || "",
-  privateKey: IMAGEKIT_PRIVATE_KEY || "",
-  urlEndpoint: IMAGEKIT_URL_ENDPOINT || "",
-});
-
-export async function uploadImage(fileBase64OrBuffer, folder = "products") {
-  if (!IMAGEKIT_PUBLIC_KEY || !IMAGEKIT_PRIVATE_KEY || !IMAGEKIT_URL_ENDPOINT) {
-    throw new Error("ImageKit env missing (IMAGEKIT_PUBLIC_KEY/PRIVATE_KEY/URL_ENDPOINT).");
+const getClient = () => {
+  if (!process.env.IMAGEKIT_PRIVATE_KEY) {
+    throw new Error("Image upload service is not configured");
   }
-  const res = await imagekitClient.upload({
-    file: fileBase64OrBuffer, // Base64 data URL or Buffer
-    fileName: `${Date.now()}.jpg`,
-    folder,
-  });
-  return { url: res.url, fileId: res.fileId };
+
+  defaultClient ??= new ImageKit({ privateKey: process.env.IMAGEKIT_PRIVATE_KEY });
+  return defaultClient;
+};
+
+const dataUrlToBuffer = (value) => {
+  const match = /^data:([a-z0-9.+-]+\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i.exec(value);
+  if (!match) return null;
+
+  const extension = match[1] === "image/png" ? "png" : match[1] === "image/webp" ? "webp" : "jpg";
+  return { buffer: Buffer.from(match[2].replace(/\s/g, ""), "base64"), extension };
+};
+
+const normalizeUpload = (input, extension) => {
+  if (Buffer.isBuffer(input) || input instanceof Uint8Array) {
+    return { buffer: input, extension };
+  }
+
+  if (typeof input === "string") {
+    const parsed = dataUrlToBuffer(input.trim());
+    if (parsed) return parsed;
+  }
+
+  throw new Error("Unsupported image upload input");
+};
+
+export async function uploadImage(fileBase64OrBuffer, folder = "products", options = {}) {
+  const client = options.client ?? getClient();
+  const toFile = options.toFile ?? imageKitToFile;
+  const normalized = normalizeUpload(fileBase64OrBuffer, options.extension ?? "jpg");
+  const fileName = `${Date.now()}.${normalized.extension}`;
+  const file = await toFile(normalized.buffer, fileName);
+  const response = await client.files.upload({ file, fileName, folder });
+  return { url: response.url, fileId: response.fileId };
 }
 
-export async function deleteImage(fileId) {
+export async function deleteImage(fileId, options = {}) {
   if (!fileId) return;
-  if (!IMAGEKIT_PUBLIC_KEY || !IMAGEKIT_PRIVATE_KEY || !IMAGEKIT_URL_ENDPOINT) {
-    console.warn("[ImageKit] Missing env, skip delete.");
-    return;
-  }
-  await imagekitClient.deleteFile(fileId);
+  const client = options.client ?? getClient();
+  await client.files.delete(fileId);
 }

@@ -88,7 +88,7 @@ const CheckoutPage = () => {
       });
       await clearCart();
       if (!user) {
-        addGuestPendingOrder(order.trackingCode);
+        addGuestPendingOrder(order.trackingCode, order.guestAccessToken);
       }
       navigate(`/pay/${order.trackingCode}`);
     } catch (error) {

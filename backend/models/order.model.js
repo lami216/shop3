@@ -23,6 +23,12 @@ const orderSchema = new mongoose.Schema(
     orderNumberSeq: { type: Number, required: false, index: true },
     orderNumberDisplay: { type: String, required: false },
     trackingCode: { type: String, required: true, unique: true, index: true },
+    guestAccessTokenHash: { type: String, required: false, select: false },
+    legacyGuestClaim: {
+      tokenHash: { type: String, required: false, select: false },
+      expiresAt: { type: Date, required: false },
+      consumedAt: { type: Date, required: false },
+    },
     products: [orderItemSchema],
     totalAmount: { type: Number, required: true, min: 0 },
     customer: {
@@ -58,7 +64,18 @@ const orderSchema = new mongoose.Schema(
     totalProfit: { type: Number, default: 0 },
     source: { type: String, enum: ["ONLINE", "POS"], default: "ONLINE" },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform: (_document, result) => {
+        delete result.guestAccessTokenHash;
+        if (result.legacyGuestClaim) {
+          delete result.legacyGuestClaim.tokenHash;
+        }
+        return result;
+      },
+    },
+  }
 );
 
 const Order = mongoose.model("Order", orderSchema);

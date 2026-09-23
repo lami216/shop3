@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useOrderStore } from "../stores/useOrderStore";
+import { getGuestOrderAccessToken } from "../lib/guestPendingOrders";
 import { formatMRU } from "../lib/formatMRU";
 import { getOrderDisplayNumber, getOrderStatusLabelAr } from "../lib/orderStatus";
 import { formatDateTimeFr } from "../lib/localeFormat";
@@ -32,7 +33,10 @@ const OrderDetailsPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getOrderDetailsByTracking(trackingCode);
+        const data = await getOrderDetailsByTracking(
+          trackingCode,
+          getGuestOrderAccessToken(trackingCode)
+        );
         setOrder(data.order);
       } catch (error) {
         toast.error(error.response?.data?.message || "تعذر تحميل تفاصيل الطلب");

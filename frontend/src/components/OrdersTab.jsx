@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { buildLegacyGuestClaimUrl } from "../lib/legacyGuestClaim";
 import { useOrderStore } from "../stores/useOrderStore";
 
 const REVIEWABLE_STATUSES = ["UNDER_REVIEW", "pending_payment", "PENDING_PAYMENT", "pending_approval", "PENDING_APPROVAL"];
 
 const OrdersTab = () => {
-  const { adminOrders, fetchAdminOrders, approveOrder, rejectOrder } = useOrderStore();
+  const { adminOrders, fetchAdminOrders, approveOrder, rejectOrder, issueLegacyGuestClaim } = useOrderStore();
+  const [claimLinks, setClaimLinks] = useState({});
+  const [issuingClaimFor, setIssuingClaimFor] = useState(null);
 
   useEffect(() => {
     fetchAdminOrders();
@@ -17,6 +20,25 @@ const OrdersTab = () => {
       return;
     }
     action();
+  };
+
+  const createLegacyClaimLink = async (order) => {
+    if (!window.confirm("Confirm that this legacy guest order was manually verified before issuing a recovery link.")) {
+      return;
+    }
+
+    setIssuingClaimFor(order._id);
+    try {
+      const issued = await issueLegacyGuestClaim(order._id);
+      const claimLink = buildLegacyGuestClaimUrl(window.location.origin, issued.claimPath);
+      setClaimLinks((current) => ({ ...current, [order._id]: claimLink }));
+      await navigator.clipboard?.writeText(claimLink);
+      toast.success("72-hour one-time claim link created and copied");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to issue a legacy claim link");
+    } finally {
+      setIssuingClaimFor(null);
+    }
   };
 
   return (
@@ -52,6 +74,27 @@ const OrdersTab = () => {
               </div>
             ) : null}
             {hasProof ? <div className='mt-3 h-32 overflow-hidden rounded-md'><img src={order.receiptImageUrl} alt='proof' className='block h-full w-full object-cover object-center' /></div> : null}
+            {order.source === "ONLINE" && !order.user ? (
+              <div className='mt-3 rounded border border-amber-400/40 bg-amber-950/30 p-3'>
+                <button
+                  className='rounded bg-amber-600 px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={issuingClaimFor === order._id}
+                  onClick={() => createLegacyClaimLink(order)}
+                >
+                  {issuingClaimFor === order._id ? "Issuing…" : "Issue verified legacy claim link"}
+                </button>
+                {claimLinks[order._id] ? (
+                  <input
+                    aria-label='One-time legacy claim link'
+                    className='mt-2 w-full rounded bg-black/30 px-2 py-1 text-xs text-white'
+                    dir='ltr'
+                    readOnly
+                    value={claimLinks[order._id]}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                ) : null}
+              </div>
+            ) : null}
             <div className='mt-3 flex gap-2'>
               <button
                 className='rounded bg-green-600 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50'
