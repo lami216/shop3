@@ -17,3 +17,37 @@ test("guest order capability hash is hidden from normal queries and JSON", () =>
   });
   assert.equal(order.toJSON().guestAccessTokenHash, undefined);
 });
+
+test("orders without recovery attempts do not expose claim metadata", () => {
+  const order = new Order({
+    orderNumber: "ORD-current",
+    trackingCode: "TRK-current",
+    products: [],
+    totalAmount: 1,
+    customer: { name: "Guest", phone: "00000000", address: "Address" },
+  });
+
+  assert.equal(order.toJSON().legacyGuestClaim, undefined);
+});
+
+test("legacy guest claim secrets are hidden from normal queries and JSON", () => {
+  const tokenPath = Order.schema.path("legacyGuestClaim.tokenHash");
+  assert.equal(tokenPath.options.select, false);
+
+  const order = new Order({
+    orderNumber: "ORD-legacy",
+    trackingCode: "TRK-legacy",
+    products: [],
+    totalAmount: 1,
+    customer: { name: "Guest", phone: "00000000", address: "Address" },
+    legacyGuestClaim: {
+      tokenHash: "sensitive-claim-hash",
+      expiresAt: new Date("2026-01-04T00:00:00.000Z"),
+      consumedAt: null,
+    },
+  });
+
+  assert.equal(order.toJSON().legacyGuestClaim.tokenHash, undefined);
+  assert.equal(order.toJSON().legacyGuestClaim.expiresAt.toISOString(), "2026-01-04T00:00:00.000Z");
+  assert.equal(order.toJSON().legacyGuestClaim.consumedAt, null);
+});

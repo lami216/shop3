@@ -14,6 +14,7 @@ import {
   rejectOrder,
   submitPaymentProof,
 } from "../controllers/order.controller.js";
+import { createLegacyGuestClaimHandlers } from "../controllers/legacyGuestClaim.controller.js";
 import { adminRoute, optionalAuth, protectRoute } from "../middleware/auth.middleware.js";
 import { createRequireOrderAccess } from "../middleware/orderAccess.middleware.js";
 import {
@@ -26,8 +27,13 @@ import {
   receiptFileFilter,
 } from "../security/receiptUpload.js";
 
-export const createOrderRouter = ({ OrderModel = Order } = {}) => {
+export const createOrderRouter = ({
+  OrderModel = Order,
+  protectRouteMiddleware = protectRoute,
+  adminRouteMiddleware = adminRoute,
+} = {}) => {
   const router = express.Router();
+  const legacyGuestClaim = createLegacyGuestClaimHandlers({ OrderModel });
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_RECEIPT_BYTES, files: 1 },
@@ -48,6 +54,12 @@ export const createOrderRouter = ({ OrderModel = Order } = {}) => {
   router.post("/claim", trackingRateLimiter, protectRoute, requireClaimedOrder, claimGuestOrder);
   router.get("/my", protectRoute, getMyOrders);
   router.get("/admin/all", protectRoute, adminRoute, getAdminOrders);
+  router.post(
+    "/admin/:id/legacy-guest-claim",
+    protectRouteMiddleware,
+    adminRouteMiddleware,
+    legacyGuestClaim.issue
+  );
   router.post("/admin/pos-invoice", protectRoute, adminRoute, createPosInvoice);
   router.get("/tracking/:trackingCode", trackingRateLimiter, optionalAuth, requireOrderByTracking, getOrderByTracking);
   router.get(
@@ -63,6 +75,11 @@ export const createOrderRouter = ({ OrderModel = Order } = {}) => {
     optionalAuth,
     requireOrderByTracking,
     getOrderPaymentSessionByTracking
+  );
+  router.post(
+    "/:id/legacy-guest-claim",
+    trackingRateLimiter,
+    legacyGuestClaim.consume
   );
   router.get("/:id/payment-session", trackingRateLimiter, optionalAuth, requireOrderById, getOrderPaymentSession);
   router.post(

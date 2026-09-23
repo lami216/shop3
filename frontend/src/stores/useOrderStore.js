@@ -72,6 +72,8 @@ export const useOrderStore = create((set) => ({
   createPosInvoice: async (payload) => {
     return apiClient.post("/orders/admin/pos-invoice", payload);
   },
+  issueLegacyGuestClaim: async (orderId) =>
+    apiClient.post(`/orders/admin/${orderId}/legacy-guest-claim`),
   fetchMyOrders: async () => {
     const data = await apiClient.get("/orders/my");
     set({ myOrders: data.orders || [] });

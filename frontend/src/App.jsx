@@ -26,6 +26,7 @@ import MyOrdersPage from "./pages/MyOrdersPage";
 import GuestPendingOrdersFab from "./components/GuestPendingOrdersFab";
 import AboutPage from "./pages/AboutPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import LegacyGuestClaimPage from "./pages/LegacyGuestClaimPage";
 
 const ScrollToTop = () => {
 	const { pathname } = useLocation();
@@ -85,6 +86,7 @@ function App() {
                                         <Route path='/track' element={<TrackingPage />} />
                                         <Route path='/track-order' element={<TrackingPage />} />
                                         <Route path='/order/:trackingCode' element={<OrderDetailsPage />} />
+                                        <Route path='/claim-legacy-order/:orderId' element={<LegacyGuestClaimPage />} />
                                         <Route path='/my-orders' element={user ? <MyOrdersPage /> : <Navigate to='/login' />} />
                                         <Route path='/purchase-success' element={<PurchaseSuccessPage />} />
                                         <Route path='/purchase-cancel' element={<PurchaseCancelPage />} />
